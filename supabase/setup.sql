@@ -20,6 +20,50 @@
 -- Supabase PostgreSQL. Run in the SQL editor or via `supabase db push`.
 -- =====================================================================
 
+-- ---------------------------------------------------------------------
+-- 설치 전 안전장치
+--
+-- 이 앱은 public 스키마에 tasks · payments · guests · events 같은 흔한 이름의
+-- 표를 만든다. 다른 서비스가 이미 쓰고 있는 프로젝트에 설치하면 이름이 겹쳐
+-- 엉뚱한 표에 색인과 권한이 붙는다. 그래서 겹치는 이름이 하나라도 있으면
+-- 아무것도 건드리지 않고 여기서 멈춘다.
+--
+-- 이 앱 전용 Supabase 프로젝트를 새로 만들어서 실행하세요.
+-- (이미 이 앱이 깔린 프로젝트라면 이 검사는 건너뛴다 — 다시 실행해도 안전하다.)
+-- ---------------------------------------------------------------------
+do $$
+declare
+  clashing text[] := array[]::text[];
+  t text;
+  already_installed boolean;
+begin
+  select exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'weddings' and column_name = 'invite_code'
+  ) into already_installed;
+
+  if already_installed then
+    return; -- 이 앱이 이미 설치된 프로젝트
+  end if;
+
+  foreach t in array array[
+    'profiles','weddings','wedding_members','tasks','budget_categories','budget_items','payments',
+    'vendors','venues','honeymoon','honeymoon_items','music_items','outfit_items','guests',
+    'invitation_meetings','gifts','events','memos','activity_logs','attachments','user_settings'
+  ] loop
+    if exists (select 1 from information_schema.tables where table_schema = 'public' and table_name = t) then
+      clashing := clashing || t;
+    end if;
+  end loop;
+
+  if array_length(clashing, 1) > 0 then
+    raise exception E'이 Supabase 프로젝트에는 같은 이름의 표가 이미 있습니다: %\n\n'
+      '결혼 준비 앱은 이 표들을 새로 만들어야 해서, 기존 프로젝트에 설치하면 원래 쓰던 데이터가 섞이거나 망가질 수 있습니다.\n'
+      '아무것도 바꾸지 않고 멈췄습니다. 이 앱만 쓸 Supabase 프로젝트를 새로 만든 뒤 거기서 실행해 주세요.',
+      array_to_string(clashing, ', ');
+  end if;
+end $$;
+
 create extension if not exists "pgcrypto";
 
 -- ---------- helpers ----------

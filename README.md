@@ -73,13 +73,15 @@ npm run dev
 두 사람이 같은 화면을 보고 수정이 서로 연동되려면 **Supabase 연결이 필요합니다.** 브라우저 저장소는 기기 밖으로 나가지 않기 때문입니다.
 설정 순서는 [`docs/SUPABASE.md`](docs/SUPABASE.md) 에 15분짜리 단계로 적어두었습니다. 요약하면:
 
-1. Supabase 프로젝트 생성 (무료, Seoul 리전)
+1. **새** Supabase 프로젝트 생성 (무료, Seoul 리전). 쓰던 프로젝트에 설치하면 `tasks` · `payments` 같은 이름이 겹칩니다
 2. SQL Editor 에서 **`supabase/setup.sql`** 전체를 붙여넣고 한 번 Run (세 개 마이그레이션이 순서대로 들어 있음)
 3. `NEXT_PUBLIC_SUPABASE_URL` · `NEXT_PUBLIC_SUPABASE_ANON_KEY` 환경변수 등록 후 재배포
 4. 한 사람이 가입하며 원본 데이터를 가져오고, 설정 › 계정에서 **초대 링크**를 상대에게 전달
 
 `0002`는 `weddings.details` 컬럼과 결혼식 날짜 범위 제약(1970~2100)을 추가해 1900-01-01 같은 값을 막습니다.
 `0003`은 모든 테이블에 `REPLICA IDENTITY FULL` 을 걸어 **상대가 삭제한 항목도 실시간으로 전달**되게 합니다.
+`setup.sql` 맨 앞에는 이름이 겹치는 표가 있으면 아무것도 건드리지 않고 멈추는 안전장치가 있습니다.
+다른 프로젝트에 잘못 실행했는지 확인하려면 `supabase/inspect.sql`(읽기 전용), 지우려면 `supabase/uninstall.sql` 을 쓰세요.
 연결 상태는 설정 › 계정의 배지와 상단 프로필 옆 초록 점으로 확인할 수 있습니다.
 
 ## 성능
