@@ -1,5 +1,4 @@
-import { GiftsView } from "@/components/gifts/GiftsView";
-export const metadata = { title: "선물" };
-export default function GiftsPage() {
-  return <GiftsView />;
+import { redirect } from "next/navigation";
+export default function Page() {
+  redirect("/guests?tab=gifts");
 }

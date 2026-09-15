@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { collectEvents, computeBudget, computeProgress, eventsThisWeek, HEALTH_LABEL, nearestEventDays } from "@/lib/compute";
 import { formatDDay } from "@/lib/date";
-import { formatKRW } from "@/lib/money";
+import { formatCompactKRW, formatKRW } from "@/lib/money";
 import { useWeddingStore } from "@/lib/store/wedding-store";
 import { cn } from "@/lib/utils";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
@@ -42,12 +42,12 @@ function Stat({
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-3">
           <div className="flex items-center gap-2 sm:block">
             <span className={cn("inline-flex size-8 shrink-0 items-center justify-center rounded-full [&>svg]:size-4 sm:size-10 sm:[&>svg]:size-5", tone)}>{icon}</span>
-            <p className="text-[0.8125rem] text-fg-2 sm:hidden">{label}</p>
+            <p className="text-[0.875rem] text-fg-2 sm:hidden">{label}</p>
           </div>
           <div className="min-w-0 flex-1">
-            <p className="hidden text-[0.8125rem] text-fg-2 sm:block">{label}</p>
-            <p className="truncate text-[1.125rem] font-bold tabular leading-tight text-fg sm:mt-0.5 sm:text-[1.375rem]">{value}</p>
-            {sub && <p className="mt-1 line-clamp-2 text-[0.75rem] leading-snug text-fg-3">{sub}</p>}
+            <p className="hidden text-[0.875rem] text-fg-2 sm:block">{label}</p>
+            <p className="truncate text-[1.25rem] font-bold tabular leading-tight text-fg sm:mt-0.5 sm:text-[1.5rem]">{value}</p>
+            {sub && <p className="mt-1 line-clamp-2 text-[0.8125rem] leading-snug text-fg-3">{sub}</p>}
           </div>
         </div>
         {children}
@@ -69,7 +69,7 @@ export function StatCards() {
   return (
     <section className="space-y-3">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat index={0} icon={<ClipboardCheck />} label="준비 진행률" tone="bg-accent-soft text-accent-text" href="/tasks" value={<><AnimatedNumber value={progress.percent} />%</>}>
+        <Stat index={0} icon={<ClipboardCheck />} label="준비 진행률" tone="bg-accent-soft text-accent-text" href="/plan" value={<><AnimatedNumber value={progress.percent} />%</>}>
           <ProgressBar value={progress.percent} className="mt-3" />
         </Stat>
         <Stat
@@ -77,7 +77,7 @@ export function StatCards() {
           icon={<CheckSquare />}
           label="전체 할 일"
           tone="bg-success-soft text-success"
-          href="/tasks"
+          href="/plan"
           value={<><AnimatedNumber value={progress.total} />개</>}
           sub={`완료 ${progress.done} · 진행 중 ${progress.doing} · 남은 일 ${progress.remaining}`}
         />
@@ -87,15 +87,15 @@ export function StatCards() {
           label="총 예산"
           tone="bg-warning-soft text-warning"
           href="/budget"
-          value={<AnimatedNumber value={budget.totalBudget} format={formatKRW} />}
-          sub={budget.totalBudget > 0 ? `사용 ${formatKRW(budget.totalActual)} (${Math.round(budget.usedPct)}%)` : "총 예산을 정해보세요"}
+          value={<AnimatedNumber value={budget.totalBudget} format={(n) => (n >= 10000000 ? formatCompactKRW(n) : formatKRW(n))} />}
+          sub={budget.totalBudget > 0 ? `사용 ${formatKRW(budget.totalActual)} · ${Math.round(budget.usedPct)}%` : "총 예산을 정해보세요"}
         />
         <Stat
           index={3}
           icon={<Calendar />}
           label="이번 주 일정"
           tone="bg-info-soft text-info"
-          href="/calendar"
+          href="/plan?tab=calendar"
           value={<><AnimatedNumber value={weekEvents.length} />개</>}
           sub={nearest !== null ? `가장 가까운 일정 ${formatDDay(nearest)}` : "예정된 일정이 없어요"}
         />
@@ -106,7 +106,7 @@ export function StatCards() {
           type="button"
           onClick={() => setMore((v) => !v)}
           aria-expanded={more}
-          className="flex w-full items-center justify-between px-5 py-3 text-[0.875rem] text-fg-2 hover:bg-surface-2"
+          className="flex w-full items-center justify-between px-5 py-3 text-[0.9375rem] text-fg-2 hover:bg-surface-2"
         >
           <span className="inline-flex items-center gap-2">
             자세히 보기
@@ -115,7 +115,7 @@ export function StatCards() {
           <ChevronDown className={cn("size-4 transition-transform", more && "rotate-180")} />
         </button>
         {more && (
-          <dl className="grid grid-cols-2 gap-x-4 gap-y-3 border-t border-line px-5 py-4 text-[0.8125rem] sm:grid-cols-3 lg:grid-cols-6">
+          <dl className="grid grid-cols-2 gap-x-4 gap-y-3 border-t border-line px-5 py-4 text-[0.875rem] sm:grid-cols-3 lg:grid-cols-6">
             {[
               ["총 견적", formatKRW(budget.totalEstimated)],
               ["실제 지출", formatKRW(budget.totalActual)],

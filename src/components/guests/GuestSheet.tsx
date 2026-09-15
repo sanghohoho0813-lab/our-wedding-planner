@@ -13,6 +13,73 @@ import { Stepper } from "@/components/ui/Stepper";
 import { Toggle } from "@/components/ui/Toggle";
 import { useEntityForm } from "@/components/shared/useEntityForm";
 
+type GuestValues = RowValues<"guests">;
+
+/** 시트(모바일)와 상세 패널(PC)이 함께 쓰는 입력 묶음 */
+export function GuestFields({
+  values,
+  set,
+  isEdit,
+  onSubmit,
+}: {
+  values: GuestValues;
+  set: <K extends keyof GuestValues>(k: K, v: GuestValues[K]) => void;
+  isEdit: boolean;
+  onSubmit?: () => void;
+}) {
+  return (
+      <div className="space-y-5">
+        <FieldRow label="이름" required>
+          <TextField
+            value={values.name}
+            onChange={(v) => set("name", v)}
+            placeholder="이름"
+            autoFocus={!isEdit}
+            delay={isEdit ? 400 : 0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !isEdit) onSubmit?.();
+            }}
+          />
+        </FieldRow>
+        <FieldRow label="측">
+          <Segmented
+            size="lg"
+            options={[
+              { value: "groom", label: "신랑측" },
+              { value: "bride", label: "신부측" },
+            ]}
+            value={values.side}
+            onChange={(v) => set("side", v)}
+          />
+        </FieldRow>
+        <FieldRow label="참석">
+          <Segmented size="lg" options={RSVP} value={values.rsvp} onChange={(v) => set("rsvp", v)} />
+        </FieldRow>
+        <FieldRow label="동반 인원" right={<span className="text-[0.8125rem] text-fg-3">본인 포함 {1 + values.companions}명</span>}>
+          <Stepper value={values.companions} onChange={(v) => set("companions", v)} max={20} />
+        </FieldRow>
+        <FieldRow label="관계">
+          <ChipSelect size="sm" options={GUEST_RELATIONS.map((r) => ({ value: r, label: r }))} value={values.relation} onChange={(v) => set("relation", values.relation === v ? null : v)} />
+        </FieldRow>
+        <FieldRow label="식사">
+          <Segmented options={MEAL} value={values.meal} onChange={(v) => set("meal", v)} />
+        </FieldRow>
+        <div className="space-y-1 rounded-[14px] border border-line px-3 py-1">
+          <Toggle checked={values.contacted} onChange={(v) => set("contacted", v)} label="연락 완료" />
+          <Toggle checked={values.invitation_sent} onChange={(v) => set("invitation_sent", v)} label="청첩장 전달" />
+        </div>
+        {values.invitation_sent && (
+          <FieldRow label="청첩장 방식">
+            <ChipSelect options={INVITATION_METHOD} value={values.invitation_method} onChange={(v) => set("invitation_method", v)} />
+          </FieldRow>
+        )}
+        <FieldRow label="메모">
+          <TextArea value={values.memo ?? ""} onChange={(v) => set("memo", v || null)} placeholder="좌석, 축의금, 특이사항 등" />
+        </FieldRow>
+      </div>
+  );
+}
+
 export function GuestSheet({
   open,
   onClose,
@@ -71,55 +138,7 @@ export function GuestSheet({
         )
       }
     >
-      <div className="space-y-5">
-        <FieldRow label="이름" required>
-          <TextField
-            value={values.name}
-            onChange={(v) => set("name", v)}
-            placeholder="이름"
-            autoFocus={!isEdit}
-            delay={isEdit ? 400 : 0}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !isEdit) submit(true);
-            }}
-          />
-        </FieldRow>
-        <FieldRow label="측">
-          <Segmented
-            size="lg"
-            options={[
-              { value: "groom", label: "신랑측" },
-              { value: "bride", label: "신부측" },
-            ]}
-            value={values.side}
-            onChange={(v) => set("side", v)}
-          />
-        </FieldRow>
-        <FieldRow label="참석">
-          <Segmented size="lg" options={RSVP} value={values.rsvp} onChange={(v) => set("rsvp", v)} />
-        </FieldRow>
-        <FieldRow label="동반 인원" right={<span className="text-[0.75rem] text-fg-3">본인 포함 {1 + values.companions}명</span>}>
-          <Stepper value={values.companions} onChange={(v) => set("companions", v)} max={20} />
-        </FieldRow>
-        <FieldRow label="관계">
-          <ChipSelect size="sm" options={GUEST_RELATIONS.map((r) => ({ value: r, label: r }))} value={values.relation} onChange={(v) => set("relation", values.relation === v ? null : v)} />
-        </FieldRow>
-        <FieldRow label="식사">
-          <Segmented options={MEAL} value={values.meal} onChange={(v) => set("meal", v)} />
-        </FieldRow>
-        <div className="space-y-1 rounded-[14px] border border-line px-3 py-1">
-          <Toggle checked={values.contacted} onChange={(v) => set("contacted", v)} label="연락 완료" />
-          <Toggle checked={values.invitation_sent} onChange={(v) => set("invitation_sent", v)} label="청첩장 전달" />
-        </div>
-        {values.invitation_sent && (
-          <FieldRow label="청첩장 방식">
-            <ChipSelect options={INVITATION_METHOD} value={values.invitation_method} onChange={(v) => set("invitation_method", v)} />
-          </FieldRow>
-        )}
-        <FieldRow label="메모">
-          <TextArea value={values.memo ?? ""} onChange={(v) => set("memo", v || null)} placeholder="좌석, 축의금, 특이사항 등" />
-        </FieldRow>
-      </div>
+      <GuestFields values={values} set={set} isEdit={isEdit} onSubmit={() => submit(true)} />
     </Sheet>
   );
 }

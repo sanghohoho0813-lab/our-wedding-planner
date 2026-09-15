@@ -29,15 +29,15 @@ export function CardHeader({
       <div className="flex items-center gap-2 min-w-0">
         {icon && <span className="text-accent shrink-0 [&>svg]:size-[1.125rem]">{icon}</span>}
         <div className="min-w-0">
-          <h2 className="text-[1rem] font-semibold text-fg truncate">{title}</h2>
-          {subtitle && <p className="text-[0.75rem] text-fg-3 truncate">{subtitle}</p>}
+          <h2 className="text-[1.0625rem] font-semibold text-fg truncate">{title}</h2>
+          {subtitle && <p className="text-[0.8125rem] text-fg-3 truncate">{subtitle}</p>}
         </div>
       </div>
       {action ??
         (href && (
           <Link
             href={href}
-            className="inline-flex items-center gap-0.5 text-[0.8125rem] text-fg-3 hover:text-accent transition-colors shrink-0 h-9 px-1 -mr-1"
+            className="inline-flex items-center gap-0.5 text-[0.875rem] text-fg-3 hover:text-accent transition-colors shrink-0 h-9 px-1 -mr-1"
           >
             {actionLabel}
             <ChevronRight className="size-3.5" />

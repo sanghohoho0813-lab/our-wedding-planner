@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 import { Chip } from "./Chip";
 
 export const inputCls =
-  "h-11 w-full rounded-[12px] border border-line bg-surface px-3.5 text-[0.9375rem] text-fg placeholder:text-fg-3 outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent-soft disabled:opacity-50";
+  "h-11 w-full rounded-[12px] border border-line bg-surface px-3.5 text-[1rem] text-fg placeholder:text-fg-3 outline-none transition-colors focus:border-accent focus:ring-2 focus:ring-accent-soft disabled:opacity-50";
 
 export function FieldRow({
   label,
@@ -29,7 +29,7 @@ export function FieldRow({
       {(label || right) && (
         <div className="flex items-center justify-between">
           {label && (
-            <label className="block text-[0.8125rem] font-medium text-fg-2">
+            <label className="block text-[0.875rem] font-medium text-fg-2">
               {label}
               {required && <span className="ml-0.5 text-accent">*</span>}
             </label>
@@ -38,7 +38,7 @@ export function FieldRow({
         </div>
       )}
       {children}
-      {hint && <p className="text-[0.75rem] text-fg-3">{hint}</p>}
+      {hint && <p className="text-[0.8125rem] text-fg-3">{hint}</p>}
     </div>
   );
 }
@@ -142,7 +142,7 @@ export function DateField({
           value={value ?? ""}
           onChange={(e) => onChange(e.target.value || null)}
           onClick={openPicker}
-          className={cn(inputCls, "native-picker min-w-0 cursor-pointer px-3 tabular text-[0.875rem]", clearable && value && "pr-9", !value && "text-fg-3")}
+          className={cn(inputCls, "native-picker min-w-0 cursor-pointer px-3 tabular text-[0.9375rem]", clearable && value && "pr-9", !value && "text-fg-3")}
           aria-label={placeholder}
         />
         {clearable && value && (
@@ -164,7 +164,7 @@ export function DateField({
           <Chip size="sm" active={value === addDays(today, 30)} onClick={() => onChange(addDays(today, 30))}>한 달 뒤</Chip>
         </div>
       )}
-      {value && <p className="text-[0.75rem] text-fg-3">{formatKoreanDate(value)}</p>}
+      {value && <p className="text-[0.8125rem] text-fg-3">{formatKoreanDate(value)}</p>}
     </div>
   );
 }
@@ -177,7 +177,7 @@ export function TimeField({ value, onChange, className }: { value: string | null
         value={value ?? ""}
         onChange={(e) => onChange(e.target.value || null)}
         onClick={openPicker}
-        className={cn(inputCls, "native-picker min-w-0 cursor-pointer px-3 tabular text-[0.875rem]", !value && "text-fg-3")}
+        className={cn(inputCls, "native-picker min-w-0 cursor-pointer px-3 tabular text-[0.9375rem]", !value && "text-fg-3")}
         aria-label="시간 선택"
       />
     </div>

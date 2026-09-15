@@ -341,9 +341,22 @@ export const useWeddingStore = create<WeddingState>((set, get) => {
         set({ data: next });
         return;
       }
-      // Supabase: 테이블별로 행 삽입 (백업 복원)
+      // Supabase: 결혼 정보를 먼저 맞추고 테이블별로 행을 넣는다(백업 복원 · 원본 재이관)
       set((s) => ({ pending: s.pending + 1 }));
       try {
+        const w = next.wedding;
+        const base = {
+          name: w.name,
+          wedding_date: w.wedding_date,
+          wedding_time: w.wedding_time,
+          total_budget: w.total_budget,
+        };
+        try {
+          await adapter.updateWedding(weddingId, { ...base, details: w.details });
+        } catch {
+          // details 컬럼이 아직 없는 데이터베이스(0002 마이그레이션 전)면 나머지만 저장한다
+          await adapter.updateWedding(weddingId, base);
+        }
         const tables = Object.keys(next).filter((k) => k !== "wedding") as TableName[];
         for (const t of tables) {
           for (const row of next[t] as TableMap[TableName][]) await adapter.insert(t, { ...row, wedding_id: weddingId });

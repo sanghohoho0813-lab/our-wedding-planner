@@ -5,13 +5,16 @@ import { useEffect, useState } from "react";
 import { isSupabaseConfigured } from "@/lib/config";
 import { toast } from "@/lib/store/ui-store";
 import { useWeddingStore } from "@/lib/store/wedding-store";
+import { useWorkspace } from "@/lib/store/workspace";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { SettingsNav } from "./SettingsNav";
 
-export function AccountSettings({ email }: { email?: string | null }) {
+export function AccountSettings() {
+  const ws = useWorkspace();
+  const email = ws.email;
   const wedding = useWeddingStore((s) => s.data!.wedding);
   const router = useRouter();
   const [members, setMembers] = useState<number | null>(null);
@@ -47,7 +50,7 @@ export function AccountSettings({ email }: { email?: string | null }) {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader title="내 계정" />
-          <div className="space-y-3 px-5 pb-5 text-[0.875rem]">
+          <div className="space-y-3 px-5 pb-5 text-[0.9375rem]">
             {isSupabaseConfigured ? (
               <>
                 <p className="text-fg-2">
@@ -74,14 +77,14 @@ export function AccountSettings({ email }: { email?: string | null }) {
         </Card>
         <Card>
           <CardHeader title="파트너 초대" icon={<Users />} subtitle="같은 공간에서 함께 기록해요" />
-          <div className="space-y-3 px-5 pb-5 text-[0.875rem]">
+          <div className="space-y-3 px-5 pb-5 text-[0.9375rem]">
             {isSupabaseConfigured ? (
               <>
                 <p className="text-fg-2">
                   현재 멤버 <b className="text-fg">{members ?? "…"}명</b> / 최대 2명
                 </p>
                 <div className="flex items-center gap-2">
-                  <code className="flex-1 rounded-[12px] border border-line bg-surface-2 px-4 py-3 text-center text-[1.25rem] font-bold tracking-[0.3em] text-fg">{wedding.invite_code}</code>
+                  <code className="flex-1 rounded-[12px] border border-line bg-surface-2 px-4 py-3 text-center text-[1.375rem] font-bold tracking-[0.3em] text-fg">{wedding.invite_code}</code>
                   <Button variant="secondary" onClick={copyCode} aria-label="초대 코드 복사">
                     <Copy className="size-4" />
                   </Button>

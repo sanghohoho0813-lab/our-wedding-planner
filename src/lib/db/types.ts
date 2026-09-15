@@ -17,6 +17,8 @@ export interface Wedding {
   groom_name: string;
   bride_name: string;
   total_budget: number;
+  /** 원본 시트의 부수 정보(부케 수, 헤어·메이크업 인원 등) */
+  details: Record<string, unknown>;
   invite_code: string;
   created_by: string | null;
   created_at: ISODateTime;

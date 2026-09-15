@@ -3,6 +3,7 @@ import { AnimatePresence } from "framer-motion";
 import { CheckSquare, Plus, Search } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
+import { useMediaQuery } from "@/lib/hooks";
 import type { Task } from "@/lib/db/types";
 import { addDays, thisWeekRange, todayISO } from "@/lib/date";
 import { computeProgress } from "@/lib/compute";
@@ -14,6 +15,8 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { inputCls } from "@/components/ui/Field";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { MasterDetail } from "@/components/layout/MasterDetail";
+import { TaskDetail } from "./TaskDetail";
 import { TaskRow } from "./TaskRow";
 import { TaskSheet } from "./TaskSheet";
 
@@ -35,7 +38,7 @@ const SORTS: { value: Sort; label: string }[] = [
 ];
 const PRIORITY_RANK = { high: 0, normal: 1, low: 2 };
 
-export function TasksView() {
+export function TasksView({ embedded }: { embedded?: boolean } = {}) {
   const params = useSearchParams();
   const router = useRouter();
   const tasks = useWeddingStore((s) => s.data!.tasks);
@@ -45,6 +48,9 @@ export function TasksView() {
   const [category, setCategory] = useState<string | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const wide = useMediaQuery("(min-width: 1280px)");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const open = (id: string) => (wide ? setSelectedId(id) : setEditId(id));
 
   const setFilter = (f: Filter) => {
     const sp = new URLSearchParams(params.toString());
@@ -102,6 +108,7 @@ export function TasksView() {
   return (
     <div>
       <PageHeader
+        compact={embedded}
         title="할 일"
         description={`완료 ${progress.done} / 전체 ${progress.total} · ${progress.percent}%`}
         actions={
@@ -141,37 +148,42 @@ export function TasksView() {
         </div>
       </PageHeader>
 
-      {list.length === 0 ? (
-        <div className="card">
-          <EmptyState
-            icon={<CheckSquare />}
-            title={tasks.length === 0 ? "아직 등록된 할 일이 없어요" : "조건에 맞는 할 일이 없어요"}
-            description={tasks.length === 0 ? "결혼 준비의 첫 할 일을 추가해 볼까요?" : "필터를 바꾸거나 새 할 일을 추가해 보세요."}
-            actionLabel="할 일 추가"
-            onAction={() => setCreating(true)}
-          />
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {groups.map((g) => (
-            <section key={g.key} className="card overflow-hidden">
-              {g.label && (
-                <h2 className="flex items-center justify-between border-b border-line px-4 py-2 text-[0.75rem] font-semibold uppercase tracking-wide text-fg-3">
-                  {g.label}
-                  <span className="tabular">{g.items.length}</span>
-                </h2>
-              )}
-              <ul className="divide-y divide-line">
-                <AnimatePresence initial={false}>
-                  {g.items.map((t) => (
-                    <TaskRow key={t.id} task={t} onOpen={setEditId} />
-                  ))}
-                </AnimatePresence>
-              </ul>
-            </section>
-          ))}
-        </div>
-      )}
+      <MasterDetail
+        detail={<TaskDetail taskId={selectedId} />}
+        list={
+          list.length === 0 ? (
+            <div className="card">
+              <EmptyState
+                icon={<CheckSquare />}
+                title={tasks.length === 0 ? "아직 등록된 할 일이 없어요" : "조건에 맞는 할 일이 없어요"}
+                description={tasks.length === 0 ? "결혼 준비의 첫 할 일을 추가해 볼까요?" : "필터를 바꾸거나 새 할 일을 추가해 보세요."}
+                actionLabel="할 일 추가"
+                onAction={() => setCreating(true)}
+              />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {groups.map((g) => (
+                <section key={g.key} className="card overflow-hidden">
+                  {g.label && (
+                    <h2 className="flex items-center justify-between border-b border-line px-4 py-2 text-[0.8125rem] font-semibold uppercase tracking-wide text-fg-3">
+                      {g.label}
+                      <span className="tabular">{g.items.length}</span>
+                    </h2>
+                  )}
+                  <ul className="divide-y divide-line">
+                    <AnimatePresence initial={false}>
+                      {g.items.map((t) => (
+                        <TaskRow key={t.id} task={t} onOpen={open} selected={selectedId === t.id} />
+                      ))}
+                    </AnimatePresence>
+                  </ul>
+                </section>
+              ))}
+            </div>
+          )
+        }
+      />
 
       <TaskSheet open={!!editId || creating} onClose={() => { setEditId(null); setCreating(false); }} taskId={editId} initial={category ? { category } : undefined} />
     </div>

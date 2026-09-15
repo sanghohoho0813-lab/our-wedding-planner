@@ -30,7 +30,7 @@ const FIELDS: FieldDef[] = [
 
 const TONE: Record<MeetingStatus, BadgeTone> = { planned: "accent", done: "success", canceled: "neutral" };
 
-export function MeetingsView() {
+export function MeetingsView({ embedded }: { embedded?: boolean } = {}) {
   const meetings = useWeddingStore((s) => s.data!.invitation_meetings);
   const [editId, setEditId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -42,6 +42,7 @@ export function MeetingsView() {
   return (
     <div>
       <PageHeader
+        compact={embedded}
         title="청첩장 모임"
         description={`${meetings.length}개 모임 · 예상 ${formatKRW(est)} · 실제 ${formatKRW(act)}`}
         actions={

@@ -24,7 +24,7 @@ const FIELDS: FieldDef[] = [
   { key: "memo", label: "메모", type: "textarea", placeholder: "사이즈, 옵션, 수선 내용 등" },
 ];
 
-export function OutfitView() {
+export function OutfitView({ embedded }: { embedded?: boolean } = {}) {
   const items = useWeddingStore((s) => s.data!.outfit_items);
   const patch = useWeddingStore((s) => s.patch);
   const [editId, setEditId] = useState<string | null>(null);
@@ -45,6 +45,7 @@ export function OutfitView() {
   return (
     <div>
       <PageHeader
+        compact={embedded}
         title="예복"
         description={`${items.length}개 · 총 ${formatKRW(total)}`}
         actions={

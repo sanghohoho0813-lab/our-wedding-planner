@@ -1,18 +1,25 @@
 "use client";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Search, X } from "lucide-react";
+import { Activity, Search, Star, StickyNote, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useLockBodyScroll, useMounted } from "@/lib/hooks";
-import { useUIStore } from "@/lib/store/ui-store";
+import { useUIStore, type HomeSheet } from "@/lib/store/ui-store";
 import { IconButton } from "@/components/ui/Button";
 import { Logo } from "./Logo";
 import { NavList } from "./Sidebar";
 
+const EXTRAS: { key: Exclude<HomeSheet, null>; label: string; icon: React.ReactNode }[] = [
+  { key: "memos", label: "메모함", icon: <StickyNote className="size-4" /> },
+  { key: "favorites", label: "즐겨찾기", icon: <Star className="size-4" /> },
+  { key: "activity", label: "최근 활동", icon: <Activity className="size-4" /> },
+];
+
 export function MenuDrawer() {
   const open = useUIStore((s) => s.drawerOpen);
   const setOpen = useUIStore((s) => s.setDrawer);
+  const setHomeSheet = useUIStore((s) => s.setHomeSheet);
   const mounted = useMounted();
   const reduce = useReducedMotion();
   const router = useRouter();
@@ -36,7 +43,7 @@ export function MenuDrawer() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.18 }}
+            transition={{ duration: 0.15 }}
             onClick={() => setOpen(false)}
           />
           <motion.aside
@@ -47,7 +54,7 @@ export function MenuDrawer() {
             initial={reduce ? { x: 0 } : { x: "-100%" }}
             animate={{ x: 0 }}
             exit={{ x: "-100%" }}
-            transition={reduce ? { duration: 0 } : { type: "spring", damping: 30, stiffness: 320 }}
+            transition={reduce ? { duration: 0 } : { type: "spring", damping: 32, stiffness: 420 }}
             style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
           >
             <div className="flex items-start justify-between px-5 pt-5 pb-3">
@@ -71,12 +78,29 @@ export function MenuDrawer() {
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
                   placeholder="검색"
-                  className="h-11 w-full rounded-full border border-line bg-surface-2 pl-10 pr-4 text-[0.9375rem] outline-none placeholder:text-fg-3 focus:border-accent"
+                  className="h-12 w-full rounded-full border border-line bg-surface-2 pl-10 pr-4 text-[1rem] outline-none placeholder:text-fg-3 focus:border-accent"
                 />
               </label>
             </form>
             <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-6 safe-bottom">
               <NavList onNavigate={() => setOpen(false)} />
+              <div className="mt-4 border-t border-line pt-3">
+                <p className="px-3 pb-1 text-[0.75rem] font-semibold uppercase tracking-wider text-fg-3">기록</p>
+                {EXTRAS.map((e) => (
+                  <button
+                    key={e.key}
+                    type="button"
+                    onClick={() => {
+                      setOpen(false);
+                      setHomeSheet(e.key);
+                    }}
+                    className="flex h-11 w-full items-center gap-3 rounded-[12px] px-3 text-[0.9375rem] font-medium text-fg-2 hover:bg-surface-2 hover:text-fg"
+                  >
+                    <span className="text-fg-3">{e.icon}</span>
+                    {e.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </motion.aside>
         </>

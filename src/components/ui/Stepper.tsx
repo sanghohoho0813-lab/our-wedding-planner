@@ -26,7 +26,7 @@ export function Stepper({ value, onChange, min = 0, max = 999, step = 1, suffix 
       >
         <Minus className="size-4" />
       </button>
-      <span className="min-w-14 text-center font-semibold tabular text-[0.9375rem]">
+      <span className="min-w-14 text-center font-semibold tabular text-[1rem]">
         {value}
         {suffix}
       </span>

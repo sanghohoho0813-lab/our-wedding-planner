@@ -18,7 +18,7 @@ import { vendorFields, type VendorPageConfig } from "./vendorConfig";
 const STATUS_TONE: Record<VendorStatus, BadgeTone> = { candidate: "neutral", contracted: "success", done: "info" };
 const PAY_TONE = { unpaid: "neutral", deposit: "warning", paid: "success" } as const;
 
-export function VendorsView({ cfg }: { cfg: VendorPageConfig }) {
+export function VendorsView({ cfg, embedded }: { cfg: VendorPageConfig; embedded?: boolean }) {
   const vendors = useWeddingStore((s) => s.data!.vendors);
   const patch = useWeddingStore((s) => s.patch);
   const [status, setStatus] = useState<VendorStatus | null>(null);
@@ -36,6 +36,7 @@ export function VendorsView({ cfg }: { cfg: VendorPageConfig }) {
   return (
     <div>
       <PageHeader
+        compact={embedded}
         title={cfg.title}
         description={`${all.length}개 업체${contracted.length ? ` · 계약 ${contracted.length}곳 · ${formatKRW(total)}` : ""}`}
         actions={

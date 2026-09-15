@@ -20,7 +20,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   if (!isSupabaseConfigured) {
     return (
       <div className="space-y-4 text-center">
-        <p className="text-[0.9375rem] text-fg-2">
+        <p className="text-[1rem] text-fg-2">
           Supabase가 설정되지 않아 <b>로컬 저장 모드</b>로 동작해요. 로그인 없이 이 기기에만 데이터가 저장됩니다.
         </p>
         <Button full onClick={() => router.replace("/")}>
@@ -71,7 +71,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
 
   return (
     <form onSubmit={submit} className="space-y-4">
-      <h1 className="text-[1.25rem] font-bold text-fg">{mode === "login" ? "로그인" : "회원가입"}</h1>
+      <h1 className="text-[1.375rem] font-bold text-fg">{mode === "login" ? "로그인" : "회원가입"}</h1>
       {mode === "signup" && (
         <FieldRow label="이름">
           <input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} placeholder="상호" autoComplete="name" />
@@ -92,8 +92,8 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
           placeholder="6자 이상"
         />
       </FieldRow>
-      {err && <p className="rounded-[10px] bg-danger-soft px-3 py-2 text-[0.8125rem] text-danger">{err}</p>}
-      {msg && <p className="rounded-[10px] bg-success-soft px-3 py-2 text-[0.8125rem] text-success">{msg}</p>}
+      {err && <p className="rounded-[10px] bg-danger-soft px-3 py-2 text-[0.875rem] text-danger">{err}</p>}
+      {msg && <p className="rounded-[10px] bg-success-soft px-3 py-2 text-[0.875rem] text-success">{msg}</p>}
       <Button type="submit" full size="lg" loading={loading}>
         {mode === "login" ? "로그인" : "가입하기"}
       </Button>
@@ -102,7 +102,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
           이메일 링크로 로그인
         </Button>
       )}
-      <p className="text-center text-[0.8125rem] text-fg-3">
+      <p className="text-center text-[0.875rem] text-fg-3">
         {mode === "login" ? (
           <>
             아직 계정이 없나요?{" "}

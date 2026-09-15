@@ -28,7 +28,7 @@ export function SearchView() {
       <PageHeader title="검색" description="할 일, 예산, 업체, 일정, 하객, 메모를 한 번에 찾아요">
         <label className="relative block">
           <Search className="pointer-events-none absolute left-4 top-1/2 size-5 -translate-y-1/2 text-fg-3" />
-          <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="예: 스냅, 부케, 김OO" className={`${inputCls} h-12 rounded-full pl-12 text-[1rem]`} />
+          <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="예: 스냅, 부케, 김OO" className={`${inputCls} h-12 rounded-full pl-12 text-[1.0625rem]`} />
         </label>
       </PageHeader>
       {!q.trim() ? (
@@ -41,17 +41,17 @@ export function SearchView() {
         </div>
       ) : (
         <div className="space-y-4">
-          <p className="text-[0.8125rem] text-fg-3">{results.length}개 결과</p>
+          <p className="text-[0.875rem] text-fg-3">{results.length}개 결과</p>
           {[...groups.entries()].map(([kind, items]) => (
             <section key={kind} className="card overflow-hidden">
-              <h2 className="border-b border-line px-4 py-2 text-[0.75rem] font-semibold text-fg-3">{kind}</h2>
+              <h2 className="border-b border-line px-4 py-2 text-[0.8125rem] font-semibold text-fg-3">{kind}</h2>
               <ul className="divide-y divide-line">
                 {items.map((r) => (
                   <li key={r.key}>
                     <Link href={r.href} className="flex items-center gap-3 px-4 py-3 hover:bg-surface-2">
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[0.9375rem] font-medium text-fg">{r.title}</span>
-                        {r.subtitle && <span className="block truncate text-[0.75rem] text-fg-3">{r.subtitle}</span>}
+                        <span className="block truncate text-[1rem] font-medium text-fg">{r.title}</span>
+                        {r.subtitle && <span className="block truncate text-[0.8125rem] text-fg-3">{r.subtitle}</span>}
                       </span>
                       <Badge>{kind}</Badge>
                     </Link>

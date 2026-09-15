@@ -17,7 +17,7 @@ export function Segmented<T extends string>({ options, value, onChange, classNam
   const id = useId();
   const reduce = useReducedMotion();
   const h = size === "lg" ? "h-12" : size === "md" ? "h-11" : "h-9";
-  const text = size === "lg" ? "text-[0.9375rem]" : size === "md" ? "text-[0.875rem]" : "text-[0.8125rem]";
+  const text = size === "lg" ? "text-[1rem]" : size === "md" ? "text-[0.9375rem]" : "text-[0.875rem]";
   return (
     <div
       role="radiogroup"

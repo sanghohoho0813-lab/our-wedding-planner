@@ -16,7 +16,7 @@ export function SettingsNav() {
       {TABS.map((t) => {
         const active = pathname === t.href;
         return (
-          <Link key={t.href} href={t.href} aria-current={active ? "page" : undefined} className={cn("flex h-10 flex-1 items-center justify-center rounded-[9px] text-[0.875rem] font-medium transition-colors", active ? "bg-surface text-fg shadow-sm" : "text-fg-2 hover:text-fg")}>
+          <Link key={t.href} href={t.href} aria-current={active ? "page" : undefined} className={cn("flex h-10 flex-1 items-center justify-center rounded-[9px] text-[0.9375rem] font-medium transition-colors", active ? "bg-surface text-fg shadow-sm" : "text-fg-2 hover:text-fg")}>
             {t.label}
           </Link>
         );

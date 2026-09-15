@@ -7,7 +7,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <Logo size="lg" className="inline-block" />
       </div>
       <div className="card w-full max-w-sm p-6 sm:p-7">{children}</div>
-      <p className="mt-6 text-center text-[0.75rem] text-fg-3">소중한 순간이 모여, 평생 기억할 하루가 됩니다.</p>
+      <p className="mt-6 text-center text-[0.8125rem] text-fg-3">소중한 순간이 모여, 평생 기억할 하루가 됩니다.</p>
     </div>
   );
 }

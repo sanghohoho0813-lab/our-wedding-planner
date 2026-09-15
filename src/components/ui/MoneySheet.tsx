@@ -99,7 +99,7 @@ export function MoneySheet({
     setFresh(true);
   };
 
-  const key = "h-12 rounded-[12px] bg-surface-2 text-[1.125rem] font-semibold text-fg hover:bg-surface-3 active:scale-[0.97] transition tabular";
+  const key = "h-12 rounded-[12px] bg-surface-2 text-[1.25rem] font-semibold text-fg hover:bg-surface-3 active:scale-[0.97] transition tabular";
   const opKey = (o: Op) => cn(key, "bg-accent-softer text-accent-text", op === o && fresh && "bg-accent text-accent-fg");
 
   return (
@@ -128,10 +128,10 @@ export function MoneySheet({
     >
       <div className="space-y-3">
         <div className="rounded-[16px] bg-surface-2 px-4 py-3 text-right">
-          <div className="h-5 text-[0.8125rem] text-fg-3 tabular">
+          <div className="h-5 text-[0.875rem] text-fg-3 tabular">
             {acc !== null && op ? `${formatNumber(acc)} ${op}${!fresh ? ` ${formatNumber(curNum)}` : ""}` : "현재 금액"}
           </div>
-          <div className="text-[1.75rem] font-bold tabular text-fg leading-tight">{formatKRW(curNum)}</div>
+          <div className="text-[1.875rem] font-bold tabular text-fg leading-tight">{formatKRW(curNum)}</div>
         </div>
 
         <div className="grid grid-cols-4 gap-1.5">
@@ -141,14 +141,14 @@ export function MoneySheet({
               type="button"
               onClick={() => quick(q.v)}
               className={cn(
-                "h-10 rounded-[10px] border text-[0.8125rem] font-medium tabular active:scale-[0.97] transition",
+                "h-10 rounded-[10px] border text-[0.875rem] font-medium tabular active:scale-[0.97] transition",
                 q.v > 0 ? "border-line bg-surface text-fg hover:bg-surface-2" : "border-line bg-surface text-fg-2 hover:bg-surface-2",
               )}
             >
               {q.label}
             </button>
           ))}
-          <button type="button" onClick={() => quick(-curNum)} className="h-10 rounded-[10px] border border-line bg-surface text-[0.8125rem] font-medium text-fg-3 hover:bg-surface-2">
+          <button type="button" onClick={() => quick(-curNum)} className="h-10 rounded-[10px] border border-line bg-surface text-[0.875rem] font-medium text-fg-3 hover:bg-surface-2">
             0으로
           </button>
         </div>
@@ -172,7 +172,7 @@ export function MoneySheet({
             <Delete className="size-5" />
           </button>
           <button type="button" onClick={() => pressOp("+")} className={opKey("+")} aria-label="더하기">+</button>
-          <button type="button" onClick={() => press("000")} className={cn(key, "col-span-3 text-[0.9375rem]")}>000</button>
+          <button type="button" onClick={() => press("000")} className={cn(key, "col-span-3 text-[1rem]")}>000</button>
           <button type="button" onClick={equals} className={cn(key, "bg-accent-soft text-accent-text")} aria-label="계산">=</button>
         </div>
       </div>

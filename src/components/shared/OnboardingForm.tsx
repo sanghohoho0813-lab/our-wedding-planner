@@ -2,9 +2,9 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { DEFAULT_WEDDING_DATE } from "@/lib/config";
-import { DEFAULT_CATEGORIES, STARTER_TASKS } from "@/lib/db/seed";
+import { migratedRows, ORIGINAL_WEDDING } from "@/lib/db/migration";
+import { MIGRATION_TOTAL } from "@/lib/db/migration";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
-import { addDays } from "@/lib/date";
 import { Button } from "@/components/ui/Button";
 import { DateField, FieldRow, inputCls } from "@/components/ui/Field";
 import { MoneyField } from "@/components/ui/MoneyField";
@@ -14,11 +14,11 @@ import { Toggle } from "@/components/ui/Toggle";
 export function OnboardingForm() {
   const router = useRouter();
   const [tab, setTab] = useState<"create" | "join">("create");
-  const [name, setName] = useState("우리의 결혼 준비");
-  const [date, setDate] = useState<string | null>(DEFAULT_WEDDING_DATE);
+  const [name, setName] = useState<string>(ORIGINAL_WEDDING.name);
+  const [date, setDate] = useState<string | null>(ORIGINAL_WEDDING.wedding_date || DEFAULT_WEDDING_DATE);
   const [groom, setGroom] = useState("");
   const [bride, setBride] = useState("");
-  const [budget, setBudget] = useState(0);
+  const [budget, setBudget] = useState<number>(ORIGINAL_WEDDING.total_budget);
   const [seed, setSeed] = useState(true);
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
@@ -39,17 +39,11 @@ export function OnboardingForm() {
       });
       if (error) throw error;
       if (seed) {
-        await sb.from("budget_categories").insert(DEFAULT_CATEGORIES.map((c, i) => ({ wedding_id: wid, name: c.name, icon: c.icon, sort_order: i })));
-        await sb.from("tasks").insert(
-          STARTER_TASKS.map((t, i) => ({
-            wedding_id: wid,
-            title: t.title,
-            category: t.category,
-            due_date: addDays(date, t.offsetDays),
-            priority: t.priority ?? "normal",
-            sort_order: i,
-          })),
-        );
+        for (const { table, rows } of migratedRows(wid as string)) {
+          if (rows.length === 0) continue;
+          const { error: e } = await sb.from(table).insert(rows);
+          if (e) throw e;
+        }
       }
       router.replace("/");
       router.refresh();
@@ -77,8 +71,8 @@ export function OnboardingForm() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-[1.25rem] font-bold text-fg">결혼 준비 공간 만들기</h1>
-        <p className="mt-1 text-[0.875rem] text-fg-3">두 사람이 같은 공간에서 함께 기록해요.</p>
+        <h1 className="text-[1.375rem] font-bold text-fg">결혼 준비 공간 만들기</h1>
+        <p className="mt-1 text-[0.9375rem] text-fg-3">두 사람이 같은 공간에서 함께 기록해요.</p>
       </div>
       <Segmented
         value={tab}
@@ -107,8 +101,13 @@ export function OnboardingForm() {
           <FieldRow label="총 예산 (나중에 바꿀 수 있어요)">
             <MoneyField value={budget} onChange={setBudget} />
           </FieldRow>
-          <Toggle checked={seed} onChange={setSeed} label="기본 카테고리 · 체크리스트 넣기" description="웨딩홀, 스드메 등 기본 예산 카테고리와 준비 체크리스트" />
-          {err && <p className="rounded-[10px] bg-danger-soft px-3 py-2 text-[0.8125rem] text-danger">{err}</p>}
+          <Toggle
+            checked={seed}
+            onChange={setSeed}
+            label="기존 결혼계획표 데이터 가져오기"
+            description={`할 일·예산·하객·업체 등 원본 스프레드시트 ${MIGRATION_TOTAL}건을 그대로 옮겨옵니다`}
+          />
+          {err && <p className="rounded-[10px] bg-danger-soft px-3 py-2 text-[0.875rem] text-danger">{err}</p>}
           <Button full size="lg" loading={loading} onClick={create}>
             시작하기
           </Button>
@@ -118,7 +117,7 @@ export function OnboardingForm() {
           <FieldRow label="초대 코드" hint="파트너의 설정 › 계정 화면에서 확인할 수 있어요.">
             <input className={`${inputCls} uppercase tracking-widest`} value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="ABCD1234" maxLength={8} />
           </FieldRow>
-          {err && <p className="rounded-[10px] bg-danger-soft px-3 py-2 text-[0.8125rem] text-danger">{err}</p>}
+          {err && <p className="rounded-[10px] bg-danger-soft px-3 py-2 text-[0.875rem] text-danger">{err}</p>}
           <Button full size="lg" loading={loading} onClick={join}>
             참여하기
           </Button>

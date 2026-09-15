@@ -13,7 +13,7 @@ export function UpcomingEvents({ limit = 5 }: { limit?: number }) {
   const events = upcomingEvents(collectEvents(data), limit);
   return (
     <Card>
-      <CardHeader title="다가오는 일정" icon={<CalendarDays />} href="/calendar" />
+      <CardHeader title="다가오는 일정" icon={<CalendarDays />} href="/plan?tab=calendar" />
       {events.length === 0 ? (
         <EmptyState compact title="다가오는 일정이 없어요" description="피팅, 방문, 촬영 일정을 등록해 보세요." />
       ) : (
@@ -31,7 +31,7 @@ export function UpcomingEvents({ limit = 5 }: { limit?: number }) {
                 }
                 title={
                   <span className="flex items-center gap-2">
-                    <span className="shrink-0 tabular text-[0.8125rem] font-semibold text-accent-text">{formatShortDate(e.date)}</span>
+                    <span className="shrink-0 tabular text-[0.875rem] font-semibold text-accent-text">{formatShortDate(e.date)}</span>
                     <span className="truncate">{e.title}</span>
                   </span>
                 }

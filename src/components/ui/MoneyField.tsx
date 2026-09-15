@@ -32,7 +32,7 @@ export function MoneyField({
           className,
         )}
       >
-        <span className={cn("tabular font-semibold", size === "lg" ? "text-[1.25rem]" : "text-[0.9375rem]", !value && "font-normal text-fg-3")}>
+        <span className={cn("tabular font-semibold", size === "lg" ? "text-[1.375rem]" : "text-[1rem]", !value && "font-normal text-fg-3")}>
           {value ? formatKRW(value) : placeholder}
         </span>
         <Calculator className="size-4 text-fg-3" />

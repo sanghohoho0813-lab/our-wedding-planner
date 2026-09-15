@@ -42,8 +42,8 @@ export function Toggle({ checked, onChange, label, description, className, disab
     >
       {label && (
         <span className="min-w-0">
-          <span className="block text-[0.9375rem] font-medium text-fg">{label}</span>
-          {description && <span className="block text-[0.8125rem] text-fg-3">{description}</span>}
+          <span className="block text-[1rem] font-medium text-fg">{label}</span>
+          {description && <span className="block text-[0.875rem] text-fg-3">{description}</span>}
         </span>
       )}
       {sw}

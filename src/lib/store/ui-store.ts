@@ -10,10 +10,16 @@ export interface Toast {
   tone?: "default" | "success" | "error";
 }
 
+export type HomeSheet = "memos" | "favorites" | "activity" | null;
+
 interface UIState {
   drawerOpen: boolean;
   quickAddOpen: boolean;
+  homeSheet: HomeSheet;
+  activeTab: string | null;
   toasts: Toast[];
+  setHomeSheet: (s: HomeSheet) => void;
+  setActiveTab: (t: string | null) => void;
   setDrawer: (open: boolean) => void;
   setQuickAdd: (open: boolean) => void;
   toast: (message: string, opts?: Omit<Toast, "id" | "message">) => string;
@@ -23,7 +29,11 @@ interface UIState {
 export const useUIStore = create<UIState>((set, get) => ({
   drawerOpen: false,
   quickAddOpen: false,
+  homeSheet: null,
+  activeTab: null,
   toasts: [],
+  setHomeSheet: (homeSheet) => set({ homeSheet }),
+  setActiveTab: (activeTab) => set({ activeTab }),
   setDrawer: (open) => set({ drawerOpen: open }),
   setQuickAdd: (open) => set({ quickAddOpen: open }),
   toast: (message, opts) => {

@@ -1,10 +1,5 @@
-import { Suspense } from "react";
-import { GuestsView } from "@/components/guests/GuestsView";
-export const metadata = { title: "하객 목록" };
+import { GuestsHub } from "@/components/guests/GuestsHub";
+export const metadata = { title: "하객 · 초대" };
 export default function GuestsPage() {
-  return (
-    <Suspense>
-      <GuestsView />
-    </Suspense>
-  );
+  return <GuestsHub />;
 }

@@ -7,12 +7,12 @@ export function QuoteCard() {
         <circle cx="72" cy="38" r="24" />
         <path d="M72 8l6 7-6 8-6-8z" fill="currentColor" stroke="none" opacity="0.6" />
       </svg>
-      <p className="relative font-hand text-[1.5rem] leading-snug text-fg">
+      <p className="relative font-hand text-[1.625rem] leading-snug text-fg">
         결혼은 끝이 아니라,
         <br />
         더 좋은 날들의 시작
       </p>
-      <p className="relative mt-4 text-[0.875rem] text-fg-2">우리, 잘하고 있어요 ♡</p>
+      <p className="relative mt-4 text-[0.9375rem] text-fg-2">우리, 잘하고 있어요 ♡</p>
     </div>
   );
 }

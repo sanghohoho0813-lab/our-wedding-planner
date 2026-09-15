@@ -29,10 +29,10 @@ export function ListRow({
     <>
       {left && <div className="flex shrink-0 items-center">{left}</div>}
       <div className="min-w-0 flex-1">
-        <div className={cn("truncate text-[0.9375rem] font-medium", muted ? "text-fg-3 line-through decoration-fg-3/60" : "text-fg")}>{title}</div>
-        {subtitle && <div className="mt-0.5 truncate text-[0.8125rem] text-fg-3">{subtitle}</div>}
+        <div className={cn("truncate text-[1rem] font-medium", muted ? "text-fg-3 line-through decoration-fg-3/60" : "text-fg")}>{title}</div>
+        {subtitle && <div className="mt-0.5 truncate text-[0.875rem] text-fg-3">{subtitle}</div>}
       </div>
-      {right && <div className="flex shrink-0 items-center gap-2 text-[0.8125rem] text-fg-2">{right}</div>}
+      {right && <div className="flex shrink-0 items-center gap-2 text-[0.875rem] text-fg-2">{right}</div>}
       {chevron && (onClick || href) && <ChevronRight className="size-4 shrink-0 text-fg-3" />}
     </>
   );

@@ -24,7 +24,7 @@ const FIELDS: FieldDef[] = [
   { key: "memo", label: "메모", type: "textarea", placeholder: "연주 여부, 편곡, 큐 시트 메모 등" },
 ];
 
-export function MusicView() {
+export function MusicView({ embedded }: { embedded?: boolean } = {}) {
   const items = useWeddingStore((s) => s.data!.music_items);
   const patch = useWeddingStore((s) => s.patch);
   const [slot, setSlot] = useState<MusicSlot | null>(null);
@@ -36,6 +36,7 @@ export function MusicView() {
   return (
     <div>
       <PageHeader
+        compact={embedded}
         title="음악"
         description={`${items.length}곡 · 확정 ${confirmed}곡`}
         actions={
@@ -65,9 +66,9 @@ export function MusicView() {
             if (list.length === 0 && slot === null) return null;
             return (
               <section key={s.value} className="card overflow-hidden">
-                <h2 className="flex items-center justify-between border-b border-line px-4 py-2.5 text-[0.9375rem] font-semibold">
+                <h2 className="flex items-center justify-between border-b border-line px-4 py-2.5 text-[1rem] font-semibold">
                   {s.label}
-                  <span className="text-[0.75rem] font-normal text-fg-3">{list.length}곡</span>
+                  <span className="text-[0.8125rem] font-normal text-fg-3">{list.length}곡</span>
                 </h2>
                 {list.length === 0 ? (
                   <EmptyState compact title="후보곡이 없어요" actionLabel="곡 추가" onAction={() => { setSlot(s.value); setCreating(true); }} />
@@ -78,10 +79,10 @@ export function MusicView() {
                         <CheckCircle checked={m.is_confirmed} onChange={(v) => patch("music_items", m.id, { is_confirmed: v })} label={m.is_confirmed ? "확정 해제" : "확정"} />
                         <button type="button" onClick={() => setEditId(m.id)} className="min-w-0 flex-1 text-left">
                           <span className="flex items-center gap-2">
-                            <span className={cn("truncate text-[0.9375rem] font-medium text-fg")}>{m.title}</span>
+                            <span className={cn("truncate text-[1rem] font-medium text-fg")}>{m.title}</span>
                             {m.is_confirmed && <Badge tone="success">확정</Badge>}
                           </span>
-                          <span className="block truncate text-[0.75rem] text-fg-3">{[m.artist, m.section].filter(Boolean).join(" · ") || MUSIC_SLOT_LABEL[m.slot]}</span>
+                          <span className="block truncate text-[0.8125rem] text-fg-3">{[m.artist, m.section].filter(Boolean).join(" · ") || MUSIC_SLOT_LABEL[m.slot]}</span>
                         </button>
                         {m.url && (
                           <a href={m.url} target="_blank" rel="noreferrer" aria-label="링크 열기" className="inline-flex size-10 items-center justify-center rounded-full text-fg-3 hover:bg-surface-3 hover:text-accent">

@@ -1,10 +1,8 @@
 // usage: node shot.mjs <path> <name> [width height] [theme] [accent] [fontScale]
 import { chromium } from "playwright";
-import { buildDemo, DEMO_KEY } from "./demo-data.mjs";
 const [,, path = "/", name = "home", w = "390", h = "844", theme = "light", accent = "rose", fs = "1"] = process.argv;
 const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });
 const ctx = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: Number(w), height: Number(h) }, deviceScaleFactor: 1, locale: "ko-KR", timezoneId: "Asia/Seoul", hasTouch: Number(w) < 768, reducedMotion: process.env.REDUCE ? "reduce" : "no-preference" });
-if (process.env.SEED) await ctx.addInitScript(({ key, data }) => { if (!localStorage.getItem(key)) localStorage.setItem(key, JSON.stringify(data)); }, { key: DEMO_KEY, data: buildDemo() });
 await ctx.addInitScript(({ theme, accent, fs }) => {
   localStorage.setItem("owp:settings", JSON.stringify({ state: { theme, accent, fontScale: Number(fs) }, version: 0 }));
 }, { theme, accent, fs });

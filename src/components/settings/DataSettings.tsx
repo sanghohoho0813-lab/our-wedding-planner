@@ -1,15 +1,16 @@
 "use client";
-import { Download, FileJson, FileSpreadsheet, RotateCcw, Upload } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Database, Download, FileJson, FileSpreadsheet, RotateCcw, Upload } from "lucide-react";
 import { useRef, useState } from "react";
 import { isSupabaseConfigured } from "@/lib/config";
 import type { DataTable } from "@/lib/db/defaults";
-import { emptyWeddingData } from "@/lib/db/local";
-import { seedWeddingData } from "@/lib/db/seed";
+import { emptyData } from "@/lib/db/migration";
+import { buildMigratedData, MIGRATION_AUDIT, MIGRATION_TOTAL, MIGRATION_WARNINGS, migratedRows } from "@/lib/db/migration";
 import type { TableName } from "@/lib/db/types";
 import { CSV_TABLE_LABEL, csvTemplate, csvToRows, download, parseJSONBackup, toCSV, toJSONBackup } from "@/lib/export";
 import { todayISO } from "@/lib/date";
 import { toast } from "@/lib/store/ui-store";
 import { useWeddingStore } from "@/lib/store/wedding-store";
+import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader } from "@/components/ui/Card";
@@ -27,11 +28,12 @@ export function DataSettings() {
   const replaceAll = useWeddingStore((s) => s.replaceAll);
   const [csvTable, setCsvTable] = useState<TableName>("tasks");
   const [importTable, setImportTable] = useState<DataTable>("tasks");
-  const [confirm, setConfirm] = useState<null | "restore" | "reset">(null);
+  const [confirm, setConfirm] = useState<null | "restore" | "reset" | "remigrate">(null);
   const [pendingJSON, setPendingJSON] = useState<string | null>(null);
   const jsonRef = useRef<HTMLInputElement>(null);
   const csvRef = useRef<HTMLInputElement>(null);
   const counts = Object.entries(CSV_TABLE_LABEL).map(([t, label]) => [label, (data[t as TableName] as unknown[]).length] as const);
+  const totalRows = counts.reduce((n, [, c]) => n + c, 0);
 
   const onJSONFile = async (f: File | undefined) => {
     if (!f) return;
@@ -67,35 +69,120 @@ export function DataSettings() {
     }
   };
 
+  const remigrate = async () => {
+    const next = buildMigratedData(data.wedding.id, data.wedding.created_by);
+    next.wedding = { ...next.wedding, invite_code: data.wedding.invite_code, groom_name: data.wedding.groom_name, bride_name: data.wedding.bride_name };
+    await replaceAll(next);
+    toast(`원본 결혼계획표 ${MIGRATION_TOTAL}건을 다시 불러왔어요.`, { tone: "success" });
+  };
+
   const reset = async () => {
-    const fresh = seedWeddingData(emptyWeddingData({ ...data.wedding, total_budget: 0 }), data.wedding.wedding_date);
-    await replaceAll(fresh);
-    toast("초기화했어요.", { tone: "success" });
+    await replaceAll(emptyData({ ...data.wedding, total_budget: 0 }));
+    toast("모든 기록을 비웠어요.", { tone: "success" });
+  };
+
+  const addMigration = async () => {
+    let n = 0;
+    for (const { table, rows } of migratedRows(data.wedding.id)) {
+      for (const row of rows) {
+        add(table as DataTable, row as never, { log: false });
+        n += 1;
+      }
+    }
+    toast(`원본 데이터 ${n}건을 추가했어요.`, { tone: "success" });
   };
 
   return (
     <div>
-      <PageHeader title="데이터 관리" description="백업, 내보내기, 가져오기" />
+      <PageHeader title="데이터 관리" description="원본 결혼계획표 이관 결과, 백업, 내보내기" />
       <SettingsNav />
-      <div className="grid gap-4 lg:grid-cols-2">
+
+      <Card className="mb-4">
+        <CardHeader
+          title="원본 결혼계획표 이관 결과"
+          icon={<Database />}
+          subtitle="Google 스프레드시트 '결혼 계획표_공유용' 기준"
+          action={<Badge tone="success">{MIGRATION_TOTAL}건 이관</Badge>}
+        />
+        <div className="px-5 pb-5">
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[34rem] text-[0.9375rem]">
+              <thead>
+                <tr className="border-b border-line text-left text-[0.875rem] text-fg-3">
+                  <th className="py-2 pr-3 font-medium">원본 시트</th>
+                  <th className="py-2 pr-3 text-right font-medium">원본</th>
+                  <th className="py-2 pr-3 text-right font-medium">이관</th>
+                  <th className="py-2 pr-3 text-right font-medium">제외</th>
+                  <th className="py-2 font-medium">비고</th>
+                </tr>
+              </thead>
+              <tbody>
+                {MIGRATION_AUDIT.map((a) => (
+                  <tr key={a.sheet} className="border-b border-line/60 align-top">
+                    <td className="py-2 pr-3 font-medium text-fg whitespace-nowrap">{a.sheet}</td>
+                    <td className="py-2 pr-3 text-right tabular text-fg-2">{a.source}</td>
+                    <td className={cn("py-2 pr-3 text-right tabular font-semibold", a.migrated > 0 ? "text-success" : "text-fg-3")}>{a.migrated}</td>
+                    <td className={cn("py-2 pr-3 text-right tabular", a.skipped > 0 ? "text-warning" : "text-fg-3")}>{a.skipped}</td>
+                    <td className="py-2 text-[0.875rem] leading-snug text-fg-3">{a.note || "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-3 text-[0.875rem] text-fg-3">
+            현재 이 워크스페이스에 저장된 기록은 모두 {totalRows}건입니다.
+          </p>
+        </div>
+      </Card>
+
+      {MIGRATION_WARNINGS.length > 0 && (
+        <Card className="mb-4">
+          <CardHeader title="원본 데이터에서 확인이 필요한 부분" icon={<AlertTriangle />} />
+          <ul className="space-y-2 px-5 pb-5">
+            {MIGRATION_WARNINGS.map((w) => (
+              <li key={w.title} className={cn("rounded-[12px] border px-4 py-3", w.level === "high" ? "border-warning/40 bg-warning-soft/50" : "border-line bg-surface-2/60")}>
+                <p className="text-[1rem] font-semibold text-fg">{w.title}</p>
+                <p className="mt-0.5 text-[0.9375rem] leading-relaxed text-fg-2">{w.detail}</p>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
+      <div className="grid gap-4 xl:grid-cols-2">
         <Card>
           <CardHeader title="저장 방식" action={<Badge tone={isSupabaseConfigured ? "success" : "warning"}>{isSupabaseConfigured ? "Supabase 연결됨" : "로컬 저장 모드"}</Badge>} />
-          <div className="px-5 pb-5 text-[0.875rem] text-fg-2">
+          <div className="px-5 pb-5 text-[1rem] text-fg-2">
             {isSupabaseConfigured ? (
               <p>데이터는 Supabase 데이터베이스에 저장되고, 같은 공간의 두 사람에게 실시간으로 공유돼요.</p>
             ) : (
               <p>
-                Supabase 환경변수가 없어 <b>이 브라우저에만</b> 저장돼요. 브라우저 데이터를 지우면 사라질 수 있으니 주기적으로 JSON 백업을 받아두세요. Vercel 배포 시 환경변수를 설정하면 자동으로 DB 모드로 전환돼요.
+                Supabase 환경변수가 없어 <b className="text-fg">이 브라우저에만</b> 저장돼요. 브라우저 데이터를 지우면 사라질 수 있으니 주기적으로 JSON 백업을 받아두세요.
               </p>
             )}
-            <dl className="mt-4 grid grid-cols-3 gap-2 text-[0.75rem]">
+            <dl className="mt-4 grid grid-cols-2 gap-2 text-[0.875rem] sm:grid-cols-3">
               {counts.map(([label, n]) => (
-                <div key={label} className="rounded-[10px] bg-surface-2 px-2.5 py-1.5">
+                <div key={label} className="rounded-[10px] bg-surface-2 px-3 py-2">
                   <dt className="text-fg-3">{label}</dt>
-                  <dd className="tabular font-semibold text-fg">{n}건</dd>
+                  <dd className="tabular text-[1.0625rem] font-semibold text-fg">{n}건</dd>
                 </div>
               ))}
             </dl>
+          </div>
+        </Card>
+
+        <Card>
+          <CardHeader title="원본 데이터 다시 불러오기" icon={<CheckCircle2 />} subtitle="스프레드시트 내용으로 되돌리거나 덧붙이기" />
+          <div className="space-y-2 px-5 pb-5">
+            <Button full variant="outline" onClick={() => setConfirm("remigrate")}>
+              <RotateCcw className="size-4" /> 원본 결혼계획표로 되돌리기
+            </Button>
+            <Button full variant="ghost" onClick={addMigration}>
+              <Upload className="size-4" /> 지금 데이터에 원본 덧붙이기
+            </Button>
+            <p className="text-[0.875rem] text-fg-3">
+              되돌리기는 지금 기록을 모두 지우고 원본 {MIGRATION_TOTAL}건으로 교체합니다. 덧붙이기는 같은 항목이면 덮어쓰고 새 항목만 추가합니다.
+            </p>
           </div>
         </Card>
 
@@ -109,7 +196,6 @@ export function DataSettings() {
             <Button full variant="secondary" onClick={() => jsonRef.current?.click()}>
               <Upload className="size-4" /> JSON 백업 복원
             </Button>
-            <p className="text-[0.75rem] text-fg-3">복원하면 {isSupabaseConfigured ? "백업의 항목이 현재 데이터에 추가돼요." : "현재 데이터가 백업 내용으로 교체돼요."}</p>
           </div>
         </Card>
 
@@ -124,7 +210,7 @@ export function DataSettings() {
         </Card>
 
         <Card>
-          <CardHeader title="CSV 가져오기" icon={<Upload />} subtitle="기존 스프레드시트 옮기기" />
+          <CardHeader title="CSV 가져오기" icon={<Upload />} subtitle="다른 시트 옮기기" />
           <div className="space-y-3 px-5 pb-5">
             <ChipSelect size="sm" options={IMPORT_TABLES.map((t) => ({ value: t, label: CSV_TABLE_LABEL[t]! }))} value={importTable} onChange={setImportTable} />
             <div className="flex gap-2">
@@ -136,21 +222,19 @@ export function DataSettings() {
                 <Upload className="size-4" /> CSV 파일 선택
               </Button>
             </div>
-            <p className="text-[0.75rem] text-fg-3">첫 줄은 헤더여야 해요. 템플릿의 한국어 헤더(제목, 마감일 …)나 영문 키 모두 인식해요. 상태·참석 등은 한국어 값(완료, 참석 …)도 변환돼요.</p>
+            <p className="text-[0.875rem] text-fg-3">첫 줄은 헤더여야 해요. 한국어 헤더(제목, 마감일 …)와 한국어 값(완료, 참석 …)을 그대로 인식합니다.</p>
           </div>
         </Card>
 
-        {!isSupabaseConfigured && (
-          <Card>
-            <CardHeader title="초기화" icon={<RotateCcw />} />
-            <div className="space-y-2 px-5 pb-5">
-              <p className="text-[0.875rem] text-fg-2">모든 기록을 지우고 기본 카테고리와 체크리스트만 남겨요. 먼저 JSON 백업을 받아두세요.</p>
-              <Button variant="danger" onClick={() => setConfirm("reset")}>
-                로컬 데이터 초기화
-              </Button>
-            </div>
-          </Card>
-        )}
+        <Card>
+          <CardHeader title="전체 비우기" icon={<RotateCcw />} />
+          <div className="space-y-2 px-5 pb-5">
+            <p className="text-[1rem] text-fg-2">모든 기록을 지웁니다. 되돌릴 수 없으니 JSON 백업을 먼저 받아두세요.</p>
+            <Button variant="danger" onClick={() => setConfirm("reset")}>
+              전체 비우기
+            </Button>
+          </div>
+        </Card>
       </div>
 
       <ConfirmSheet
@@ -158,11 +242,20 @@ export function DataSettings() {
         onClose={() => { setConfirm(null); setPendingJSON(null); }}
         onConfirm={restore}
         title="백업을 복원할까요?"
-        message={isSupabaseConfigured ? "백업 파일의 항목이 현재 데이터에 추가돼요. 중복될 수 있어요." : "현재 브라우저의 데이터가 백업 내용으로 완전히 교체돼요."}
+        message={isSupabaseConfigured ? "백업 파일의 항목이 현재 데이터에 추가돼요." : "현재 데이터가 백업 내용으로 교체돼요."}
         confirmLabel="복원"
         danger
       />
-      <ConfirmSheet open={confirm === "reset"} onClose={() => setConfirm(null)} onConfirm={reset} title="정말 초기화할까요?" message="되돌릴 수 없어요. JSON 백업을 먼저 받았는지 확인해 주세요." confirmLabel="초기화" danger />
+      <ConfirmSheet
+        open={confirm === "remigrate"}
+        onClose={() => setConfirm(null)}
+        onConfirm={remigrate}
+        title="원본 결혼계획표로 되돌릴까요?"
+        message={`지금 기록을 모두 지우고 원본 스프레드시트 ${MIGRATION_TOTAL}건으로 교체합니다. 앱에서 추가한 내용은 사라져요.`}
+        confirmLabel="되돌리기"
+        danger
+      />
+      <ConfirmSheet open={confirm === "reset"} onClose={() => setConfirm(null)} onConfirm={reset} title="정말 전체를 비울까요?" message="되돌릴 수 없어요. JSON 백업을 먼저 받았는지 확인해 주세요." confirmLabel="비우기" danger />
     </div>
   );
 }

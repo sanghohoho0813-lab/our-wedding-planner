@@ -46,8 +46,8 @@ export function Sheet({ open, onClose, title, description, children, footer, siz
   const header = (title || headerRight) && (
     <div className="flex items-start justify-between gap-3 px-5 pt-3 pb-2 md:pt-5">
       <div className="min-w-0 pt-1.5">
-        {title && <h2 className="text-[1.0625rem] font-semibold text-fg leading-snug">{title}</h2>}
-        {description && <p className="mt-0.5 text-[0.8125rem] text-fg-3">{description}</p>}
+        {title && <h2 className="text-[1.125rem] font-semibold text-fg leading-snug">{title}</h2>}
+        {description && <p className="mt-0.5 text-[0.875rem] text-fg-3">{description}</p>}
       </div>
       <div className="flex items-center gap-1 shrink-0 -mr-2">
         {headerRight}

@@ -1,5 +1,4 @@
-import { OutfitView } from "@/components/outfit/OutfitView";
-export const metadata = { title: "예복" };
-export default function OutfitPage() {
-  return <OutfitView />;
+import { redirect } from "next/navigation";
+export default function Page() {
+  redirect("/wedding?tab=outfit");
 }

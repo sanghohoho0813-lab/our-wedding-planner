@@ -21,7 +21,7 @@ export function ConfirmSheet({
 }) {
   return (
     <Sheet open={open} onClose={onClose} title={title} size="sm">
-      {message && <p className="text-[0.9375rem] text-fg-2 leading-relaxed">{message}</p>}
+      {message && <p className="text-[1rem] text-fg-2 leading-relaxed">{message}</p>}
       <div className="mt-5 flex gap-2">
         <Button variant="secondary" full onClick={onClose}>
           취소

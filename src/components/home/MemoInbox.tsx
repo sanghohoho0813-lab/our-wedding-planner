@@ -7,10 +7,12 @@ import { useNow } from "@/lib/hooks";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/Button";
+import { useUIStore } from "@/lib/store/ui-store";
 import { MemoSheet } from "@/components/memos/MemoSheet";
 
 export function MemoInbox({ limit = 4 }: { limit?: number }) {
   const memos = useWeddingStore((s) => s.data!.memos);
+  const setSheet = useUIStore((st) => st.setHomeSheet);
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const now = useNow(30_000);
@@ -21,9 +23,14 @@ export function MemoInbox({ limit = 4 }: { limit?: number }) {
         title="메모함"
         icon={<StickyNote />}
         action={
-          <Button size="sm" variant="soft" onClick={() => setOpen(true)}>
-            + 메모
-          </Button>
+          <span className="flex items-center gap-1">
+            <Button size="sm" variant="ghost" onClick={() => setSheet("memos")}>
+              전체 보기
+            </Button>
+            <Button size="sm" variant="soft" onClick={() => setOpen(true)}>
+              + 메모
+            </Button>
+          </span>
         }
       />
       {list.length === 0 ? (
@@ -35,8 +42,8 @@ export function MemoInbox({ limit = 4 }: { limit?: number }) {
               <button type="button" onClick={() => setEditId(m.id)} className="flex w-full items-start gap-3 rounded-[12px] px-3 py-2.5 text-left hover:bg-surface-2">
                 <span className="mt-2 size-1.5 shrink-0 rounded-full bg-accent" />
                 <span className="min-w-0 flex-1">
-                  <span className="line-clamp-2 text-[0.875rem] text-fg">{m.content}</span>
-                  <span className="block text-[0.6875rem] text-fg-3">{now ? relativeTime(m.created_at, now) : ""}</span>
+                  <span className="line-clamp-2 text-[0.9375rem] text-fg">{m.content}</span>
+                  <span className="block text-[0.75rem] text-fg-3">{now ? relativeTime(m.created_at, now) : ""}</span>
                 </span>
               </button>
             </li>

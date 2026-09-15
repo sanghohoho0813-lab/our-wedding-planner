@@ -77,11 +77,11 @@ export function HoneymoonView() {
         <div className="hero-gradient p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="inline-flex items-center gap-1.5 text-[0.8125rem] text-fg-2">
+              <p className="inline-flex items-center gap-1.5 text-[0.875rem] text-fg-2">
                 <Plane className="size-4 text-accent" /> 여행지
               </p>
-              <h2 className="mt-1 text-[1.375rem] font-bold text-fg">{where || "아직 정하지 않았어요"}</h2>
-              <p className="text-[0.875rem] text-fg-2">
+              <h2 className="mt-1 text-[1.5rem] font-bold text-fg">{where || "아직 정하지 않았어요"}</h2>
+              <p className="text-[0.9375rem] text-fg-2">
                 {hm?.depart_date ? formatKoreanDate(hm.depart_date) : "출발일 미정"}
                 {hm?.return_date ? ` → ${formatKoreanDate(hm.return_date, { year: false })}` : ""}
                 {nights !== null && nights > 0 ? ` · ${nights - 1 > 0 ? `${nights - 1}박 ` : ""}${nights}일` : ""}
@@ -89,7 +89,7 @@ export function HoneymoonView() {
             </div>
             {hm?.depart_date && (
               <div className="text-right">
-                <p className="text-[0.75rem] text-fg-3">출발까지</p>
+                <p className="text-[0.8125rem] text-fg-3">출발까지</p>
                 <p className="font-script text-[2.25rem] leading-none text-accent-text">{formatDDay(daysUntil(hm.depart_date, today))}</p>
               </div>
             )}
@@ -147,9 +147,9 @@ export function HoneymoonView() {
                 <li key={it.id} className="flex items-center gap-3 px-4 py-2.5 hover:bg-surface-2">
                   <CheckCircle checked={it.done} onChange={(v) => patch("honeymoon_items", it.id, { done: v })} />
                   <button type="button" onClick={() => setEditId(it.id)} className="min-w-0 flex-1 text-left">
-                    <span className={cn("block truncate text-[0.9375rem] font-medium", it.done ? "text-fg-3 line-through" : "text-fg")}>{it.title}</span>
+                    <span className={cn("block truncate text-[1rem] font-medium", it.done ? "text-fg-3 line-through" : "text-fg")}>{it.title}</span>
                     {(it.date || it.memo) && (
-                      <span className="block truncate text-[0.75rem] text-fg-3">
+                      <span className="block truncate text-[0.8125rem] text-fg-3">
                         {[it.date ? `${formatShortDate(it.date)}${it.time ? ` ${formatTime(it.time)}` : ""}` : null, it.memo].filter(Boolean).join(" · ")}
                       </span>
                     )}

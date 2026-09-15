@@ -1,7 +1,5 @@
-import { BudgetDashboard } from "@/components/budget/BudgetDashboard";
-
+import { BudgetHub } from "@/components/budget/BudgetHub";
 export const metadata = { title: "예산" };
-
 export default function BudgetPage() {
-  return <BudgetDashboard />;
+  return <BudgetHub />;
 }

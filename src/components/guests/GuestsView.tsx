@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Mail, MessageCircle, Plus, Search, Users } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
+import { useMediaQuery } from "@/lib/hooks";
 import type { Guest, GuestSide, Rsvp } from "@/lib/db/types";
 import { computeGuestStats } from "@/lib/compute";
 import { RSVP } from "@/lib/labels";
@@ -14,6 +15,8 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { inputCls } from "@/components/ui/Field";
 import { Segmented } from "@/components/ui/Segmented";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { MasterDetail } from "@/components/layout/MasterDetail";
+import { GuestDetail } from "./GuestDetail";
 import { GuestSheet } from "./GuestSheet";
 
 type SideFilter = "all" | GuestSide;
@@ -25,20 +28,20 @@ const RSVP_STYLE: Record<Rsvp, string> = {
   no: "bg-danger-soft text-danger",
 };
 
-function GuestRow({ g, onOpen }: { g: Guest; onOpen: (id: string) => void }) {
+function GuestRow({ g, onOpen, selected }: { g: Guest; onOpen: (id: string) => void; selected?: boolean }) {
   const patch = useWeddingStore((s) => s.patch);
   const people = 1 + g.companions;
   return (
-    <motion.li layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex items-center gap-2 px-3 py-2.5 hover:bg-surface-2 sm:px-4">
+    <motion.li layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className={cn("flex items-center gap-2 px-3 py-2.5 transition-colors hover:bg-surface-2 sm:px-4", selected && "bg-accent-softer ring-1 ring-inset ring-accent/30")}>
       <button type="button" onClick={() => onOpen(g.id)} className="min-w-0 flex-1 text-left">
         <span className="flex items-center gap-2">
-          <span className={cn("inline-flex size-8 shrink-0 items-center justify-center rounded-full text-[0.75rem] font-bold", g.side === "groom" ? "bg-info-soft text-info" : "bg-accent-soft text-accent-text")}>
+          <span className={cn("inline-flex size-8 shrink-0 items-center justify-center rounded-full text-[0.8125rem] font-bold", g.side === "groom" ? "bg-info-soft text-info" : "bg-accent-soft text-accent-text")}>
             {g.side === "groom" ? "신랑" : "신부"}
           </span>
-          <span className="truncate text-[0.9375rem] font-medium text-fg">{g.name}</span>
-          {people > 1 && <span className="shrink-0 text-[0.75rem] text-fg-3">+{g.companions}</span>}
+          <span className="truncate text-[1rem] font-medium text-fg">{g.name}</span>
+          {people > 1 && <span className="shrink-0 text-[0.8125rem] text-fg-3">+{g.companions}</span>}
         </span>
-        <span className="mt-0.5 flex items-center gap-1.5 pl-10 text-[0.75rem] text-fg-3">
+        <span className="mt-0.5 flex items-center gap-1.5 pl-10 text-[0.8125rem] text-fg-3">
           {g.relation && <span>{g.relation}</span>}
           {g.contacted && <MessageCircle className="size-3 text-success" aria-label="연락 완료" />}
           {g.invitation_sent && <Mail className="size-3 text-success" aria-label="청첩장 전달" />}
@@ -54,7 +57,7 @@ function GuestRow({ g, onOpen }: { g: Guest; onOpen: (id: string) => void }) {
             aria-checked={g.rsvp === o.value}
             onClick={() => patch("guests", g.id, { rsvp: o.value })}
             className={cn(
-              "h-9 min-w-11 rounded-full px-2.5 text-[0.75rem] font-semibold transition-colors",
+              "h-9 min-w-11 rounded-full px-2.5 text-[0.8125rem] font-semibold transition-colors",
               g.rsvp === o.value ? RSVP_STYLE[o.value] : "text-fg-3 hover:bg-surface-3",
             )}
           >
@@ -66,7 +69,7 @@ function GuestRow({ g, onOpen }: { g: Guest; onOpen: (id: string) => void }) {
   );
 }
 
-export function GuestsView() {
+export function GuestsView({ embedded }: { embedded?: boolean } = {}) {
   const params = useSearchParams();
   const guests = useWeddingStore((s) => s.data!.guests);
   const [side, setSide] = useState<SideFilter>("all");
@@ -74,6 +77,9 @@ export function GuestsView() {
   const [q, setQ] = useState(params.get("q") ?? "");
   const [editId, setEditId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const wide = useMediaQuery("(min-width: 1280px)");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const open = (id: string) => (wide ? setSelectedId(id) : setEditId(id));
   const stats = computeGuestStats(guests);
 
   const list = useMemo(() => {
@@ -100,6 +106,7 @@ export function GuestsView() {
   return (
     <div>
       <PageHeader
+        compact={embedded}
         title="하객 목록"
         description={`총 ${stats.total}명 · 참석 확정 ${stats.confirmed}명 · 예상 총 ${stats.expectedPeople}명`}
         actions={
@@ -118,8 +125,8 @@ export function GuestsView() {
             ["예상 총 인원", `${stats.expectedPeople}명`],
           ].map(([k, v]) => (
             <div key={k} className="card px-3 py-2.5">
-              <p className="text-[0.6875rem] text-fg-3">{k}</p>
-              <p className="tabular text-[1.0625rem] font-bold text-fg">{v}</p>
+              <p className="text-[0.75rem] text-fg-3">{k}</p>
+              <p className="tabular text-[1.125rem] font-bold text-fg">{v}</p>
             </div>
           ))}
         </div>
@@ -156,37 +163,42 @@ export function GuestsView() {
         </div>
       </PageHeader>
 
-      {list.length === 0 ? (
-        <div className="card">
-          <EmptyState
-            icon={<Users />}
-            title={guests.length === 0 ? "아직 등록된 하객이 없어요" : "조건에 맞는 하객이 없어요"}
-            description="이름만 입력하고 [신랑측/신부측], [참석/미정/불참]을 눌러 빠르게 기록해요."
-            actionLabel="첫 하객 추가"
-            onAction={() => setCreating(true)}
-          />
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {groups.map((g) => (
-            <section key={g.key} className="card overflow-hidden">
-              <h2 className="flex items-center justify-between border-b border-line px-4 py-2 text-[0.75rem] font-semibold text-fg-3">
-                <span>
-                  {g.side === "groom" ? "신랑측" : "신부측"} · {g.relation}
-                </span>
-                <span className="tabular">{g.items.length}명</span>
-              </h2>
-              <ul className="divide-y divide-line">
-                <AnimatePresence initial={false}>
-                  {g.items.map((guest) => (
-                    <GuestRow key={guest.id} g={guest} onOpen={setEditId} />
-                  ))}
-                </AnimatePresence>
-              </ul>
-            </section>
-          ))}
-        </div>
-      )}
+      <MasterDetail
+        detail={<GuestDetail guestId={selectedId} />}
+        list={
+          list.length === 0 ? (
+            <div className="card">
+              <EmptyState
+                icon={<Users />}
+                title={guests.length === 0 ? "아직 등록된 하객이 없어요" : "조건에 맞는 하객이 없어요"}
+                description="이름만 입력하고 [신랑측/신부측], [참석/미정/불참]을 눌러 빠르게 기록해요."
+                actionLabel="첫 하객 추가"
+                onAction={() => setCreating(true)}
+              />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {groups.map((g) => (
+                <section key={g.key} className="card overflow-hidden">
+                  <h2 className="flex items-center justify-between border-b border-line px-4 py-2 text-[0.8125rem] font-semibold text-fg-3">
+                    <span>
+                      {g.side === "groom" ? "신랑측" : "신부측"} · {g.relation}
+                    </span>
+                    <span className="tabular">{g.items.length}명</span>
+                  </h2>
+                  <ul className="divide-y divide-line">
+                    <AnimatePresence initial={false}>
+                      {g.items.map((guest) => (
+                        <GuestRow key={guest.id} g={guest} onOpen={open} selected={selectedId === guest.id} />
+                      ))}
+                    </AnimatePresence>
+                  </ul>
+                </section>
+              ))}
+            </div>
+          )
+        }
+      />
 
       <GuestSheet open={!!editId || creating} onClose={() => { setEditId(null); setCreating(false); }} guestId={editId} initial={side !== "all" ? { side } : undefined} />
     </div>

@@ -59,9 +59,9 @@ export function CategoryManagerSheet({ open, onClose }: { open: boolean; onClose
                 </button>
               </div>
               <div className="mt-2 flex items-center gap-3">
-                <span className="text-[0.75rem] text-fg-3 shrink-0">계획 금액</span>
+                <span className="text-[0.8125rem] text-fg-3 shrink-0">계획 금액</span>
                 <MoneyField size="sm" value={c.planned_amount} onChange={(v) => patch("budget_categories", c.id, { planned_amount: v })} title={`${c.name} 계획 금액`} />
-                <span className="shrink-0 text-[0.75rem] text-fg-3">{count}개 항목</span>
+                <span className="shrink-0 text-[0.8125rem] text-fg-3">{count}개 항목</span>
               </div>
             </li>
           );

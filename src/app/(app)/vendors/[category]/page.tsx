@@ -1,22 +1,8 @@
-import { notFound } from "next/navigation";
-import { VendorsView } from "@/components/vendors/VendorsView";
-import { VENDOR_PAGES } from "@/components/vendors/vendorConfig";
+import { redirect } from "next/navigation";
 
-type Key = keyof typeof VENDOR_PAGES;
+const MAP: Record<string, string> = { beauty: "beauty", bouquet: "bouquet", photo: "photo", coordination: "coordination" };
 
-export function generateStaticParams() {
-  return Object.keys(VENDOR_PAGES).map((category) => ({ category }));
-}
-
-export async function generateMetadata({ params }: { params: Promise<{ category: string }> }) {
+export default async function Page({ params }: { params: Promise<{ category: string }> }) {
   const { category } = await params;
-  const cfg = VENDOR_PAGES[category as Key];
-  return { title: cfg?.title ?? "업체" };
-}
-
-export default async function VendorCategoryPage({ params }: { params: Promise<{ category: string }> }) {
-  const { category } = await params;
-  const cfg = VENDOR_PAGES[category as Key];
-  if (!cfg) notFound();
-  return <VendorsView cfg={cfg} />;
+  redirect(`/wedding?tab=${MAP[category] ?? "all"}`);
 }

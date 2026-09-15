@@ -27,8 +27,8 @@ function EventRow({ e, onOpen }: { e: UnifiedEvent; onOpen: (e: UnifiedEvent) =>
           <EventTypeIcon type={e.type} className="size-4" />
         </span>
         <span className="min-w-0 flex-1">
-          <span className={cn("block truncate text-[0.9375rem] font-medium text-fg", e.is_done && "line-through")}>{e.title}</span>
-          <span className="block truncate text-[0.75rem] text-fg-3">
+          <span className={cn("block truncate text-[1rem] font-medium text-fg", e.is_done && "line-through")}>{e.title}</span>
+          <span className="block truncate text-[0.8125rem] text-fg-3">
             {[e.start_time ? `${formatTime(e.start_time)}${e.end_time ? ` - ${formatTime(e.end_time)}` : ""}` : null, e.location, e.memo && e.type === "payment" ? e.memo : null, EVENT_TYPE_LABEL[e.type]]
               .filter(Boolean)
               .join(" · ")}
@@ -40,7 +40,7 @@ function EventRow({ e, onOpen }: { e: UnifiedEvent; onOpen: (e: UnifiedEvent) =>
   );
 }
 
-export function CalendarView() {
+export function CalendarView({ embedded }: { embedded?: boolean } = {}) {
   const params = useSearchParams();
   const router = useRouter();
   const data = useWeddingStore((s) => s.data!);
@@ -91,6 +91,7 @@ export function CalendarView() {
   return (
     <div>
       <PageHeader
+        compact={embedded}
         title="일정"
         description="예복 피팅, 업체 방문, 결제일이 자동으로 모여요"
         actions={
@@ -113,7 +114,7 @@ export function CalendarView() {
       {view === "list" ? (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <p className="text-[0.8125rem] text-fg-3">{showPast ? "전체 일정" : "오늘 이후 일정"}</p>
+            <p className="text-[0.875rem] text-fg-3">{showPast ? "전체 일정" : "오늘 이후 일정"}</p>
             <Chip size="sm" tone="neutral" active={showPast} onClick={() => setShowPast((v) => !v)}>
               지난 일정 보기
             </Chip>
@@ -127,7 +128,7 @@ export function CalendarView() {
               const d = daysUntil(g.date, today);
               return (
                 <section key={g.date} className="card overflow-hidden">
-                  <h2 className={cn("flex items-center justify-between border-b border-line px-4 py-2 text-[0.8125rem] font-semibold", g.date === today ? "bg-accent-softer text-accent-text" : "text-fg-2")}>
+                  <h2 className={cn("flex items-center justify-between border-b border-line px-4 py-2 text-[0.875rem] font-semibold", g.date === today ? "bg-accent-softer text-accent-text" : "text-fg-2")}>
                     <span>{formatKoreanDate(g.date, { year: g.date.slice(0, 4) !== today.slice(0, 4) })}</span>
                     <span className="tabular text-fg-3">{formatDDay(d)}</span>
                   </h2>
@@ -149,7 +150,7 @@ export function CalendarView() {
                 <ChevronLeft className="size-5" />
               </button>
               <div className="flex items-center gap-2">
-                <h2 className="text-[1.0625rem] font-semibold tabular">{monthLabel(ym.y, ym.m)}</h2>
+                <h2 className="text-[1.125rem] font-semibold tabular">{monthLabel(ym.y, ym.m)}</h2>
                 <Chip
                   size="sm"
                   tone="neutral"
@@ -165,7 +166,7 @@ export function CalendarView() {
                 <ChevronRight className="size-5" />
               </button>
             </div>
-            <div className="grid grid-cols-7 text-center text-[0.6875rem] font-medium text-fg-3">
+            <div className="grid grid-cols-7 text-center text-[0.75rem] font-medium text-fg-3">
               {["일", "월", "화", "수", "목", "금", "토"].map((d, i) => (
                 <div key={d} className={cn("py-1", i === 0 && "text-danger/80", i === 6 && "text-info")}>{d}</div>
               ))}
@@ -187,7 +188,7 @@ export function CalendarView() {
                   >
                     <span
                       className={cn(
-                        "inline-flex size-7 items-center justify-center rounded-full text-[0.8125rem] tabular",
+                        "inline-flex size-7 items-center justify-center rounded-full text-[0.875rem] tabular",
                         isToday && "bg-accent text-accent-fg font-bold",
                         isWedding && !isToday && "ring-2 ring-accent font-bold text-accent-text",
                         fromISO(cell.iso).getDay() === 0 && !isToday && "text-danger/80",
@@ -206,7 +207,7 @@ export function CalendarView() {
             </div>
           </section>
           <section className="card overflow-hidden">
-            <h2 className="flex items-center justify-between border-b border-line px-4 py-3 text-[0.9375rem] font-semibold">
+            <h2 className="flex items-center justify-between border-b border-line px-4 py-3 text-[1rem] font-semibold">
               <span>
                 {formatKoreanDate(selected)}
               </span>
@@ -231,10 +232,10 @@ export function CalendarView() {
 
       <Sheet open={!!info} onClose={() => setInfo(null)} title={info?.title} description={info ? `${formatKoreanDate(info.date)}${info.start_time ? ` · ${formatTime(info.start_time)}` : ""}` : undefined} size="sm">
         {info && (
-          <div className="space-y-3 text-[0.9375rem]">
+          <div className="space-y-3 text-[1rem]">
             {info.location && <p className="text-fg-2">{info.location}</p>}
             {info.memo && <p className="text-fg-2">{info.memo}</p>}
-            <p className="text-[0.8125rem] text-fg-3">이 일정은 {info.source?.table === "wedding" ? "결혼 정보" : "다른 화면의 날짜"}에서 자동으로 가져왔어요. 수정하려면 원본 화면으로 이동하세요.</p>
+            <p className="text-[0.875rem] text-fg-3">이 일정은 {info.source?.table === "wedding" ? "결혼 정보" : "다른 화면의 날짜"}에서 자동으로 가져왔어요. 수정하려면 원본 화면으로 이동하세요.</p>
             {info.source && (
               <Link href={info.source.href} className="inline-flex h-11 w-full items-center justify-center rounded-[12px] bg-accent-soft font-medium text-accent-text">
                 원본 화면으로 이동

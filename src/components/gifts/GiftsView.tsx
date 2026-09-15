@@ -28,7 +28,7 @@ const FIELDS: FieldDef[] = [
 
 type Filter = "all" | "todo" | "purchased" | "delivered";
 
-export function GiftsView() {
+export function GiftsView({ embedded }: { embedded?: boolean } = {}) {
   const gifts = useWeddingStore((s) => s.data!.gifts);
   const [filter, setFilter] = useState<Filter>("all");
   const [editId, setEditId] = useState<string | null>(null);
@@ -41,6 +41,7 @@ export function GiftsView() {
   return (
     <div>
       <PageHeader
+        compact={embedded}
         title="선물"
         description={`${gifts.length}개 · 전달 ${delivered}개 · 예상 ${formatKRW(est)} · 실제 ${formatKRW(act)}`}
         actions={

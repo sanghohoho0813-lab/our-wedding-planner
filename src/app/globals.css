@@ -15,11 +15,11 @@
   --surface: #fffdfb;
   --surface-2: #f6f0eb;
   --surface-3: #efe7e1;
-  --text: #2c2926;
-  --text-2: #6f6862;
-  --text-3: #a29a93;
-  --border: #ebe2db;
-  --border-strong: #d9cdc4;
+  --text: #241f1b;
+  --text-2: #57504a;
+  --text-3: #837b73;
+  --border: #e6dcd3;
+  --border-strong: #cfc1b5;
   --overlay: rgba(44, 41, 38, 0.35);
   --shadow-sm: 0 1px 2px rgba(60, 40, 30, 0.05), 0 1px 3px rgba(60, 40, 30, 0.04);
   --shadow-md: 0 4px 14px rgba(60, 40, 30, 0.08), 0 1px 3px rgba(60, 40, 30, 0.05);
@@ -50,8 +50,17 @@
   --radius: 16px;
   --radius-sm: 10px;
   --radius-lg: 22px;
-  --nav-h: 64px;
-  --sidebar-w: 248px;
+  --nav-h: 68px;
+  --sidebar-w: 252px;
+  /* 화면이 넓어지면 본문도 같이 넓어진다 (좌우 빈 공간 최소화) */
+  --content-max: 1200px;
+}
+
+@media (min-width: 1600px) {
+  :root { --content-max: 1360px; --sidebar-w: 268px; }
+}
+@media (min-width: 1800px) {
+  :root { --content-max: 1500px; }
 }
 
 :root[data-accent="terracotta"] {
@@ -89,11 +98,11 @@
   --surface: #262321;
   --surface-2: #2e2a27;
   --surface-3: #37322e;
-  --text: #f1ece7;
-  --text-2: #b6ada5;
-  --text-3: #837b74;
-  --border: #383330;
-  --border-strong: #4a443f;
+  --text: #f6f1ec;
+  --text-2: #c3bab1;
+  --text-3: #968d85;
+  --border: #3c3733;
+  --border-strong: #544d47;
   --overlay: rgba(0, 0, 0, 0.55);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 14px rgba(0, 0, 0, 0.35);
@@ -189,7 +198,7 @@
 /* ---------- Base (layered so utilities win) ---------- */
 @layer base {
   html {
-    font-size: calc(16px * var(--font-scale));
+    font-size: calc(16.5px * var(--font-scale));
     -webkit-text-size-adjust: 100%;
     scroll-behavior: smooth;
   }
@@ -247,6 +256,13 @@
     height: auto;
   }
 
+  /* PC 에서는 한 단계 더 크게 — 글자와 컨트롤이 작다는 피드백 반영 */
+  @media (min-width: 1024px) {
+    html {
+      font-size: calc(17.5px * var(--font-scale));
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -302,6 +318,11 @@
     radial-gradient(120% 90% at 0% 0%, color-mix(in oklab, var(--accent-soft) 85%, white) 0%, transparent 55%),
     radial-gradient(90% 80% at 100% 100%, color-mix(in oklab, var(--accent-soft) 60%, var(--surface)) 0%, transparent 60%),
     linear-gradient(135deg, var(--surface) 0%, var(--surface-2) 100%);
+}
+@utility page-shell {
+  width: 100%;
+  max-width: var(--content-max);
+  margin-inline: auto;
 }
 @utility touch-target {
   min-height: 44px;

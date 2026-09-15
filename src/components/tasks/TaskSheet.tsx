@@ -13,6 +13,63 @@ import { Segmented } from "@/components/ui/Segmented";
 import { Sheet } from "@/components/ui/Sheet";
 import { useEntityForm } from "@/components/shared/useEntityForm";
 
+type TaskValues = RowValues<"tasks">;
+
+/** 시트(모바일)와 상세 패널(PC)이 함께 쓰는 입력 묶음 */
+export function TaskFields({
+  values,
+  set,
+  setStatus,
+  isEdit,
+  onSubmit,
+}: {
+  values: TaskValues;
+  set: <K extends keyof TaskValues>(k: K, v: TaskValues[K]) => void;
+  setStatus: (s: TaskValues["status"]) => void;
+  isEdit: boolean;
+  onSubmit?: () => void;
+}) {
+  return (
+    <div className="space-y-5">
+      <FieldRow label="제목" required>
+        <TextField
+          value={values.title}
+          onChange={(v) => set("title", v)}
+          placeholder="예: 청첩장 주문"
+          autoFocus={!isEdit}
+          delay={isEdit ? 400 : 0}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !isEdit) onSubmit?.();
+          }}
+        />
+      </FieldRow>
+      <FieldRow label="상태">
+        <Segmented options={TASK_STATUS} value={values.status} onChange={setStatus} size="lg" />
+      </FieldRow>
+      <FieldRow label="마감일">
+        <DateField value={values.due_date} onChange={(v) => set("due_date", v)} />
+      </FieldRow>
+      <FieldRow label="중요도">
+        <ChipSelect options={TASK_PRIORITY} value={values.priority} onChange={(v) => set("priority", v)} />
+      </FieldRow>
+      <FieldRow label="카테고리">
+        <ChipSelect
+          size="sm"
+          options={TASK_CATEGORIES.map((c) => ({ value: c, label: c }))}
+          value={values.category}
+          onChange={(v) => set("category", values.category === v ? null : v)}
+        />
+      </FieldRow>
+      <FieldRow label="담당">
+        <Segmented options={ASSIGNEE} value={values.assignee} onChange={(v) => set("assignee", v)} />
+      </FieldRow>
+      <FieldRow label="메모">
+        <TextArea value={values.memo ?? ""} onChange={(v) => set("memo", v || null)} placeholder="참고할 내용을 적어두세요" />
+      </FieldRow>
+    </div>
+  );
+}
+
 export function TaskSheet({
   open,
   onClose,
@@ -75,43 +132,7 @@ export function TaskSheet({
         )
       }
     >
-      <div className="space-y-5">
-        <FieldRow label="제목" required>
-          <TextField
-            value={values.title}
-            onChange={(v) => set("title", v)}
-            placeholder="예: 청첩장 주문"
-            autoFocus={!isEdit}
-            delay={isEdit ? 400 : 0}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !isEdit) submit();
-            }}
-          />
-        </FieldRow>
-        <FieldRow label="상태">
-          <Segmented options={TASK_STATUS} value={values.status} onChange={setStatus} size="lg" />
-        </FieldRow>
-        <FieldRow label="마감일">
-          <DateField value={values.due_date} onChange={(v) => set("due_date", v)} />
-        </FieldRow>
-        <FieldRow label="중요도">
-          <ChipSelect options={TASK_PRIORITY} value={values.priority} onChange={(v) => set("priority", v)} />
-        </FieldRow>
-        <FieldRow label="카테고리">
-          <ChipSelect
-            size="sm"
-            options={TASK_CATEGORIES.map((c) => ({ value: c, label: c }))}
-            value={values.category}
-            onChange={(v) => set("category", values.category === v ? null : v)}
-          />
-        </FieldRow>
-        <FieldRow label="담당">
-          <Segmented options={ASSIGNEE} value={values.assignee} onChange={(v) => set("assignee", v)} />
-        </FieldRow>
-        <FieldRow label="메모">
-          <TextArea value={values.memo ?? ""} onChange={(v) => set("memo", v || null)} placeholder="참고할 내용을 적어두세요" />
-        </FieldRow>
-      </div>
+      <TaskFields values={values} set={set} setStatus={setStatus} isEdit={isEdit} onSubmit={submit} />
     </Sheet>
   );
 }

@@ -2,6 +2,7 @@
 import { Plus, Search, Wallet } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
+import { useMediaQuery } from "@/lib/hooks";
 import { computeBudget, type ItemSummary } from "@/lib/compute";
 import { formatKRW, formatSignedKRW, formatSignedPct } from "@/lib/money";
 import { useWeddingStore } from "@/lib/store/wedding-store";
@@ -13,6 +14,8 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { FavoriteButton } from "@/components/ui/FavoriteButton";
 import { inputCls } from "@/components/ui/Field";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { MasterDetail } from "@/components/layout/MasterDetail";
+import { BudgetItemDetail } from "./BudgetItemDetail";
 import { BudgetItemSheet } from "./BudgetItemSheet";
 
 type Sort = "category" | "amount" | "updated";
@@ -20,30 +23,30 @@ type Sort = "category" | "amount" | "updated";
 const PAY_LABEL = { unpaid: "미결제", partial: "부분 결제", paid: "완납" } as const;
 const PAY_TONE = { unpaid: "neutral", partial: "warning", paid: "success" } as const;
 
-function ItemCard({ s, onOpen }: { s: ItemSummary; onOpen: (id: string) => void }) {
+function ItemCard({ s, onOpen, selected }: { s: ItemSummary; onOpen: (id: string) => void; selected?: boolean }) {
   const patch = useWeddingStore((st) => st.patch);
   const { item } = s;
   const hasActual = item.actual_amount > 0;
   return (
-    <li className="card card-hover">
+    <li className={cn("card card-hover", selected && "border-accent/60 ring-1 ring-accent/30")}>
       <div className="flex items-start gap-2 p-4">
         <button type="button" onClick={() => onOpen(item.id)} className="min-w-0 flex-1 text-left">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="truncate text-[1rem] font-semibold text-fg">{item.name}</span>
+            <span className="truncate text-[1.0625rem] font-semibold text-fg">{item.name}</span>
             <Badge tone={PAY_TONE[s.paymentStatus]}>{PAY_LABEL[s.paymentStatus]}</Badge>
           </div>
-          {item.vendor_name && <p className="mt-0.5 truncate text-[0.8125rem] text-fg-3">{item.vendor_name}</p>}
+          {item.vendor_name && <p className="mt-0.5 truncate text-[0.875rem] text-fg-3">{item.vendor_name}</p>}
           <div className="mt-3 grid grid-cols-2 gap-3">
             <div>
-              <p className="text-[0.6875rem] text-fg-3">예상</p>
-              <p className="tabular text-[0.9375rem] font-medium text-fg-2">{item.estimated_amount ? formatKRW(item.estimated_amount) : "—"}</p>
+              <p className="text-[0.75rem] text-fg-3">예상</p>
+              <p className="tabular text-[1rem] font-medium text-fg-2">{item.estimated_amount ? formatKRW(item.estimated_amount) : "—"}</p>
             </div>
             <div>
-              <p className="text-[0.6875rem] text-fg-3">실제</p>
-              <p className="tabular text-[0.9375rem] font-semibold text-fg">{hasActual ? formatKRW(item.actual_amount) : "—"}</p>
+              <p className="text-[0.75rem] text-fg-3">실제</p>
+              <p className="tabular text-[1rem] font-semibold text-fg">{hasActual ? formatKRW(item.actual_amount) : "—"}</p>
             </div>
           </div>
-          <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[0.75rem]">
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[0.8125rem]">
             {hasActual && item.estimated_amount > 0 ? (
               <span className={cn("tabular font-medium", s.diff > 0 ? "text-warning" : s.diff < 0 ? "text-success" : "text-fg-3")}>
                 {formatSignedKRW(s.diff)} ({formatSignedPct(s.diffPct)})
@@ -63,7 +66,7 @@ function ItemCard({ s, onOpen }: { s: ItemSummary; onOpen: (id: string) => void 
   );
 }
 
-export function BudgetItemsView() {
+export function BudgetItemsView({ embedded }: { embedded?: boolean } = {}) {
   const params = useSearchParams();
   const data = useWeddingStore((s) => s.data!);
   const [category, setCategory] = useState<string | null>(params.get("category"));
@@ -73,6 +76,9 @@ export function BudgetItemsView() {
   const [onlyFav, setOnlyFav] = useState(params.get("filter") === "favorite");
   const [editId, setEditId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const wide = useMediaQuery("(min-width: 1280px)");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const open = (id: string) => (wide ? setSelectedId(id) : setEditId(id));
 
   const b = computeBudget(data.wedding, data.budget_categories, data.budget_items, data.payments);
   const cats = [...data.budget_categories].sort((x, y) => x.sort_order - y.sort_order);
@@ -109,6 +115,7 @@ export function BudgetItemsView() {
   return (
     <div>
       <PageHeader
+        compact={embedded}
         title="상세 예산"
         description={`${data.budget_items.length}개 항목 · 예상 총 지출 ${formatKRW(b.totalEffective)}`}
         actions={
@@ -147,7 +154,10 @@ export function BudgetItemsView() {
         </div>
       </PageHeader>
 
-      {list.length === 0 ? (
+      <MasterDetail
+        detail={<BudgetItemDetail itemId={selectedId} />}
+        list={
+          list.length === 0 ? (
         <div className="card">
           <EmptyState
             icon={<Wallet />}
@@ -157,27 +167,29 @@ export function BudgetItemsView() {
             onAction={() => setCreating(true)}
           />
         </div>
-      ) : (
-        <div className="space-y-6">
-          {groups.map((g) => (
-            <section key={g.key}>
-              {g.name && (
-                <div className="mb-2 flex items-center justify-between px-1">
-                  <h2 className="text-[0.9375rem] font-semibold text-fg">{g.name}</h2>
-                  <span className="tabular text-[0.8125rem] text-fg-2">
-                    {formatKRW(g.total)} <span className="text-fg-3">· {((g.total / Math.max(b.totalBudget, b.totalEffective, 1)) * 100).toFixed(1)}%</span>
-                  </span>
-                </div>
-              )}
-              <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {g.items.map((s) => (
-                  <ItemCard key={s.item.id} s={s} onOpen={setEditId} />
-                ))}
-              </ul>
-            </section>
-          ))}
-        </div>
-      )}
+          ) : (
+            <div className="space-y-6">
+              {groups.map((g) => (
+                <section key={g.key}>
+                  {g.name && (
+                    <div className="mb-2 flex items-center justify-between px-1">
+                      <h2 className="text-[1rem] font-semibold text-fg">{g.name}</h2>
+                      <span className="tabular text-[0.875rem] text-fg-2">
+                        {formatKRW(g.total)} <span className="text-fg-3">· {((g.total / Math.max(b.totalBudget, b.totalEffective, 1)) * 100).toFixed(1)}%</span>
+                      </span>
+                    </div>
+                  )}
+                  <ul className="grid gap-3 md:grid-cols-2">
+                    {g.items.map((s) => (
+                      <ItemCard key={s.item.id} s={s} onOpen={open} selected={selectedId === s.item.id} />
+                    ))}
+                  </ul>
+                </section>
+              ))}
+            </div>
+          )
+        }
+      />
 
       <BudgetItemSheet
         open={!!editId || creating}

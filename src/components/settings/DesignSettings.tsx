@@ -55,7 +55,7 @@ export function DesignSettings() {
                     <span className={cn("inline-flex size-11 items-center justify-center rounded-full ring-offset-2 ring-offset-surface transition-shadow", active && "ring-2 ring-fg/70")} style={{ background: a.color }}>
                       {active && <Check className="size-5 text-white" strokeWidth={3} />}
                     </span>
-                    <span className="text-[0.75rem] text-fg-2">{a.label}</span>
+                    <span className="text-[0.8125rem] text-fg-2">{a.label}</span>
                   </button>
                 );
               })}
@@ -65,7 +65,7 @@ export function DesignSettings() {
             <CardHeader title="글자 크기" />
             <div className="px-5 pb-5">
               <Segmented size="lg" options={FONT_SCALES.map((f) => ({ value: String(f.value), label: f.label }))} value={String(fontScale)} onChange={(v) => setFontScale(Number(v) as typeof fontScale)} />
-              <p className="mt-2 text-[0.75rem] text-fg-3">현재 {Math.round(fontScale * 100)}%</p>
+              <p className="mt-2 text-[0.8125rem] text-fg-3">현재 {Math.round(fontScale * 100)}%</p>
             </div>
           </Card>
         </div>
@@ -76,13 +76,13 @@ export function DesignSettings() {
             <div className="px-5 pb-5">
               <div className="rounded-[16px] border border-line bg-bg p-4">
                 <p className="font-script text-[2.25rem] leading-none text-accent-text">D-97</p>
-                <p className="mt-2 text-[0.9375rem] font-semibold text-fg">이렇게 보일 거예요.</p>
-                <p className="text-[0.8125rem] text-fg-2">우리의 특별한 날까지, 행복하게 준비해요. ♡</p>
+                <p className="mt-2 text-[1rem] font-semibold text-fg">이렇게 보일 거예요.</p>
+                <p className="text-[0.875rem] text-fg-2">우리의 특별한 날까지, 행복하게 준비해요. ♡</p>
                 <ProgressBar value={68} className="mt-3" />
                 <div className="mt-3 flex gap-2">
-                  <span className="rounded-full bg-accent px-3 py-1 text-[0.75rem] font-medium text-accent-fg">완료</span>
-                  <span className="rounded-full bg-accent-soft px-3 py-1 text-[0.75rem] font-medium text-accent-text">진행 중</span>
-                  <span className="rounded-full bg-surface-2 px-3 py-1 text-[0.75rem] font-medium text-fg-2">시작 전</span>
+                  <span className="rounded-full bg-accent px-3 py-1 text-[0.8125rem] font-medium text-accent-fg">완료</span>
+                  <span className="rounded-full bg-accent-soft px-3 py-1 text-[0.8125rem] font-medium text-accent-text">진행 중</span>
+                  <span className="rounded-full bg-surface-2 px-3 py-1 text-[0.8125rem] font-medium text-fg-2">시작 전</span>
                 </div>
               </div>
             </div>

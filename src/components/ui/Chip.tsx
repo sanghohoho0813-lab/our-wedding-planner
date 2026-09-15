@@ -31,7 +31,7 @@ export function Chip({ active, onClick, children, className, size = "md", tone =
       aria-pressed={onClick ? !!active : undefined}
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full border font-medium whitespace-nowrap transition-colors duration-150 select-none",
-        size === "md" ? "h-10 px-4 text-[0.875rem]" : "h-8 px-3 text-[0.8125rem]",
+        size === "md" ? "h-10 px-4 text-[0.9375rem]" : "h-8 px-3 text-[0.875rem]",
         onClick && "active:scale-[0.97] cursor-pointer",
         active ? activeCls[tone] : "bg-surface border-line text-fg-2 hover:bg-surface-2 hover:text-fg",
         disabled && "opacity-50 pointer-events-none",

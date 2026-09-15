@@ -49,20 +49,20 @@ export function collectEvents(data: WeddingData): UnifiedEvent[] {
     type: "wedding",
     location: data.venues.find((v) => v.is_contracted)?.name ?? null,
     memo: null,
-    source: { table: "wedding", id: w.id, href: "/venue" },
+    source: { table: "wedding", id: w.id, href: "/wedding?tab=venue" },
     editable: false,
     is_done: false,
   });
 
   for (const o of data.outfit_items) {
-    const src = { table: "outfit_items" as const, id: o.id, href: "/outfit" };
+    const src = { table: "outfit_items" as const, id: o.id, href: "/wedding?tab=outfit" };
     if (o.reserve_date) push({ id: null, title: `${o.kind} 예약`, date: o.reserve_date, start_time: null, end_time: null, type: "appointment", location: o.vendor_name, memo: null, source: src, editable: false, is_done: false });
     if (o.fitting_date) push({ id: null, title: `${o.kind} 피팅`, date: o.fitting_date, start_time: null, end_time: null, type: "fitting", location: o.vendor_name, memo: null, source: src, editable: false, is_done: false });
     if (o.pickup_date) push({ id: null, title: `${o.kind} 수령`, date: o.pickup_date, start_time: null, end_time: null, type: "visit", location: o.vendor_name, memo: null, source: src, editable: false, is_done: false });
   }
 
   for (const v of data.vendors) {
-    const src = { table: "vendors" as const, id: v.id, href: `/vendors/${v.category}` };
+    const src = { table: "vendors" as const, id: v.id, href: `/wedding?tab=${v.category}` };
     const cat = VENDOR_CATEGORY_LABEL[v.category];
     if (v.visit_date) push({ id: null, title: `${v.name} 방문`, date: v.visit_date, start_time: null, end_time: null, type: "visit", location: cat, memo: null, source: src, editable: false, is_done: false });
     if (v.reserved_date) push({ id: null, title: `${v.name} 예약일`, date: v.reserved_date, start_time: null, end_time: null, type: "appointment", location: cat, memo: null, source: src, editable: false, is_done: false });
@@ -83,7 +83,7 @@ export function collectEvents(data: WeddingData): UnifiedEvent[] {
   for (const m of data.invitation_meetings) {
     if (!m.date || m.status === "canceled") continue;
     if (m.event_id && data.events.some((e) => e.id === m.event_id)) continue;
-    push({ id: null, title: m.title, date: m.date, start_time: m.time, end_time: null, type: "meeting", location: m.place, memo: m.memo, source: { table: "invitation_meetings", id: m.id, href: "/meetings" }, editable: false, is_done: m.status === "done" });
+    push({ id: null, title: m.title, date: m.date, start_time: m.time, end_time: null, type: "meeting", location: m.place, memo: m.memo, source: { table: "invitation_meetings", id: m.id, href: "/guests?tab=meetings" }, editable: false, is_done: m.status === "done" });
   }
 
   const itemById = new Map(data.budget_items.map((i) => [i.id, i]));
@@ -91,7 +91,7 @@ export function collectEvents(data: WeddingData): UnifiedEvent[] {
     if (p.paid || !p.due_date) continue;
     const item = itemById.get(p.budget_item_id);
     if (!item) continue;
-    push({ id: null, title: `${item.name} ${p.title}`, date: p.due_date, start_time: null, end_time: null, type: "payment", location: null, memo: formatKRW(p.amount), source: { table: "budget_items", id: item.id, href: "/budget/items" }, editable: false, is_done: false });
+    push({ id: null, title: `${item.name} ${p.title}`, date: p.due_date, start_time: null, end_time: null, type: "payment", location: null, memo: formatKRW(p.amount), source: { table: "budget_items", id: item.id, href: "/budget?tab=items" }, editable: false, is_done: false });
   }
 
   return out.sort((a, b) => a.date.localeCompare(b.date) || (a.start_time ?? "99").localeCompare(b.start_time ?? "99"));
@@ -100,22 +100,22 @@ export function collectEvents(data: WeddingData): UnifiedEvent[] {
 export function hrefFor(sourceType: string): string {
   switch (sourceType) {
     case "tasks":
-      return "/tasks";
+      return "/plan";
     case "budget_items":
-      return "/budget/items";
+      return "/budget?tab=items";
     case "vendors":
-      return "/vendors/beauty";
+      return "/wedding?tab=beauty";
     case "venues":
-      return "/venue";
+      return "/wedding?tab=venue";
     case "outfit_items":
-      return "/outfit";
+      return "/wedding?tab=outfit";
     case "invitation_meetings":
-      return "/meetings";
+      return "/guests?tab=meetings";
     case "honeymoon":
     case "honeymoon_items":
       return "/honeymoon";
     default:
-      return "/calendar";
+      return "/plan?tab=calendar";
   }
 }
 

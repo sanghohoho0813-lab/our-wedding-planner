@@ -21,8 +21,8 @@ const variants: Record<Variant, string> = {
   danger: "bg-danger-soft text-danger hover:brightness-95",
 };
 const sizes: Record<Size, string> = {
-  sm: "h-9 px-3 text-[0.8125rem] rounded-[10px] gap-1.5",
-  md: "h-11 px-4 text-[0.9375rem] rounded-[12px] gap-2",
+  sm: "h-9 px-3 text-[0.875rem] rounded-[10px] gap-1.5",
+  md: "h-11 px-4 text-[1rem] rounded-[12px] gap-2",
   lg: "h-12 px-5 text-base rounded-[14px] gap-2",
 };
 

@@ -53,16 +53,85 @@ export function fromISO(iso: string): Date {
   return new Date(y, (m ?? 1) - 1, d ?? 1);
 }
 
+/** 잘못된 날짜가 들어오면 계산을 건너뛸 수 있도록 null 을 주는 안전 버전 */
+export function fromISOSafe(iso: string | null | undefined): Date | null {
+  return isValidISO(iso) ? fromISO(iso) : null;
+}
+
 export function toISO(date: Date): string {
   return format(date, "yyyy-MM-dd");
 }
 
+const ISO_RE = /^\d{4}-\d{2}-\d{2}$/;
+/** 앱이 다루는 날짜의 합리적 범위. 이 밖의 값은 파싱 오류로 본다. */
+export const MIN_YEAR = 1970;
+export const MAX_YEAR = 2100;
+
 export function isValidISO(iso: string | null | undefined): iso is string {
-  return !!iso && isValid(parseISO(iso));
+  if (!iso || !ISO_RE.test(iso)) return false;
+  if (!isValid(parseISO(iso))) return false;
+  const y = Number(iso.slice(0, 4));
+  if (y < MIN_YEAR || y > MAX_YEAR) return false;
+  // 2월 30일 같은 값이 굴러가지 않도록 왕복 검증
+  return toISO(fromISO(iso)) === iso;
+}
+
+/**
+ * Google Sheets / Excel 의 날짜 serial 값을 ISO 로 바꾼다.
+ * 1900 시스템의 윤년 버그(1900-02-29)를 감안해 1899-12-30 을 기준일로 쓴다.
+ * serial 로 보기 어려운 값이면 null 을 돌려준다(1900-01-01 같은 fallback 을 절대 만들지 않는다).
+ */
+export function fromSpreadsheetSerial(value: number): string | null {
+  if (!Number.isFinite(value)) return null;
+  // 1(1899-12-31) ~ 73050(2100-01-01) 범위만 날짜로 인정
+  if (value < 1 || value > 73050) return null;
+  const ms = Math.round(value) * 86400000;
+  const base = Date.UTC(1899, 11, 30);
+  const d = new Date(base + ms);
+  const iso = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
+  return isValidISO(iso) ? iso : null;
+}
+
+/**
+ * 어떤 형태로 들어오든 ISO(yyyy-MM-dd) 로 정규화한다. 실패하면 null.
+ * 숫자/숫자문자열은 스프레드시트 serial 로 판별하고, 2026.12.21 / 2026/12/21 / 26.12.21 도 받는다.
+ * 파싱에 실패했을 때 임의의 fallback 날짜를 만들지 않는 것이 이 함수의 핵심이다.
+ */
+export function normalizeDateInput(input: unknown): string | null {
+  if (input == null || input === "") return null;
+  if (input instanceof Date) return isValid(input) ? toISO(input) : null;
+  if (typeof input === "number") return fromSpreadsheetSerial(input);
+  const raw = String(input).trim();
+  if (!raw) return null;
+  if (/^\d+(\.\d+)?$/.test(raw)) {
+    const n = Number(raw);
+    // 4자리 숫자(연도)는 날짜가 아니다
+    if (raw.length <= 4) return null;
+    return fromSpreadsheetSerial(n);
+  }
+  const m = raw.match(/^(\d{2,4})[.\-/\s]+(\d{1,2})[.\-/\s]+(\d{1,2})/);
+  if (m) {
+    const [, y, mo, d] = m;
+    let year = Number(y);
+    if (y.length === 2) year += 2000;
+    const iso = `${year}-${mo.padStart(2, "0")}-${d.padStart(2, "0")}`;
+    return isValidISO(iso) ? iso : null;
+  }
+  return null;
+}
+
+/**
+ * 결혼식 날짜를 안전하게 읽는다.
+ * 잘못된 값이면 기본값으로 대체하되 valid:false 를 함께 돌려주어 화면이 사용자에게 알릴 수 있게 한다.
+ */
+export function safeWeddingDate(value: string | null | undefined, fallback: string): { date: string; valid: boolean; raw: string | null } {
+  if (isValidISO(value)) return { date: value, valid: true, raw: value };
+  return { date: isValidISO(fallback) ? fallback : todayISO(), valid: false, raw: value ?? null };
 }
 
 /** target까지 남은 일수 (양수 = 미래) */
 export function daysUntil(targetISO: string, today: string = todayISO()): number {
+  if (!isValidISO(targetISO)) return 0;
   return differenceInCalendarDays(fromISO(targetISO), fromISO(today));
 }
 
@@ -76,12 +145,14 @@ export function ddayLabel(targetISO: string, today?: string): string {
 }
 
 export function weekdayKo(iso: string): string {
+  if (!isValidISO(iso)) return "";
   return WEEKDAYS_KO[getDay(fromISO(iso))];
 }
 
 /** 2026년 12월 21일 (월) */
 export function formatKoreanDate(iso: string, opts: { weekday?: boolean; year?: boolean } = {}) {
   const { weekday = true, year = true } = opts;
+  if (!isValidISO(iso)) return "날짜 없음";
   const d = fromISO(iso);
   const base = year ? format(d, "yyyy년 M월 d일") : format(d, "M월 d일");
   return weekday ? `${base} (${WEEKDAYS_KO[getDay(d)]})` : base;
@@ -89,6 +160,7 @@ export function formatKoreanDate(iso: string, opts: { weekday?: boolean; year?: 
 
 /** 9.17 (수) */
 export function formatShortDate(iso: string, withWeekday = true) {
+  if (!isValidISO(iso)) return "—";
   const d = fromISO(iso);
   return withWeekday ? `${format(d, "M.d")} (${WEEKDAYS_KO[getDay(d)]})` : format(d, "M.d");
 }

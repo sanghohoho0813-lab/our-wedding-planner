@@ -1,12 +1,4 @@
-import { Suspense } from "react";
-import { TasksView } from "@/components/tasks/TasksView";
-
-export const metadata = { title: "할 일" };
-
-export default function TasksPage() {
-  return (
-    <Suspense>
-      <TasksView />
-    </Suspense>
-  );
+import { redirect } from "next/navigation";
+export default function Page() {
+  redirect("/plan");
 }

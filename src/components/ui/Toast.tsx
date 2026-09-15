@@ -28,7 +28,7 @@ export function Toaster() {
           >
             {t.tone === "success" && <CheckCircle2 className="size-4 shrink-0 text-success" />}
             {t.tone === "error" && <AlertCircle className="size-4 shrink-0 text-danger" />}
-            <span className="flex-1 text-[0.875rem] leading-snug">{t.message}</span>
+            <span className="flex-1 text-[0.9375rem] leading-snug">{t.message}</span>
             {t.action && (
               <button
                 type="button"
@@ -36,7 +36,7 @@ export function Toaster() {
                   t.action?.onClick();
                   dismiss(t.id);
                 }}
-                className="shrink-0 rounded-md px-2 py-1 text-[0.8125rem] font-semibold text-accent hover:bg-white/10"
+                className="shrink-0 rounded-md px-2 py-1 text-[0.875rem] font-semibold text-accent hover:bg-white/10"
               >
                 {t.action.label}
               </button>

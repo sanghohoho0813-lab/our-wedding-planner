@@ -25,8 +25,8 @@ export function BudgetOverview() {
             { value: rest, color: "var(--surface-3)" },
           ]}
         >
-          <span className="text-[1.5rem] font-bold tabular leading-none text-fg">{Math.round(b.usedPct)}%</span>
-          <span className="mt-1 text-[0.6875rem] text-fg-3">사용률</span>
+          <span className="text-[1.625rem] font-bold tabular leading-none text-fg">{Math.round(b.usedPct)}%</span>
+          <span className="mt-1 text-[0.75rem] text-fg-3">사용률</span>
         </Donut>
         <dl className="min-w-0 flex-1 space-y-3">
           {[
@@ -37,8 +37,8 @@ export function BudgetOverview() {
             <div key={label as string} className="flex items-start gap-2">
               <span className="mt-1.5 size-2 shrink-0 rounded-full" style={{ background: c as string }} />
               <div className="min-w-0">
-                <dt className="text-[0.75rem] text-fg-3">{label}</dt>
-                <dd className="truncate text-[1rem] font-semibold tabular text-fg">{formatKRW(v as number)}</dd>
+                <dt className="text-[0.8125rem] text-fg-3">{label}</dt>
+                <dd className="truncate text-[1.0625rem] font-semibold tabular text-fg">{formatKRW(v as number)}</dd>
               </div>
             </div>
           ))}

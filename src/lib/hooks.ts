@@ -84,3 +84,33 @@ export function useNow(intervalMs = 1000) {
   }, [intervalMs]);
   return now;
 }
+
+/**
+ * 화면 안의 탭 상태. 라우팅을 타지 않으므로 전환이 0ms 다.
+ * URL 에는 history.replaceState 로만 남겨 공유/뒤로가기 흐름을 해치지 않는다.
+ */
+export function useTabs<T extends string>(tabs: readonly T[], fallback: T, key = "tab") {
+  const [tab, setTabState] = useState<T>(fallback);
+  useEffect(() => {
+    const fromUrl = new URLSearchParams(window.location.search).get(key) as T | null;
+    if (fromUrl && tabs.includes(fromUrl)) setTabState(fromUrl);
+    const onPop = () => {
+      const t = new URLSearchParams(window.location.search).get(key) as T | null;
+      setTabState(t && tabs.includes(t) ? t : fallback);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const setTab = useCallback(
+    (next: T) => {
+      setTabState(next);
+      const url = new URL(window.location.href);
+      if (next === fallback) url.searchParams.delete(key);
+      else url.searchParams.set(key, next);
+      window.history.replaceState(window.history.state, "", url.toString());
+    },
+    [fallback, key],
+  );
+  return [tab, setTab] as const;
+}

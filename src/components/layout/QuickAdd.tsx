@@ -55,8 +55,8 @@ export function QuickAdd() {
               >
                 <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent-text [&>svg]:size-5">{a.icon}</span>
                 <span className="min-w-0">
-                  <span className="block text-[0.9375rem] font-semibold text-fg">{a.label}</span>
-                  <span className="block text-[0.75rem] text-fg-3">{a.desc}</span>
+                  <span className="block text-[1rem] font-semibold text-fg">{a.label}</span>
+                  <span className="block text-[0.8125rem] text-fg-3">{a.desc}</span>
                 </span>
               </button>
             </li>

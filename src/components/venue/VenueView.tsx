@@ -34,7 +34,7 @@ const FIELDS: FieldDef[] = [
   { key: "memo", label: "메모", type: "textarea" },
 ];
 
-export function VenueView() {
+export function VenueView({ embedded }: { embedded?: boolean } = {}) {
   const venues = useWeddingStore((s) => s.data!.venues);
   const wedding = useWeddingStore((s) => s.data!.wedding);
   const patch = useWeddingStore((s) => s.patch);
@@ -49,6 +49,7 @@ export function VenueView() {
   return (
     <div>
       <PageHeader
+        compact={embedded}
         title="식장"
         description="후보 식장을 비교하고 계약 정보를 관리해요"
         actions={
@@ -63,15 +64,15 @@ export function VenueView() {
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="min-w-0">
                 <Badge tone="success">계약 완료</Badge>
-                <h2 className="mt-2 text-[1.25rem] font-bold text-fg">{contracted.name}</h2>
-                <p className="text-[0.875rem] text-fg-2">
+                <h2 className="mt-2 text-[1.375rem] font-bold text-fg">{contracted.name}</h2>
+                <p className="text-[0.9375rem] text-fg-2">
                   {formatKoreanDate(contracted.event_date ?? wedding.wedding_date)}
                   {contracted.event_time ? ` · ${formatTime(contracted.event_time)}` : ""}
                 </p>
-                {contracted.address && <p className="mt-1 text-[0.8125rem] text-fg-3">{contracted.address}</p>}
+                {contracted.address && <p className="mt-1 text-[0.875rem] text-fg-3">{contracted.address}</p>}
               </div>
               <div className="text-right">
-                <p className="text-[0.75rem] text-fg-3">예식까지</p>
+                <p className="text-[0.8125rem] text-fg-3">예식까지</p>
                 <p className="font-script text-[2.25rem] leading-none text-accent-text">{formatDDay(daysUntil(contracted.event_date ?? wedding.wedding_date, today))}</p>
               </div>
             </div>
@@ -83,19 +84,19 @@ export function VenueView() {
                 ["잔금", formatKRW(contracted.balance)],
               ].map(([k, v]) => (
                 <div key={k} className="rounded-[12px] bg-surface/70 px-3 py-2">
-                  <dt className="text-[0.6875rem] text-fg-3">{k}</dt>
-                  <dd className="tabular text-[0.9375rem] font-semibold text-fg">{v}</dd>
+                  <dt className="text-[0.75rem] text-fg-3">{k}</dt>
+                  <dd className="tabular text-[1rem] font-semibold text-fg">{v}</dd>
                 </div>
               ))}
             </dl>
             <div className="mt-3 flex flex-wrap gap-2">
               {contracted.phone && (
-                <a href={`tel:${contracted.phone}`} className="inline-flex h-10 items-center gap-1.5 rounded-full border border-line bg-surface px-4 text-[0.8125rem] font-medium text-fg hover:border-line-strong">
+                <a href={`tel:${contracted.phone}`} className="inline-flex h-10 items-center gap-1.5 rounded-full border border-line bg-surface px-4 text-[0.875rem] font-medium text-fg hover:border-line-strong">
                   <Phone className="size-4" /> 전화
                 </a>
               )}
               {contracted.url && (
-                <a href={contracted.url} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-1.5 rounded-full border border-line bg-surface px-4 text-[0.8125rem] font-medium text-fg hover:border-line-strong">
+                <a href={contracted.url} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-1.5 rounded-full border border-line bg-surface px-4 text-[0.875rem] font-medium text-fg hover:border-line-strong">
                   <ExternalLink className="size-4" /> 홈페이지
                 </a>
               )}

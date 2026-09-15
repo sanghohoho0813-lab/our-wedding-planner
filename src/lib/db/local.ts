@@ -1,33 +1,18 @@
 "use client";
-import { DEFAULT_WEDDING_DATE, LOCAL_USER_ID, LOCAL_WEDDING_ID } from "@/lib/config";
+import { LOCAL_USER_ID, LOCAL_WEDDING_ID } from "@/lib/config";
 import { nowISO } from "@/lib/utils";
 import type { ChangeEvent, DataAdapter } from "./adapter";
-import { seedWeddingData } from "./seed";
+import { buildMigratedData, emptyData, migratedWedding } from "./migration";
 import { TABLE_NAMES, type TableMap, type TableName, type Wedding, type WeddingData } from "./types";
 
-const KEY = (wid: string) => `owp:data:${wid}`;
+// v2: 원본 결혼계획표 이관 데이터로 교체하면서 키를 올렸다(옛 샘플 데이터와 섞이지 않게).
+const KEY = (wid: string) => `owp:data:v2:${wid}`;
+const LEGACY_KEY = (wid: string) => `owp:data:${wid}`;
 
-export function emptyWeddingData(wedding: Wedding): WeddingData {
-  const base = { wedding } as WeddingData;
-  for (const t of TABLE_NAMES) (base as unknown as Record<string, unknown[]>)[t] = [];
-  return base;
-}
+export const emptyWeddingData = emptyData;
 
 export function createLocalWedding(): Wedding {
-  const ts = nowISO();
-  return {
-    id: LOCAL_WEDDING_ID,
-    name: "우리의 결혼 준비",
-    wedding_date: DEFAULT_WEDDING_DATE,
-    wedding_time: null,
-    groom_name: "",
-    bride_name: "",
-    total_budget: 0,
-    invite_code: "LOCAL",
-    created_by: LOCAL_USER_ID,
-    created_at: ts,
-    updated_at: ts,
-  };
+  return migratedWedding(LOCAL_WEDDING_ID, LOCAL_USER_ID);
 }
 
 export class LocalAdapter implements DataAdapter {
@@ -52,10 +37,13 @@ export class LocalAdapter implements DataAdapter {
   async loadWedding(weddingId: string): Promise<WeddingData> {
     let data = this.read(weddingId);
     if (!data) {
-      const wedding = createLocalWedding();
-      wedding.id = weddingId;
-      data = seedWeddingData(emptyWeddingData(wedding), wedding.wedding_date);
+      data = buildMigratedData(weddingId, LOCAL_USER_ID);
       this.write(weddingId, data);
+      try {
+        localStorage.removeItem(LEGACY_KEY(weddingId));
+      } catch {
+        /* 옛 키 정리는 실패해도 무시 */
+      }
     }
     return data;
   }
@@ -116,8 +104,8 @@ export class LocalAdapter implements DataAdapter {
     // 단일 사용자 로컬 모드: 저장된 웨딩은 하나뿐이다.
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
-      if (k?.startsWith("owp:data:")) {
-        const data = this.read(k.slice("owp:data:".length));
+      if (k?.startsWith("owp:data:v2:")) {
+        const data = this.read(k.slice("owp:data:v2:".length));
         if (data && (data[table] as { id: string }[]).some((r) => r.id === id)) return data.wedding.id;
       }
     }
