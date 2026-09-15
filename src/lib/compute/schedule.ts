@@ -33,7 +33,7 @@ export function collectEvents(data: WeddingData): UnifiedEvent[] {
       type: ev.type,
       location: ev.location,
       memo: ev.memo,
-      source: ev.source_type && ev.source_id ? { table: ev.source_type as DataTable, id: ev.source_id, href: hrefFor(ev.source_type, ev.source_id) } : null,
+      source: ev.source_type && ev.source_id ? { table: ev.source_type as DataTable, id: ev.source_id, href: hrefFor(ev.source_type) } : null,
       editable: true,
       is_done: ev.is_done,
     });
@@ -97,7 +97,7 @@ export function collectEvents(data: WeddingData): UnifiedEvent[] {
   return out.sort((a, b) => a.date.localeCompare(b.date) || (a.start_time ?? "99").localeCompare(b.start_time ?? "99"));
 }
 
-export function hrefFor(sourceType: string, _id: string): string {
+export function hrefFor(sourceType: string): string {
   switch (sourceType) {
     case "tasks":
       return "/tasks";

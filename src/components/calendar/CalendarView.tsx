@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { collectEvents, type UnifiedEvent } from "@/lib/compute";
-import { formatKoreanDate, formatTime, fromISO, monthGrid, monthLabel, todayISO, weekdayKo, daysUntil, formatDDay } from "@/lib/date";
+import { formatKoreanDate, formatTime, fromISO, monthGrid, monthLabel, todayISO, daysUntil, formatDDay } from "@/lib/date";
 import { EVENT_TYPE_LABEL } from "@/lib/labels";
 import { useWeddingStore } from "@/lib/store/wedding-store";
 import { cn } from "@/lib/utils";
@@ -208,7 +208,7 @@ export function CalendarView() {
           <section className="card overflow-hidden">
             <h2 className="flex items-center justify-between border-b border-line px-4 py-3 text-[0.9375rem] font-semibold">
               <span>
-                {formatKoreanDate(selected)} <span className="text-fg-3 font-normal">({weekdayKo(selected)})</span>
+                {formatKoreanDate(selected)}
               </span>
               <Button size="sm" variant="soft" onClick={() => setCreating(true)}>
                 <Plus className="size-3.5" /> 추가

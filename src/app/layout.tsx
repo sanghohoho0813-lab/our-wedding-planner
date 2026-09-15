@@ -30,6 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
           href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
         />
+        {/* eslint-disable-next-line @next/next/no-page-custom-font -- App Router root layout applies to every page */}
         <link
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Nanum+Pen+Script&family=Noto+Sans+KR:wght@400;500;600;700&display=swap"

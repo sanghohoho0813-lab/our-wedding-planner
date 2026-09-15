@@ -1,5 +1,5 @@
 "use client";
-import { Calendar, Clock, Link2, Phone, X } from "lucide-react";
+import { Link2, Phone, X } from "lucide-react";
 import { useEffect, useRef, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from "react";
 import { addDays, formatKoreanDate, todayISO } from "@/lib/date";
 import { useDebouncedValue } from "@/lib/hooks";
@@ -108,6 +108,16 @@ export function TextArea({ value, onChange, delay = 500, className, rows = 3, on
   );
 }
 
+/** 입력칸 아무 곳이나 눌러도 네이티브 피커가 열리도록 */
+function openPicker(e: React.MouseEvent<HTMLInputElement>) {
+  const el = e.currentTarget as HTMLInputElement & { showPicker?: () => void };
+  try {
+    el.showPicker?.();
+  } catch {
+    /* 사용자 제스처가 아니거나 미지원 브라우저 */
+  }
+}
+
 export function DateField({
   value,
   onChange,
@@ -127,12 +137,12 @@ export function DateField({
   return (
     <div className={cn("space-y-2", className)}>
       <div className="relative">
-        <Calendar className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-fg-3" />
         <input
           type="date"
           value={value ?? ""}
           onChange={(e) => onChange(e.target.value || null)}
-          className={cn(inputCls, "pl-10 pr-10 tabular", !value && "text-fg-3")}
+          onClick={openPicker}
+          className={cn(inputCls, "native-picker min-w-0 cursor-pointer px-3 tabular text-[0.875rem]", clearable && value && "pr-9", !value && "text-fg-3")}
           aria-label={placeholder}
         />
         {clearable && value && (
@@ -162,12 +172,12 @@ export function DateField({
 export function TimeField({ value, onChange, className }: { value: string | null; onChange: (v: string | null) => void; className?: string }) {
   return (
     <div className={cn("relative", className)}>
-      <Clock className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-fg-3" />
       <input
         type="time"
         value={value ?? ""}
         onChange={(e) => onChange(e.target.value || null)}
-        className={cn(inputCls, "pl-10 tabular", !value && "text-fg-3")}
+        onClick={openPicker}
+        className={cn(inputCls, "native-picker min-w-0 cursor-pointer px-3 tabular text-[0.875rem]", !value && "text-fg-3")}
         aria-label="시간 선택"
       />
     </div>

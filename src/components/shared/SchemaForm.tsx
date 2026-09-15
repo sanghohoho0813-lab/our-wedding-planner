@@ -51,7 +51,7 @@ export function SchemaForm({
   return (
     <div className="space-y-5">
       {rows.map((row) => (
-        <div key={row.map((f) => f.key).join("+")} className={row.length === 2 ? "grid grid-cols-2 gap-3" : undefined}>
+        <div key={row.map((f) => f.key).join("+")} className={row.length === 2 ? "grid grid-cols-2 gap-3 [&>*]:min-w-0" : undefined}>
           {row.map((f) => {
             const v = get(f.key);
             const focus = autoFocusFirst && first && (f.type === "text" || f.type === "textarea");

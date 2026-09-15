@@ -16,7 +16,7 @@ export interface ChipProps {
 export function Chip({ active, onClick, children, className, size = "md", tone = "accent", icon, disabled }: ChipProps) {
   const activeCls: Record<NonNullable<ChipProps["tone"]>, string> = {
     accent: "bg-accent text-accent-fg border-accent",
-    neutral: "bg-fg text-bg border-fg",
+    neutral: "bg-fg text-inverse border-fg",
     success: "bg-success text-white border-success",
     warning: "bg-warning text-white border-warning",
     danger: "bg-danger text-white border-danger",

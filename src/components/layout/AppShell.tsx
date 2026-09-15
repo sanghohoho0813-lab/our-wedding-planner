@@ -10,6 +10,7 @@ import { PageTransition } from "./PageTransition";
 import { QuickAdd } from "./QuickAdd";
 import { Sidebar } from "./Sidebar";
 import { TopBar } from "./TopBar";
+import { SettingsSync } from "./SettingsSync";
 
 export interface AppShellProps {
   weddingId: string;
@@ -19,7 +20,7 @@ export interface AppShellProps {
   children: React.ReactNode;
 }
 
-export function AppShell({ weddingId, userId, children }: AppShellProps) {
+export function AppShell({ weddingId, userId, mode, children }: AppShellProps) {
   const status = useWeddingStore((s) => s.status);
   const error = useWeddingStore((s) => s.error);
   const currentId = useWeddingStore((s) => s.weddingId);
@@ -56,6 +57,7 @@ export function AppShell({ weddingId, userId, children }: AppShellProps) {
       <BottomNav />
       <MenuDrawer />
       {ready && <QuickAdd />}
+      {mode === "supabase" && <SettingsSync userId={userId} />}
     </div>
   );
 }

@@ -57,7 +57,7 @@ export function BudgetDashboard() {
       />
 
       <Card className="p-5">
-        <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0 flex-1">
             <p className="text-[0.8125rem] text-fg-2">총 예산</p>
             <div className="mt-1 max-w-xs">
@@ -67,7 +67,7 @@ export function BudgetDashboard() {
               {data.wedding.total_budget > 0 ? "탭해서 수정" : "카테고리 계획 금액이나 견적 합계로 자동 계산돼요"}
             </p>
           </div>
-          <div className="text-right">
+          <div className="sm:text-right">
             <Badge tone={healthTone} className="text-[0.8125rem] px-3 py-1">
               예산 {HEALTH_LABEL[b.health]}
             </Badge>
@@ -97,7 +97,7 @@ export function BudgetDashboard() {
             {b.diff > 0 ? <TrendingUp className="size-4" /> : b.diff < 0 ? <TrendingDown className="size-4" /> : null}
             {formatSignedKRW(b.diff)}
           </p>
-          <p className="text-[0.6875rem] text-fg-3">{formatSignedPct(b.diffPct)} · 실제 금액 입력 항목 기준</p>
+          <p className="text-[0.6875rem] text-fg-3">{formatSignedPct(b.diffPct)} · 실제 금액 기준</p>
         </Card>
       </div>
 

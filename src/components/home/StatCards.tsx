@@ -39,11 +39,14 @@ function Stat({
       transition={{ delay: 0.05 * index, duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
     >
       <Link href={href} className="card card-hover block h-full p-4 sm:p-5">
-        <div className="flex items-start gap-3">
-          <span className={cn("inline-flex size-10 shrink-0 items-center justify-center rounded-full [&>svg]:size-5", tone)}>{icon}</span>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-3">
+          <div className="flex items-center gap-2 sm:block">
+            <span className={cn("inline-flex size-8 shrink-0 items-center justify-center rounded-full [&>svg]:size-4 sm:size-10 sm:[&>svg]:size-5", tone)}>{icon}</span>
+            <p className="text-[0.8125rem] text-fg-2 sm:hidden">{label}</p>
+          </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[0.8125rem] text-fg-2">{label}</p>
-            <p className="mt-0.5 truncate text-[1.375rem] font-bold tabular text-fg leading-tight">{value}</p>
+            <p className="hidden text-[0.8125rem] text-fg-2 sm:block">{label}</p>
+            <p className="truncate text-[1.125rem] font-bold tabular leading-tight text-fg sm:mt-0.5 sm:text-[1.375rem]">{value}</p>
             {sub && <p className="mt-1 line-clamp-2 text-[0.75rem] leading-snug text-fg-3">{sub}</p>}
           </div>
         </div>

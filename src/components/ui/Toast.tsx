@@ -24,7 +24,7 @@ export function Toaster() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.98 }}
             transition={{ duration: 0.2 }}
-            className="pointer-events-auto flex items-center gap-3 rounded-[14px] bg-fg px-4 py-3 text-bg shadow-lg"
+            className="pointer-events-auto flex items-center gap-3 rounded-[14px] bg-fg px-4 py-3 text-inverse shadow-lg"
           >
             {t.tone === "success" && <CheckCircle2 className="size-4 shrink-0 text-success" />}
             {t.tone === "error" && <AlertCircle className="size-4 shrink-0 text-danger" />}
