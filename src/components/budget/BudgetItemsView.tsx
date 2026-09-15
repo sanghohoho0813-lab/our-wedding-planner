@@ -74,6 +74,7 @@ export function BudgetItemsView({ embedded }: { embedded?: boolean } = {}) {
   const [sort, setSort] = useState<Sort>("category");
   const [onlyUnpaid, setOnlyUnpaid] = useState(false);
   const [onlyFav, setOnlyFav] = useState(params.get("filter") === "favorite");
+  const [showEmpty, setShowEmpty] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const wide = useMediaQuery("(min-width: 1280px)");
@@ -83,8 +84,10 @@ export function BudgetItemsView({ embedded }: { embedded?: boolean } = {}) {
   const b = computeBudget(data.wedding, data.budget_categories, data.budget_items, data.payments);
   const cats = [...data.budget_categories].sort((x, y) => x.sort_order - y.sort_order);
 
+  const emptyCount = useMemo(() => b.items.filter((s) => s.item.estimated_amount === 0 && s.item.actual_amount === 0).length, [b.items]);
   const list = useMemo(() => {
     let l = b.items;
+    if (!showEmpty && !q.trim()) l = l.filter((s) => s.item.estimated_amount > 0 || s.item.actual_amount > 0);
     if (category === "__none__") l = l.filter((s) => !s.item.category_id);
     else if (category) l = l.filter((s) => s.item.category_id === category);
     if (onlyUnpaid) l = l.filter((s) => s.unpaid > 0);
@@ -97,7 +100,7 @@ export function BudgetItemsView({ embedded }: { embedded?: boolean } = {}) {
     if (sort === "amount") arr.sort((x, y) => y.effective - x.effective);
     else if (sort === "updated") arr.sort((x, y) => y.item.updated_at.localeCompare(x.item.updated_at));
     return arr;
-  }, [b.items, category, onlyUnpaid, onlyFav, q, sort]);
+  }, [b.items, category, onlyUnpaid, onlyFav, q, sort, showEmpty]);
 
   const groups = useMemo(() => {
     if (sort !== "category") return [{ key: "all", name: null as string | null, items: list, total: list.reduce((s, x) => s + x.effective, 0) }];
@@ -144,6 +147,11 @@ export function BudgetItemsView({ embedded }: { embedded?: boolean } = {}) {
             <div className="flex gap-1.5 overflow-x-auto scrollbar-none">
               <Chip size="sm" tone="neutral" active={onlyUnpaid} onClick={() => setOnlyUnpaid((v) => !v)}>미결제만</Chip>
               <Chip size="sm" tone="neutral" active={onlyFav} onClick={() => setOnlyFav((v) => !v)}>즐겨찾기</Chip>
+              {emptyCount > 0 && (
+                <Chip size="sm" tone="neutral" active={showEmpty} onClick={() => setShowEmpty((v) => !v)}>
+                  금액 없는 항목 {emptyCount}
+                </Chip>
+              )}
               {(["category", "amount", "updated"] as Sort[]).map((s) => (
                 <Chip key={s} size="sm" tone="neutral" active={sort === s} onClick={() => setSort(s)}>
                   {s === "category" ? "카테고리순" : s === "amount" ? "금액순" : "최근 수정"}
@@ -169,6 +177,14 @@ export function BudgetItemsView({ embedded }: { embedded?: boolean } = {}) {
         </div>
           ) : (
             <div className="space-y-6">
+              {!showEmpty && emptyCount > 0 && !q.trim() && (
+                <p className="text-[0.875rem] text-fg-3">
+                  금액이 아직 없는 항목 {emptyCount}개는 숨겨져 있어요.{" "}
+                  <button type="button" className="font-medium text-accent-text hover:underline" onClick={() => setShowEmpty(true)}>
+                    모두 보기
+                  </button>
+                </p>
+              )}
               {groups.map((g) => (
                 <section key={g.key}>
                   {g.name && (

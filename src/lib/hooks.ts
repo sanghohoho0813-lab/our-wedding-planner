@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 export function useMediaQuery(query: string, initial = false) {
   const [matches, setMatches] = useState(initial);
@@ -87,21 +88,16 @@ export function useNow(intervalMs = 1000) {
 
 /**
  * 화면 안의 탭 상태. 라우팅을 타지 않으므로 전환이 0ms 다.
- * URL 에는 history.replaceState 로만 남겨 공유/뒤로가기 흐름을 해치지 않는다.
+ * URL 에는 history.replaceState 로 남기고, 하단 탭처럼 링크로 ?tab= 이 바뀌어 들어와도 따라간다.
  */
 export function useTabs<T extends string>(tabs: readonly T[], fallback: T, key = "tab") {
-  const [tab, setTabState] = useState<T>(fallback);
+  const params = useSearchParams();
+  const fromUrl = params.get(key) as T | null;
+  const resolved = fromUrl && tabs.includes(fromUrl) ? fromUrl : fallback;
+  const [tab, setTabState] = useState<T>(resolved);
   useEffect(() => {
-    const fromUrl = new URLSearchParams(window.location.search).get(key) as T | null;
-    if (fromUrl && tabs.includes(fromUrl)) setTabState(fromUrl);
-    const onPop = () => {
-      const t = new URLSearchParams(window.location.search).get(key) as T | null;
-      setTabState(t && tabs.includes(t) ? t : fallback);
-    };
-    window.addEventListener("popstate", onPop);
-    return () => window.removeEventListener("popstate", onPop);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    setTabState(resolved);
+  }, [resolved]);
   const setTab = useCallback(
     (next: T) => {
       setTabState(next);

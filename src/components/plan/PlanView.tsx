@@ -7,8 +7,9 @@ import { useWeddingStore } from "@/lib/store/wedding-store";
 import { TabBar } from "@/components/layout/TabBar";
 import { TasksView } from "@/components/tasks/TasksView";
 import { CalendarView } from "@/components/calendar/CalendarView";
+import { WeddingDayView } from "./WeddingDayView";
 
-const TABS = ["tasks", "calendar"] as const;
+const TABS = ["tasks", "calendar", "day"] as const;
 type Tab = (typeof TABS)[number];
 
 export function PlanView() {
@@ -33,15 +34,18 @@ export function PlanView() {
         </div>
       </div>
       <TabBar
-        className="mb-4 max-w-sm"
+        className="mb-4 max-w-md"
         tabs={[
           { value: "tasks", label: "할 일", badge: progress.remaining },
           { value: "calendar", label: "일정" },
+          { value: "day", label: "당일 진행" },
         ]}
         value={tab}
         onChange={setTab}
       />
-      {tab === "tasks" ? <TasksView embedded /> : <CalendarView embedded />}
+      {tab === "tasks" && <TasksView embedded />}
+      {tab === "calendar" && <CalendarView embedded />}
+      {tab === "day" && <WeddingDayView />}
     </div>
   );
 }

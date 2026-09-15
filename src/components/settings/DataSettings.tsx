@@ -1,13 +1,14 @@
 "use client";
-import { AlertTriangle, CheckCircle2, Database, Download, FileJson, FileSpreadsheet, RotateCcw, Upload } from "lucide-react";
-import { useRef, useState } from "react";
+import { AlertTriangle, CheckCircle2, Database, Download, FileJson, FileSpreadsheet, History, RotateCcw, Upload } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { backupStatus, listSnapshots, markBackedUp, SNAPSHOT_LABEL, type Snapshot } from "@/lib/backup";
 import { isSupabaseConfigured } from "@/lib/config";
 import type { DataTable } from "@/lib/db/defaults";
 import { emptyData } from "@/lib/db/migration";
 import { buildMigratedData, MIGRATION_AUDIT, MIGRATION_TOTAL, MIGRATION_WARNINGS, migratedRows } from "@/lib/db/migration";
 import type { TableName } from "@/lib/db/types";
 import { CSV_TABLE_LABEL, csvTemplate, csvToRows, download, parseJSONBackup, toCSV, toJSONBackup } from "@/lib/export";
-import { todayISO } from "@/lib/date";
+import { formatKoreanDate, relativeTime, todayISO } from "@/lib/date";
 import { toast } from "@/lib/store/ui-store";
 import { useWeddingStore } from "@/lib/store/wedding-store";
 import { cn } from "@/lib/utils";
@@ -28,8 +29,19 @@ export function DataSettings() {
   const replaceAll = useWeddingStore((s) => s.replaceAll);
   const [csvTable, setCsvTable] = useState<TableName>("tasks");
   const [importTable, setImportTable] = useState<DataTable>("tasks");
-  const [confirm, setConfirm] = useState<null | "restore" | "reset" | "remigrate">(null);
+  const [confirm, setConfirm] = useState<null | "restore" | "reset" | "remigrate" | "snapshot">(null);
   const [pendingJSON, setPendingJSON] = useState<string | null>(null);
+  const [pendingSnapshot, setPendingSnapshot] = useState<Snapshot | null>(null);
+  const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
+  const [lastBackupAt, setLastBackupAt] = useState<string | null>(null);
+  const refreshLocal = useCallback(() => {
+    if (isSupabaseConfigured) return;
+    setSnapshots(listSnapshots(data.wedding.id));
+    setLastBackupAt(backupStatus().lastBackupAt);
+  }, [data.wedding.id]);
+  useEffect(() => {
+    refreshLocal();
+  }, [refreshLocal, data]);
   const jsonRef = useRef<HTMLInputElement>(null);
   const csvRef = useRef<HTMLInputElement>(null);
   const counts = Object.entries(CSV_TABLE_LABEL).map(([t, label]) => [label, (data[t as TableName] as unknown[]).length] as const);
@@ -39,6 +51,25 @@ export function DataSettings() {
     if (!f) return;
     setPendingJSON(await f.text());
     setConfirm("restore");
+  };
+
+  const downloadJSON = () => {
+    download(`our-wedding-backup-${todayISO()}.json`, toJSONBackup(data), "application/json;charset=utf-8");
+    markBackedUp();
+    refreshLocal();
+    toast("JSON 백업 파일을 내려받았어요.", { tone: "success" });
+  };
+
+  const restoreSnapshot = async () => {
+    if (!pendingSnapshot) return;
+    try {
+      await replaceAll({ ...pendingSnapshot.data, wedding: { ...pendingSnapshot.data.wedding, id: data.wedding.id } });
+      toast("스냅샷 시점으로 되돌렸어요.", { tone: "success" });
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "복원에 실패했어요.", { tone: "error" });
+    } finally {
+      setPendingSnapshot(null);
+    }
   };
 
   const restore = async () => {
@@ -189,15 +220,51 @@ export function DataSettings() {
         <Card>
           <CardHeader title="JSON 백업" icon={<FileJson />} subtitle="모든 데이터를 하나의 파일로" />
           <div className="space-y-2 px-5 pb-5">
-            <Button full variant="outline" onClick={() => download(`our-wedding-backup-${todayISO()}.json`, toJSONBackup(data), "application/json;charset=utf-8")}>
+            <Button full variant="outline" onClick={downloadJSON}>
               <Download className="size-4" /> JSON 백업 내려받기
             </Button>
+            {!isSupabaseConfigured && (
+              <p className="text-[0.875rem] text-fg-3">
+                {lastBackupAt ? `마지막 백업: ${formatKoreanDate(lastBackupAt.slice(0, 10))} (${relativeTime(lastBackupAt)})` : "아직 백업을 받은 적이 없어요."}
+              </p>
+            )}
             <input ref={jsonRef} type="file" accept="application/json,.json" className="hidden" onChange={(e) => onJSONFile(e.target.files?.[0])} />
             <Button full variant="secondary" onClick={() => jsonRef.current?.click()}>
               <Upload className="size-4" /> JSON 백업 복원
             </Button>
           </div>
         </Card>
+
+        {!isSupabaseConfigured && (
+          <Card>
+            <CardHeader title="자동 스냅샷" icon={<History />} subtitle="실수로 지워도 되돌릴 수 있는 안전망" />
+            <div className="space-y-2 px-5 pb-5">
+              {snapshots.length === 0 ? (
+                <p className="text-[0.9375rem] text-fg-3">아직 스냅샷이 없어요. 하루의 첫 수정 직전과 되돌리기 · 비우기 · 복원 직전에 자동으로 남겨져요.</p>
+              ) : (
+                <ul className="divide-y divide-line rounded-[12px] border border-line">
+                  {snapshots.map((snap) => {
+                    const n = (Object.keys(CSV_TABLE_LABEL) as TableName[]).reduce((sum, t) => sum + ((snap.data[t] as unknown[] | undefined)?.length ?? 0), 0);
+                    return (
+                      <li key={snap.kind} className="flex flex-wrap items-center gap-3 px-4 py-3">
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[1rem] font-medium text-fg">{SNAPSHOT_LABEL[snap.kind]}</p>
+                          <p className="text-[0.875rem] text-fg-3">
+                            {formatKoreanDate(snap.taken_at.slice(0, 10))} · {relativeTime(snap.taken_at)} · {n}건
+                          </p>
+                        </div>
+                        <Button size="sm" variant="outline" onClick={() => { setPendingSnapshot(snap); setConfirm("snapshot"); }}>
+                          이 시점으로 복원
+                        </Button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+              <p className="text-[0.875rem] text-fg-3">스냅샷은 이 브라우저 안에만 있어요. 기기를 바꾸거나 브라우저 데이터를 지우면 함께 사라지니 JSON 백업도 같이 받아두세요.</p>
+            </div>
+          </Card>
+        )}
 
         <Card>
           <CardHeader title="CSV 내보내기" icon={<FileSpreadsheet />} subtitle="엑셀 · 구글 시트에서 열 수 있어요" />
@@ -252,6 +319,15 @@ export function DataSettings() {
         onConfirm={remigrate}
         title="원본 결혼계획표로 되돌릴까요?"
         message={`지금 기록을 모두 지우고 원본 스프레드시트 ${MIGRATION_TOTAL}건으로 교체합니다. 앱에서 추가한 내용은 사라져요.`}
+        confirmLabel="되돌리기"
+        danger
+      />
+      <ConfirmSheet
+        open={confirm === "snapshot"}
+        onClose={() => { setConfirm(null); setPendingSnapshot(null); }}
+        onConfirm={restoreSnapshot}
+        title="스냅샷 시점으로 되돌릴까요?"
+        message={pendingSnapshot ? `${SNAPSHOT_LABEL[pendingSnapshot.kind]} (${relativeTime(pendingSnapshot.taken_at)}) 상태로 교체합니다. 지금 상태는 '통째로 바꾸기 직전' 스냅샷으로 남아요.` : ""}
         confirmLabel="되돌리기"
         danger
       />

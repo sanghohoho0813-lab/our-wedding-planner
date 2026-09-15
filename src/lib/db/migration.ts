@@ -75,7 +75,7 @@ export function migratedRows(weddingId: string): { table: TableName; rows: Table
 export const MIGRATION_TOTAL = MIGRATED_TABLES.reduce((n, t) => n + (ORIGINAL_ROWS[t]?.length ?? 0), 0);
 
 /** 이미 저장된 데이터에 한 번만 적용하는 보정. 사용자가 고친 내용은 건드리지 않는다. */
-export const DATA_VERSION = 2;
+export const DATA_VERSION = 3;
 
 export function applyDataFixups(data: WeddingData): { data: WeddingData; changed: boolean } {
   const current = Number((data.wedding.details as { data_version?: number } | undefined)?.data_version ?? 1);
@@ -89,6 +89,10 @@ export function applyDataFixups(data: WeddingData): { data: WeddingData; changed
   }
   data.venues = data.venues.map((v) => (v.event_date === OLD ? { ...v, event_date: NEW } : v));
   data.events = data.events.map((e) => (e.date === OLD ? { ...e, date: NEW } : e));
-  data.wedding = { ...data.wedding, details: { ...(data.wedding.details ?? {}), data_version: DATA_VERSION } };
+  // v3: 결혼식 당일 역할(사회·축사)을 원본 메모에서 채운다. 이미 적어둔 값은 유지.
+  const details = { ...(data.wedding.details ?? {}) } as Record<string, unknown>;
+  const originalRoles = (ORIGINAL_WEDDING.details as { roles?: Record<string, string> }).roles ?? {};
+  details.roles = { ...originalRoles, ...((details.roles as Record<string, string> | undefined) ?? {}) };
+  data.wedding = { ...data.wedding, details: { ...details, data_version: DATA_VERSION } };
   return { data, changed: true };
 }

@@ -44,9 +44,21 @@ function GuestRow({ g, onOpen, selected }: { g: Guest; onOpen: (id: string) => v
         <span className="mt-0.5 flex items-center gap-1.5 pl-10 text-[0.8125rem] text-fg-3">
           {g.relation && <span>{g.relation}</span>}
           {g.contacted && <MessageCircle className="size-3 text-success" aria-label="연락 완료" />}
-          {g.invitation_sent && <Mail className="size-3 text-success" aria-label="청첩장 전달" />}
           {g.memo && <span className="truncate">· {g.memo}</span>}
         </span>
+      </button>
+      <button
+        type="button"
+        aria-pressed={g.invitation_sent}
+        aria-label={g.invitation_sent ? `${g.name} 청첩장 전달 취소` : `${g.name} 청첩장 전달로 표시`}
+        title={g.invitation_sent ? "청첩장 전달됨" : "청첩장 전달로 표시"}
+        onClick={() => patch("guests", g.id, { invitation_sent: !g.invitation_sent })}
+        className={cn(
+          "inline-flex size-10 shrink-0 items-center justify-center rounded-full transition-colors",
+          g.invitation_sent ? "bg-success-soft text-success" : "text-fg-3 hover:bg-surface-3 hover:text-fg",
+        )}
+      >
+        <Mail className="size-[1.125rem]" />
       </button>
       <div className="flex shrink-0 gap-1" role="radiogroup" aria-label={`${g.name} 참석 여부`}>
         {RSVP.map((o) => (
@@ -115,7 +127,7 @@ export function GuestsView({ embedded }: { embedded?: boolean } = {}) {
           </Button>
         }
       >
-        <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 xl:grid-cols-7">
           {[
             ["총 하객", `${stats.total}명`],
             ["신랑측", `${stats.groom}명`],
@@ -123,6 +135,7 @@ export function GuestsView({ embedded }: { embedded?: boolean } = {}) {
             ["참석 확정", `${stats.confirmed}명`],
             ["미정", `${stats.maybe}명`],
             ["예상 총 인원", `${stats.expectedPeople}명`],
+            ["청첩장 전달", `${stats.invited} / ${stats.total}`],
           ].map(([k, v]) => (
             <div key={k} className="card px-3 py-2.5">
               <p className="text-[0.75rem] text-fg-3">{k}</p>

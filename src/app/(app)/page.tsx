@@ -1,4 +1,5 @@
 import { Hero } from "@/components/home/Hero";
+import { Notices } from "@/components/home/Notices";
 import { StatCards } from "@/components/home/StatCards";
 import { NextActions } from "@/components/home/NextActions";
 import { BudgetOverview } from "@/components/home/BudgetOverview";
@@ -13,6 +14,7 @@ import { MemoInbox } from "@/components/home/MemoInbox";
 export default function HomePage() {
   return (
     <div className="space-y-4">
+      <Notices />
       <Hero />
       <StatCards />
       <div className="grid gap-4 lg:grid-cols-3">

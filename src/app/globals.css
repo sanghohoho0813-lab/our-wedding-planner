@@ -302,6 +302,8 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow-sm);
+  /* grid/flex 안에서 긴 한 줄 텍스트(truncate) 때문에 카드가 열 너비를 넘지 않게 한다 */
+  min-width: 0;
 }
 @utility card-hover {
   transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;

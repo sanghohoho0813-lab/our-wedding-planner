@@ -501,7 +501,7 @@ def main(path):
     sched = S("일정")
     day_rows = [at(sched, i, 1) for i in range(5, len(sched)) if at(sched, i, 1).strip()]
     audit.append({"sheet": "일정", "source": len(day_rows), "migrated": 0, "skipped": len(day_rows),
-                  "note": "결혼식 당일 진행표에 시간(12:00)만 있고 항목이 비어 있어 이관할 레코드 없음"})
+                  "note": "결혼식 당일 진행표에 시간(12:00)만 있고 항목이 비어 있어 이관할 레코드 없음. 앱의 '당일' 탭에서 이어서 작성. 사회·축사 담당은 할 일 메모에서 결혼 정보로 이관"})
 
     # ---------------- 시트8 (월 생활비) ----------------
     s8 = S("시트8")
@@ -550,6 +550,8 @@ def main(path):
         "details": {
             "bouquet_count": bouquet_count, "boutonniere_count": bout_count,
             "beauty_bride": bride_count, "beauty_extra": extra_count, "beauty_hair_hours": hair_hours,
+            # 원본 할 일 메모 "사회: 강래원오빠  축사: 지언언니" 에서 이관
+            "roles": {"mc": "강래원 오빠", "speech": "지언 언니"},
             "source": "결혼 계획표_공유용",
         },
     }

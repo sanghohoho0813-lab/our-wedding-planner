@@ -1,9 +1,9 @@
 "use client";
 import { AnimatePresence } from "framer-motion";
 import { CheckSquare, Plus, Search } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
-import { useMediaQuery } from "@/lib/hooks";
+import { useMediaQuery, useTabs } from "@/lib/hooks";
 import type { Task } from "@/lib/db/types";
 import { addDays, thisWeekRange, todayISO } from "@/lib/date";
 import { computeProgress } from "@/lib/compute";
@@ -20,13 +20,14 @@ import { TaskDetail } from "./TaskDetail";
 import { TaskRow } from "./TaskRow";
 import { TaskSheet } from "./TaskSheet";
 
-type Filter = "all" | "today" | "week" | "open" | "done" | "favorite";
+type Filter = "all" | "today" | "week" | "undated" | "open" | "done" | "favorite";
 type Sort = "due" | "priority" | "updated";
 
 const FILTERS: { value: Filter; label: string }[] = [
   { value: "all", label: "전체" },
   { value: "today", label: "오늘" },
   { value: "week", label: "이번 주" },
+  { value: "undated", label: "날짜 미정" },
   { value: "open", label: "미완료" },
   { value: "done", label: "완료" },
   { value: "favorite", label: "즐겨찾기" },
@@ -37,12 +38,13 @@ const SORTS: { value: Sort; label: string }[] = [
   { value: "updated", label: "최근 수정순" },
 ];
 const PRIORITY_RANK = { high: 0, normal: 1, low: 2 };
+const FILTER_VALUES = FILTERS.map((f) => f.value);
 
 export function TasksView({ embedded }: { embedded?: boolean } = {}) {
   const params = useSearchParams();
-  const router = useRouter();
   const tasks = useWeddingStore((s) => s.data!.tasks);
-  const filter = (params.get("filter") as Filter) || "all";
+  // 필터는 URL(?filter=)에 남기되 라우팅을 타지 않는다 → 탭 안에서 0ms 전환, 상단 벨·홈 링크로 들어와도 그대로 적용
+  const [filter, setFilter] = useTabs<Filter>(FILTER_VALUES, "all", "filter");
   const [sort, setSort] = useState<Sort>("due");
   const [q, setQ] = useState(params.get("q") ?? "");
   const [category, setCategory] = useState<string | null>(null);
@@ -52,13 +54,6 @@ export function TasksView({ embedded }: { embedded?: boolean } = {}) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const open = (id: string) => (wide ? setSelectedId(id) : setEditId(id));
 
-  const setFilter = (f: Filter) => {
-    const sp = new URLSearchParams(params.toString());
-    if (f === "all") sp.delete("filter");
-    else sp.set("filter", f);
-    router.replace(`/tasks${sp.toString() ? `?${sp}` : ""}`, { scroll: false });
-  };
-
   const today = todayISO();
   const week = thisWeekRange(today);
   const progress = computeProgress(tasks);
@@ -67,6 +62,7 @@ export function TasksView({ embedded }: { embedded?: boolean } = {}) {
     let l = tasks;
     if (filter === "today") l = l.filter((t) => t.status !== "done" && t.due_date && t.due_date <= today);
     else if (filter === "week") l = l.filter((t) => t.status !== "done" && t.due_date && t.due_date >= week.start && t.due_date <= week.end);
+    else if (filter === "undated") l = l.filter((t) => t.status !== "done" && !t.due_date);
     else if (filter === "open") l = l.filter((t) => t.status !== "done");
     else if (filter === "done") l = l.filter((t) => t.status === "done");
     else if (filter === "favorite") l = l.filter((t) => t.is_favorite);

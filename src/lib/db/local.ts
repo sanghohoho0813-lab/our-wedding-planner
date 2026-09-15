@@ -1,4 +1,5 @@
 "use client";
+import { markEdited, takeSnapshot } from "@/lib/backup";
 import { LOCAL_USER_ID, LOCAL_WEDDING_ID } from "@/lib/config";
 import { nowISO } from "@/lib/utils";
 import type { ChangeEvent, DataAdapter, RealtimeStatus } from "./adapter";
@@ -58,8 +59,11 @@ export class LocalAdapter implements DataAdapter {
   private mutate(wid: string, fn: (d: WeddingData) => void) {
     const data = this.read(wid);
     if (!data) throw new Error("로컬 데이터를 찾을 수 없습니다.");
+    // 하루의 첫 수정 직전 상태를 남겨 둔다(그날 아침으로 되돌리기용)
+    takeSnapshot(wid, data, "daily", "하루의 첫 수정 전 자동 저장");
     fn(data);
     this.write(wid, data);
+    markEdited();
   }
 
   async insert<T extends TableName>(table: T, row: TableMap[T]) {
@@ -96,7 +100,10 @@ export class LocalAdapter implements DataAdapter {
   }
 
   async replaceAll(weddingId: string, data: WeddingData) {
+    const before = this.read(weddingId);
+    if (before) takeSnapshot(weddingId, before, "before-replace", "되돌리기 · 비우기 · 복원 직전 자동 저장");
     this.write(weddingId, data);
+    markEdited();
   }
 
   subscribe(weddingId: string, handler: (e: ChangeEvent) => void, onStatus?: (s: RealtimeStatus) => void) {

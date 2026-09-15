@@ -7,7 +7,10 @@ const ctx = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { widt
 const page = await ctx.newPage();
 const errors = [];
 page.on("pageerror", (e) => errors.push("pageerror: " + e.message));
-page.on("console", (m) => { if (m.type() === "error") errors.push("console: " + m.text()); });
+page.on("console", (m) => {
+  // 샌드박스에서 막히는 외부 폰트 CDN 로드 실패는 제외한다(flow.mjs 와 같은 기준)
+  if (m.type() === "error" && !/ERR_TOO_MANY_RETRIES|ERR_CERT|Failed to load resource/.test(m.text())) errors.push("console: " + m.text());
+});
 
 // 네트워크 요청 추적 (전환 때 서버에 다시 묻는지 확인)
 let requests = [];

@@ -17,6 +17,10 @@ export const ORIGINAL_WEDDING = {
     "beauty_bride": 1,
     "beauty_extra": 5,
     "beauty_hair_hours": 3,
+    "roles": {
+      "mc": "강래원 오빠",
+      "speech": "지언 언니"
+    },
     "source": "결혼 계획표_공유용"
   }
 } as const;
@@ -126,7 +130,7 @@ export const MIGRATION_AUDIT: AuditRow[] = [
     "source": 1,
     "migrated": 0,
     "skipped": 1,
-    "note": "결혼식 당일 진행표에 시간(12:00)만 있고 항목이 비어 있어 이관할 레코드 없음"
+    "note": "결혼식 당일 진행표에 시간(12:00)만 있고 항목이 비어 있어 이관할 레코드 없음. 앱의 '당일' 탭에서 이어서 작성. 사회·축사 담당은 할 일 메모에서 결혼 정보로 이관"
   },
   {
     "sheet": "시트8",

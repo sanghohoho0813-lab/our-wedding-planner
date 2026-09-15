@@ -1,11 +1,12 @@
 "use client";
 import { ChevronLeft, ChevronRight, ExternalLink, Plus } from "lucide-react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { collectEvents, type UnifiedEvent } from "@/lib/compute";
 import { formatKoreanDate, formatTime, fromISO, monthGrid, monthLabel, todayISO, daysUntil, formatDDay } from "@/lib/date";
 import { EVENT_TYPE_LABEL } from "@/lib/labels";
+import { useTabs } from "@/lib/hooks";
 import { useWeddingStore } from "@/lib/store/wedding-store";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
@@ -18,6 +19,7 @@ import { EventSheet } from "./EventSheet";
 import { EventTypeIcon } from "./EventTypeIcon";
 
 type View = "list" | "month";
+const VIEWS: readonly View[] = ["list", "month"];
 
 function EventRow({ e, onOpen }: { e: UnifiedEvent; onOpen: (e: UnifiedEvent) => void }) {
   return (
@@ -42,11 +44,10 @@ function EventRow({ e, onOpen }: { e: UnifiedEvent; onOpen: (e: UnifiedEvent) =>
 
 export function CalendarView({ embedded }: { embedded?: boolean } = {}) {
   const params = useSearchParams();
-  const router = useRouter();
   const data = useWeddingStore((s) => s.data!);
   const today = todayISO();
   const initialDate = params.get("date") && /^\d{4}-\d{2}-\d{2}$/.test(params.get("date")!) ? params.get("date")! : today;
-  const [view, setView] = useState<View>((params.get("view") as View) || "list");
+  const [view, changeView] = useTabs<View>(VIEWS, "list", "view");
   const [selected, setSelected] = useState(initialDate);
   const [ym, setYm] = useState({ y: Number(initialDate.slice(0, 4)), m: Number(initialDate.slice(5, 7)) });
   const [showPast, setShowPast] = useState(false);
@@ -64,11 +65,6 @@ export function CalendarView({ embedded }: { embedded?: boolean } = {}) {
   const open = (e: UnifiedEvent) => {
     if (e.editable && e.id) setEditId(e.id);
     else setInfo(e);
-  };
-
-  const changeView = (v: View) => {
-    setView(v);
-    router.replace(`/calendar?view=${v}`, { scroll: false });
   };
 
   const upcomingGroups = useMemo(() => {
