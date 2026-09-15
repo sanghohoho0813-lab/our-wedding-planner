@@ -23,13 +23,20 @@
 
 ## 2. 표(테이블) 만들기
 
-왼쪽 메뉴에서 **SQL Editor → New query** 를 누르고, 저장소의 파일 내용을 **순서대로** 붙여넣어 각각 Run 합니다.
+왼쪽 메뉴에서 **SQL Editor → New query** 를 누르고, 저장소의 **`supabase/setup.sql` 파일 전체**를 붙여넣은 뒤 Run 합니다.
+`Success. No rows returned` 이 나오면 끝입니다. 이 파일 하나에 아래 세 가지가 순서대로 들어 있습니다.
 
-1. `supabase/migrations/0001_init.sql` — 테이블, 권한(RLS), 초대 코드 기능
-2. `supabase/migrations/0002_revision.sql` — 결혼 정보 보조 칸, 날짜 범위 안전장치
-3. `supabase/migrations/0003_realtime.sql` — 실시간 동기화(삭제까지 전달되게)
+| 들어 있는 것 | 하는 일 |
+| --- | --- |
+| `0001_init.sql` | 테이블, 권한(RLS), 초대 코드 기능 |
+| `0002_revision.sql` | 결혼 정보 보조 칸, 날짜 범위 안전장치 |
+| `0003_realtime.sql` | 실시간 동기화 (삭제까지 전달되게) |
 
-세 번째까지 마쳐야 **상대가 지운 항목이 내 화면에서도 사라집니다.** 빠뜨리지 마세요.
+세 번째까지 들어가야 **상대가 지운 항목이 내 화면에서도 사라집니다.** 여러 번 실행해도 안전합니다.
+
+> 파일이 안 보인다면 GitHub에서 브랜치를 **`claude/sharp-bardeen-efzcvf`** 로 바꿔 보세요. 이 저장소에는 아직 그 브랜치만 있습니다.
+> 바로 열기: https://github.com/sanghohoho0813-lab/our-wedding-planner/blob/claude/sharp-bardeen-efzcvf/supabase/setup.sql
+> 복사용 원본: https://raw.githubusercontent.com/sanghohoho0813-lab/our-wedding-planner/claude/sharp-bardeen-efzcvf/supabase/setup.sql
 
 ## 3. 열쇠 두 개 복사하기
 

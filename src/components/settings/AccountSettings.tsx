@@ -100,7 +100,7 @@ export function AccountSettings() {
                 </p>
                 <ol className="list-decimal space-y-1 pl-5 text-fg-2">
                   <li>Supabase 프로젝트를 만듭니다 (무료).</li>
-                  <li>SQL Editor 에서 <code className="rounded bg-surface-2 px-1">0001 → 0002 → 0003</code> 을 실행합니다.</li>
+                  <li>SQL Editor 에 <code className="rounded bg-surface-2 px-1">supabase/setup.sql</code> 전체를 붙여넣고 Run 합니다.</li>
                   <li>URL 과 anon key 를 환경변수에 넣고 다시 배포합니다.</li>
                 </ol>
               </>

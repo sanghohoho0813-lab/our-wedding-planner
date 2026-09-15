@@ -74,7 +74,7 @@ npm run dev
 설정 순서는 [`docs/SUPABASE.md`](docs/SUPABASE.md) 에 15분짜리 단계로 적어두었습니다. 요약하면:
 
 1. Supabase 프로젝트 생성 (무료, Seoul 리전)
-2. SQL Editor 에서 `0001_init.sql` → `0002_revision.sql` → `0003_realtime.sql` 순서로 실행
+2. SQL Editor 에서 **`supabase/setup.sql`** 전체를 붙여넣고 한 번 Run (세 개 마이그레이션이 순서대로 들어 있음)
 3. `NEXT_PUBLIC_SUPABASE_URL` · `NEXT_PUBLIC_SUPABASE_ANON_KEY` 환경변수 등록 후 재배포
 4. 한 사람이 가입하며 원본 데이터를 가져오고, 설정 › 계정에서 **초대 링크**를 상대에게 전달
 
