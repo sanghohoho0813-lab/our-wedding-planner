@@ -7,6 +7,8 @@ export type ChangeEvent =
   | { type: "wedding"; wedding: Wedding }
   | { type: "reload" };
 
+export type RealtimeStatus = "off" | "connecting" | "live" | "error";
+
 export interface DataAdapter {
   readonly mode: "local" | "supabase";
   loadWedding(weddingId: string): Promise<WeddingData>;
@@ -15,5 +17,5 @@ export interface DataAdapter {
   remove(table: TableName, id: string): Promise<void>;
   updateWedding(id: string, patch: Partial<Wedding>): Promise<void>;
   replaceAll?(weddingId: string, data: WeddingData): Promise<void>;
-  subscribe?(weddingId: string, handler: (e: ChangeEvent) => void): () => void;
+  subscribe?(weddingId: string, handler: (e: ChangeEvent) => void, onStatus?: (s: RealtimeStatus) => void): () => void;
 }

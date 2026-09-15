@@ -7,7 +7,7 @@ export const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ""
 export const isSupabaseConfigured = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 export const DEFAULT_WEDDING_DATE =
-  process.env.NEXT_PUBLIC_DEFAULT_WEDDING_DATE ?? "2026-12-21";
+  process.env.NEXT_PUBLIC_DEFAULT_WEDDING_DATE ?? "2026-12-20";
 
 export const LOCAL_USER_ID = "local-user";
 export const LOCAL_WEDDING_ID = "00000000-0000-4000-8000-000000000001";

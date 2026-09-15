@@ -16,5 +16,5 @@ begin
 end $$;
 
 -- 이미 저장된 잘못된 날짜(예: 1900-01-01)는 사용자가 고칠 수 있도록 결혼식 기본값으로 올려둔다.
-update public.weddings set wedding_date = date '2026-12-21'
+update public.weddings set wedding_date = date '2026-12-20'
 where wedding_date < date '1970-01-01' or wedding_date > date '2100-01-01';

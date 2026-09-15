@@ -22,7 +22,7 @@ export function migratedWedding(id: string, createdBy: string | null, inviteCode
     groom_name: ORIGINAL_WEDDING.groom_name,
     bride_name: ORIGINAL_WEDDING.bride_name,
     total_budget: ORIGINAL_WEDDING.total_budget,
-    details: { ...ORIGINAL_WEDDING.details },
+    details: { ...ORIGINAL_WEDDING.details, data_version: DATA_VERSION },
     invite_code: inviteCode,
     created_by: createdBy,
     created_at: ts,
@@ -73,3 +73,22 @@ export function migratedRows(weddingId: string): { table: TableName; rows: Table
 }
 
 export const MIGRATION_TOTAL = MIGRATED_TABLES.reduce((n, t) => n + (ORIGINAL_ROWS[t]?.length ?? 0), 0);
+
+/** 이미 저장된 데이터에 한 번만 적용하는 보정. 사용자가 고친 내용은 건드리지 않는다. */
+export const DATA_VERSION = 2;
+
+export function applyDataFixups(data: WeddingData): { data: WeddingData; changed: boolean } {
+  const current = Number((data.wedding.details as { data_version?: number } | undefined)?.data_version ?? 1);
+  if (current >= DATA_VERSION) return { data, changed: false };
+
+  // v2: 결혼식 날짜를 원본과 같은 2026-12-20(일)로 맞춘다.
+  const OLD = "2026-12-21";
+  const NEW = ORIGINAL_WEDDING.wedding_date;
+  if (data.wedding.wedding_date === OLD) {
+    data.wedding = { ...data.wedding, wedding_date: NEW, wedding_time: data.wedding.wedding_time ?? ORIGINAL_WEDDING.wedding_time };
+  }
+  data.venues = data.venues.map((v) => (v.event_date === OLD ? { ...v, event_date: NEW } : v));
+  data.events = data.events.map((e) => (e.date === OLD ? { ...e, date: NEW } : e));
+  data.wedding = { ...data.wedding, details: { ...(data.wedding.details ?? {}), data_version: DATA_VERSION } };
+  return { data, changed: true };
+}

@@ -6,7 +6,7 @@ export const MIGRATION_SOURCE = "결혼 계획표_공유용";
 export const MIGRATION_GENERATED_AT = "2026-09-15";
 export const ORIGINAL_WEDDING = {
   "name": "우리의 결혼 준비",
-  "wedding_date": "2026-12-21",
+  "wedding_date": "2026-12-20",
   "wedding_time": "13:00",
   "groom_name": "",
   "bride_name": "",
@@ -139,11 +139,6 @@ export const MIGRATION_AUDIT: AuditRow[] = [
 
 export interface MigrationWarning { level: 'high' | 'medium' | 'low'; title: string; detail: string }
 export const MIGRATION_WARNINGS: MigrationWarning[] = [
-  {
-    "level": "high",
-    "title": "결혼식 날짜 확인 필요",
-    "detail": "원본 '할 일' 시트에는 결혼식 일정이 2026.12.20(일) 13:00 으로 적혀 있습니다. 요청하신 2026-12-21(월)로 설정했습니다. 설정 › 결혼 정보에서 바로 바꿀 수 있어요."
-  },
   {
     "level": "medium",
     "title": "야외스냅 날짜 요일 불일치",
@@ -1178,7 +1173,7 @@ export const ORIGINAL_ROWS: Record<string, Rows> = {
       "id": "f9b26a5c-d977-5c0c-8b58-1f521b549f53",
       "name": "연대 동문회관 예식장",
       "address": null,
-      "event_date": "2026-12-21",
+      "event_date": "2026-12-20",
       "event_time": "13:00",
       "is_contracted": true,
       "deposit": 0,

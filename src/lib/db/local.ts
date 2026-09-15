@@ -1,8 +1,8 @@
 "use client";
 import { LOCAL_USER_ID, LOCAL_WEDDING_ID } from "@/lib/config";
 import { nowISO } from "@/lib/utils";
-import type { ChangeEvent, DataAdapter } from "./adapter";
-import { buildMigratedData, emptyData, migratedWedding } from "./migration";
+import type { ChangeEvent, DataAdapter, RealtimeStatus } from "./adapter";
+import { applyDataFixups, buildMigratedData, emptyData, migratedWedding } from "./migration";
 import { TABLE_NAMES, type TableMap, type TableName, type Wedding, type WeddingData } from "./types";
 
 // v2: 원본 결혼계획표 이관 데이터로 교체하면서 키를 올렸다(옛 샘플 데이터와 섞이지 않게).
@@ -36,6 +36,13 @@ export class LocalAdapter implements DataAdapter {
 
   async loadWedding(weddingId: string): Promise<WeddingData> {
     let data = this.read(weddingId);
+    if (data) {
+      const fixed = applyDataFixups(data);
+      if (fixed.changed) {
+        data = fixed.data;
+        this.write(weddingId, data);
+      }
+    }
     if (!data) {
       data = buildMigratedData(weddingId, LOCAL_USER_ID);
       this.write(weddingId, data);
@@ -92,11 +99,12 @@ export class LocalAdapter implements DataAdapter {
     this.write(weddingId, data);
   }
 
-  subscribe(weddingId: string, handler: (e: ChangeEvent) => void) {
+  subscribe(weddingId: string, handler: (e: ChangeEvent) => void, onStatus?: (s: RealtimeStatus) => void) {
     const onStorage = (e: StorageEvent) => {
       if (e.key === KEY(weddingId)) handler({ type: "reload" });
     };
     window.addEventListener("storage", onStorage);
+    onStatus?.("off");
     return () => window.removeEventListener("storage", onStorage);
   }
 

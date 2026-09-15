@@ -33,6 +33,8 @@ await goto("/");
 await page.getByText("우리 결혼식까지").first().waitFor({ timeout: 30000 });
 const d = await store();
 check("원본 할 일 28건 이관", d.tasks.length === 28, `${d.tasks.length}건`);
+check("결혼식 2026-12-20(일) 13:00", d.wedding.wedding_date === "2026-12-20" && d.wedding.wedding_time === "13:00", `${d.wedding.wedding_date} ${d.wedding.wedding_time}`);
+check("계약 식장 예식일도 12-20", d.venues.find((v) => v.is_contracted)?.event_date === "2026-12-20");
 check("원본 하객 43명 이관", d.guests.length === 43, `${d.guests.length}명`);
 check("원본 예산 항목 38건 이관", d.budget_items.length === 38, `${d.budget_items.length}건`);
 check("원본 예산 카테고리 16건 이관", d.budget_categories.length === 16, `${d.budget_categories.length}건`);
@@ -46,7 +48,7 @@ check("샘플 데이터 없음 (가짜 업체 미포함)", !d.vendors.some((v) =
 
 // --- 날짜 ---
 const dday = await page.locator("text=/^D-\\d+$/").first().textContent();
-check("D-Day 정상 계산 (2026-12-21 기준 D-97)", dday === "D-97", dday);
+check("D-Day 정상 계산 (2026-12-20 기준 D-96)", dday === "D-96", dday);
 check("1900년 표시 없음", !(await page.content()).includes("1900"));
 const t1 = await page.locator("text=/오[전후] \\d{2}:\\d{2}:\\d{2}/").first().textContent();
 await page.waitForTimeout(1400);
@@ -154,7 +156,7 @@ await page.getByRole("radio", { name: "보통" }).click();
 // --- 데이터 관리: Audit 표 ---
 await goto("/settings/data");
 check("이관 Audit 표 노출", (await page.getByText("원본 결혼계획표 이관 결과").count()) > 0 && (await page.getByText("하객 목록").count()) > 0);
-check("확인 필요 항목 안내", (await page.getByText("결혼식 날짜 확인 필요").count()) > 0);
+check("확인 필요 항목 안내", (await page.getByText("만원 단위").count()) > 0);
 
 // --- 검색 ---
 await goto("/search?q=스냅");
@@ -169,7 +171,7 @@ const mp = await m.newPage();
 mp.on("pageerror", (e) => errors.push("mobile pageerror: " + e.message));
 await mp.goto(base + "/", { waitUntil: "domcontentloaded", timeout: 60000 });
 await mp.getByText("우리 결혼식까지").first().waitFor({ timeout: 30000 });
-check("모바일 홈 D-Day", (await mp.locator("text=/^D-\\d+$/").first().textContent()) === "D-97");
+check("모바일 홈 D-Day", (await mp.locator("text=/^D-\\d+$/").first().textContent()) === "D-96");
 await mp.getByRole("button", { name: "전체 메뉴" }).first().click();
 await mp.waitForTimeout(400);
 check("모바일 전체 메뉴 Drawer", (await mp.getByRole("dialog", { name: "전체 메뉴" }).count()) > 0);

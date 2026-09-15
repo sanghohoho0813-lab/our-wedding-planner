@@ -1,6 +1,6 @@
 "use client";
 import { create } from "zustand";
-import type { ChangeEvent, DataAdapter } from "@/lib/db/adapter";
+import type { ChangeEvent, DataAdapter, RealtimeStatus } from "@/lib/db/adapter";
 import { DEFAULTS, type DataTable, type RowValues } from "@/lib/db/defaults";
 import type { ActivityLog, TableMap, TableName, Wedding, WeddingData } from "@/lib/db/types";
 import { ENTITY_LABEL, VENDOR_CATEGORY_LABEL } from "@/lib/labels";
@@ -27,6 +27,7 @@ interface WeddingState {
   adapter: DataAdapter | null;
   pending: number;
   lastSavedAt: number | null;
+  realtime: RealtimeStatus;
   init: (adapter: DataAdapter, weddingId: string, userId: string) => Promise<void>;
   reload: () => Promise<void>;
   add: <T extends DataTable>(table: T, values: Partial<RowValues<T>> & { id?: string }, opts?: MutateOpts) => TableMap[T];
@@ -197,6 +198,7 @@ export const useWeddingStore = create<WeddingState>((set, get) => {
     adapter: null,
     pending: 0,
     lastSavedAt: null,
+    realtime: "off",
 
     async init(adapter, weddingId, userId) {
       set({ status: "loading", adapter, weddingId, userId, error: null });
@@ -204,7 +206,7 @@ export const useWeddingStore = create<WeddingState>((set, get) => {
         const data = await adapter.loadWedding(weddingId);
         set({ data, status: "ready" });
         unsubscribe?.();
-        unsubscribe = adapter.subscribe?.(weddingId, applyChange) ?? null;
+        unsubscribe = adapter.subscribe?.(weddingId, applyChange, (realtime) => set({ realtime })) ?? null;
       } catch (err) {
         console.error(err);
         set({ status: "error", error: err instanceof Error ? err.message : "데이터를 불러오지 못했어요." });

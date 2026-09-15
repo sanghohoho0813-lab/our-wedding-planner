@@ -7,6 +7,8 @@ import { computeNextActions, overdueTasks } from "@/lib/compute";
 import { PAGE_TITLES } from "@/lib/nav";
 import { useUIStore } from "@/lib/store/ui-store";
 import { useWeddingStore } from "@/lib/store/wedding-store";
+import { isSupabaseConfigured } from "@/lib/config";
+import { cn } from "@/lib/utils";
 import { IconButton } from "@/components/ui/Button";
 import { SaveIndicator } from "@/components/ui/SaveIndicator";
 import { Logo } from "./Logo";
@@ -25,6 +27,7 @@ export function TopBar() {
   const setDrawer = useUIStore((s) => s.setDrawer);
   const tasks = useWeddingStore((s) => s.data?.tasks ?? EMPTY_TASKS);
   const wedding = useWeddingStore((s) => s.data?.wedding);
+  const realtime = useWeddingStore((s) => s.realtime);
   const [q, setQ] = useState("");
   const isHome = pathname === "/";
   const title = titleFor(pathname);
@@ -86,8 +89,18 @@ export function TopBar() {
             href="/settings/account"
             className="ml-1 hidden items-center gap-2 rounded-full border border-line bg-surface py-1 pl-1 pr-3.5 text-[0.875rem] text-fg-2 transition-colors hover:border-line-strong hover:text-fg lg:flex"
           >
-            <span className="inline-flex size-7 items-center justify-center rounded-full bg-accent-soft text-[0.8125rem] font-bold text-accent-text">
+            <span className="relative inline-flex size-7 items-center justify-center rounded-full bg-accent-soft text-[0.8125rem] font-bold text-accent-text">
               {(wedding?.groom_name?.[0] ?? "우") + (wedding?.bride_name?.[0] ?? "")}
+              {isSupabaseConfigured && (
+                <span
+                  aria-hidden
+                  title={realtime === "live" ? "실시간 연결됨" : realtime === "connecting" ? "연결 중" : "연결 끊김"}
+                  className={cn(
+                    "absolute -right-0.5 -bottom-0.5 size-2.5 rounded-full border-2 border-surface",
+                    realtime === "live" ? "bg-success" : realtime === "connecting" ? "bg-warning" : "bg-fg-3",
+                  )}
+                />
+              )}
             </span>
             <span className="max-w-36 truncate">{wedding?.name ?? "우리의 결혼 준비"}</span>
           </Link>

@@ -1,5 +1,5 @@
 "use client";
-import { Copy, LogOut, Users } from "lucide-react";
+import { Check, Copy, Link2, LogOut, RefreshCw, Users, Wifi, WifiOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { isSupabaseConfigured } from "@/lib/config";
@@ -16,8 +16,11 @@ export function AccountSettings() {
   const ws = useWorkspace();
   const email = ws.email;
   const wedding = useWeddingStore((s) => s.data!.wedding);
+  const realtime = useWeddingStore((s) => s.realtime);
+  const reload = useWeddingStore((s) => s.reload);
   const router = useRouter();
   const [members, setMembers] = useState<number | null>(null);
+  const [copied, setCopied] = useState<"code" | "link" | null>(null);
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
@@ -27,12 +30,14 @@ export function AccountSettings() {
     });
   }, [wedding.id]);
 
-  const copyCode = async () => {
+  const copy = async (text: string, kind: "code" | "link") => {
     try {
-      await navigator.clipboard.writeText(wedding.invite_code);
-      toast("초대 코드를 복사했어요.", { tone: "success" });
+      await navigator.clipboard.writeText(text);
+      setCopied(kind);
+      setTimeout(() => setCopied(null), 2000);
+      toast(kind === "code" ? "초대 코드를 복사했어요." : "초대 링크를 복사했어요.", { tone: "success" });
     } catch {
-      toast(`초대 코드: ${wedding.invite_code}`);
+      toast(text);
     }
   };
 
@@ -43,11 +48,66 @@ export function AccountSettings() {
     router.refresh();
   };
 
+  const inviteLink = typeof window !== "undefined" ? `${window.location.origin}/onboarding?code=${wedding.invite_code}` : "";
+  const rt = {
+    live: { tone: "success" as const, icon: <Wifi className="size-3.5" />, label: "실시간 연결됨" },
+    connecting: { tone: "warning" as const, icon: <RefreshCw className="size-3.5 animate-spin" />, label: "연결 중" },
+    error: { tone: "danger" as const, icon: <WifiOff className="size-3.5" />, label: "연결 끊김" },
+    off: { tone: "neutral" as const, icon: <WifiOff className="size-3.5" />, label: "실시간 꺼짐" },
+  }[realtime];
+
   return (
     <div>
-      <PageHeader title="계정" description="로그인 정보와 파트너 초대" />
+      <PageHeader title="계정" description="로그인 정보와 함께 쓰기" />
       <SettingsNav />
-      <div className="grid gap-4 lg:grid-cols-2">
+      <div className="grid gap-4 xl:grid-cols-2">
+        <Card>
+          <CardHeader title="함께 쓰기" icon={<Users />} subtitle="두 사람이 같은 화면을 봅니다" action={isSupabaseConfigured ? <Badge tone={rt.tone} icon={rt.icon}>{rt.label}</Badge> : undefined} />
+          <div className="space-y-3 px-5 pb-5 text-[0.9375rem]">
+            {isSupabaseConfigured ? (
+              <>
+                <p className="text-fg-2">
+                  현재 멤버 <b className="text-fg">{members ?? "…"}명</b> / 최대 2명. 한 사람이 고치면 상대 화면에 바로 반영돼요.
+                </p>
+                <div className="rounded-[14px] border border-line bg-surface-2/60 p-4">
+                  <p className="text-[0.8125rem] font-medium text-fg-2">초대 코드</p>
+                  <div className="mt-2 flex items-center gap-2">
+                    <code className="flex-1 rounded-[12px] border border-line bg-surface px-4 py-3 text-center text-[1.375rem] font-bold tracking-[0.3em] text-fg">{wedding.invite_code}</code>
+                    <Button variant="secondary" onClick={() => copy(wedding.invite_code, "code")} aria-label="초대 코드 복사">
+                      {copied === "code" ? <Check className="size-4" /> : <Copy className="size-4" />}
+                    </Button>
+                  </div>
+                  <Button variant="ghost" full className="mt-2" onClick={() => copy(inviteLink, "link")}>
+                    {copied === "link" ? <Check className="size-4" /> : <Link2 className="size-4" />} 초대 링크 복사
+                  </Button>
+                </div>
+                <ol className="list-decimal space-y-1 pl-5 text-fg-2">
+                  <li>상대에게 초대 링크를 보냅니다.</li>
+                  <li>상대가 회원가입을 합니다.</li>
+                  <li>코드가 미리 채워진 화면에서 참여하기를 누르면 끝입니다.</li>
+                </ol>
+                {realtime !== "live" && (
+                  <Button variant="outline" full onClick={() => reload()}>
+                    <RefreshCw className="size-4" /> 지금 새로 불러오기
+                  </Button>
+                )}
+              </>
+            ) : (
+              <>
+                <Badge tone="warning">로컬 저장 모드</Badge>
+                <p className="text-fg-2">
+                  지금은 이 기기에만 저장돼서 두 사람이 같이 볼 수 없어요. 함께 쓰려면 Supabase를 연결해야 합니다. 저장소의 <code className="rounded bg-surface-2 px-1">docs/SUPABASE.md</code> 에 순서대로 적어두었어요.
+                </p>
+                <ol className="list-decimal space-y-1 pl-5 text-fg-2">
+                  <li>Supabase 프로젝트를 만듭니다 (무료).</li>
+                  <li>SQL Editor 에서 <code className="rounded bg-surface-2 px-1">0001 → 0002 → 0003</code> 을 실행합니다.</li>
+                  <li>URL 과 anon key 를 환경변수에 넣고 다시 배포합니다.</li>
+                </ol>
+              </>
+            )}
+          </div>
+        </Card>
+
         <Card>
           <CardHeader title="내 계정" />
           <div className="space-y-3 px-5 pb-5 text-[0.9375rem]">
@@ -61,38 +121,7 @@ export function AccountSettings() {
                 </Button>
               </>
             ) : (
-              <>
-                <Badge tone="warning">로컬 저장 모드</Badge>
-                <p className="text-fg-2">로그인 없이 이 기기에만 저장 중이에요. 두 사람이 함께 쓰려면 Supabase를 연결하세요.</p>
-                <ol className="list-decimal space-y-1 pl-5 text-fg-2">
-                  <li>Supabase 프로젝트 생성 후 SQL 편집기에서 <code className="rounded bg-surface-2 px-1">supabase/migrations/0001_init.sql</code> 실행</li>
-                  <li>
-                    <code className="rounded bg-surface-2 px-1">NEXT_PUBLIC_SUPABASE_URL</code>, <code className="rounded bg-surface-2 px-1">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> 환경변수 설정
-                  </li>
-                  <li>재배포하면 로그인 · 공유 · 실시간 동기화가 켜져요</li>
-                </ol>
-              </>
-            )}
-          </div>
-        </Card>
-        <Card>
-          <CardHeader title="파트너 초대" icon={<Users />} subtitle="같은 공간에서 함께 기록해요" />
-          <div className="space-y-3 px-5 pb-5 text-[0.9375rem]">
-            {isSupabaseConfigured ? (
-              <>
-                <p className="text-fg-2">
-                  현재 멤버 <b className="text-fg">{members ?? "…"}명</b> / 최대 2명
-                </p>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 rounded-[12px] border border-line bg-surface-2 px-4 py-3 text-center text-[1.375rem] font-bold tracking-[0.3em] text-fg">{wedding.invite_code}</code>
-                  <Button variant="secondary" onClick={copyCode} aria-label="초대 코드 복사">
-                    <Copy className="size-4" />
-                  </Button>
-                </div>
-                <p className="text-fg-3">파트너가 회원가입 후 “초대 코드로 참여”에 이 코드를 입력하면 같은 데이터를 함께 수정할 수 있어요.</p>
-              </>
-            ) : (
-              <p className="text-fg-2">Supabase 연결 후 초대 코드가 생성돼요.</p>
+              <p className="text-fg-2">로컬 저장 모드에서는 로그인이 필요 없어요. 데이터는 이 브라우저에만 있습니다.</p>
             )}
           </div>
         </Card>

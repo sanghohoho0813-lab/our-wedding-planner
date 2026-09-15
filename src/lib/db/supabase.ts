@@ -1,6 +1,6 @@
 "use client";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { ChangeEvent, DataAdapter } from "./adapter";
+import type { ChangeEvent, DataAdapter, RealtimeStatus } from "./adapter";
 import { TABLE_NAMES, type TableMap, type TableName, type Wedding, type WeddingData } from "./types";
 
 export class SupabaseAdapter implements DataAdapter {
@@ -48,7 +48,7 @@ export class SupabaseAdapter implements DataAdapter {
     if (error) throw error;
   }
 
-  subscribe(weddingId: string, handler: (e: ChangeEvent) => void) {
+  subscribe(weddingId: string, handler: (e: ChangeEvent) => void, onStatus?: (s: RealtimeStatus) => void) {
     const channel = this.sb.channel(`wedding:${weddingId}`);
     for (const table of TABLE_NAMES) {
       channel.on(
@@ -66,8 +66,14 @@ export class SupabaseAdapter implements DataAdapter {
       { event: "UPDATE", schema: "public", table: "weddings", filter: `id=eq.${weddingId}` },
       (payload) => handler({ type: "wedding", wedding: payload.new as Wedding }),
     );
-    channel.subscribe();
+    onStatus?.("connecting");
+    channel.subscribe((status) => {
+      if (status === "SUBSCRIBED") onStatus?.("live");
+      else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") onStatus?.("error");
+      else if (status === "CLOSED") onStatus?.("off");
+    });
     return () => {
+      onStatus?.("off");
       this.sb.removeChannel(channel);
     };
   }

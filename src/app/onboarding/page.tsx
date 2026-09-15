@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { isSupabaseConfigured } from "@/lib/config";
 import { getSupabaseServer } from "@/lib/supabase/server";
 import { Logo } from "@/components/layout/Logo";
+import { Suspense } from "react";
 import { OnboardingForm } from "@/components/shared/OnboardingForm";
 
 export const metadata = { title: "시작하기" };
@@ -22,7 +23,7 @@ export default async function OnboardingPage() {
         <Logo size="lg" className="inline-block" />
       </div>
       <div className="card w-full max-w-md p-6 sm:p-7">
-        <OnboardingForm />
+        <Suspense><OnboardingForm /></Suspense>
       </div>
     </div>
   );

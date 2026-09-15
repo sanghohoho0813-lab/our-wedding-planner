@@ -1,5 +1,5 @@
 "use client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { DEFAULT_WEDDING_DATE } from "@/lib/config";
 import { migratedRows, ORIGINAL_WEDDING } from "@/lib/db/migration";
@@ -13,14 +13,16 @@ import { Toggle } from "@/components/ui/Toggle";
 
 export function OnboardingForm() {
   const router = useRouter();
-  const [tab, setTab] = useState<"create" | "join">("create");
+  const params = useSearchParams();
+  const invited = (params.get("code") ?? "").toUpperCase();
+  const [tab, setTab] = useState<"create" | "join">(invited ? "join" : "create");
   const [name, setName] = useState<string>(ORIGINAL_WEDDING.name);
   const [date, setDate] = useState<string | null>(ORIGINAL_WEDDING.wedding_date || DEFAULT_WEDDING_DATE);
   const [groom, setGroom] = useState("");
   const [bride, setBride] = useState("");
   const [budget, setBudget] = useState<number>(ORIGINAL_WEDDING.total_budget);
   const [seed, setSeed] = useState(true);
-  const [code, setCode] = useState("");
+  const [code, setCode] = useState(invited);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
@@ -114,7 +116,7 @@ export function OnboardingForm() {
         </div>
       ) : (
         <div className="space-y-4">
-          <FieldRow label="초대 코드" hint="파트너의 설정 › 계정 화면에서 확인할 수 있어요.">
+          <FieldRow label="초대 코드" hint={invited ? "초대 링크에서 받은 코드예요. 참여하기만 누르면 됩니다." : "파트너의 설정 › 계정 화면에서 확인할 수 있어요."}>
             <input className={`${inputCls} uppercase tracking-widest`} value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="ABCD1234" maxLength={8} />
           </FieldRow>
           {err && <p className="rounded-[10px] bg-danger-soft px-3 py-2 text-[0.875rem] text-danger">{err}</p>}
