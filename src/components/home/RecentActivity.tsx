@@ -1,8 +1,8 @@
 "use client";
-import { Activity, Pencil, Plus, Trash2 } from "lucide-react";
-import { relativeTime } from "@/lib/date";
+import { Activity } from "lucide-react";
 import { useNow } from "@/lib/hooks";
 import { useWeddingStore } from "@/lib/store/wedding-store";
+import { ActivityRow } from "./ActivityRow";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { useUIStore } from "@/lib/store/ui-store";
@@ -10,6 +10,8 @@ import { EmptyState } from "@/components/ui/EmptyState";
 
 export function RecentActivity({ limit = 6 }: { limit?: number }) {
   const logs = useWeddingStore((s) => s.data!.activity_logs);
+  const wedding = useWeddingStore((s) => s.data!.wedding);
+  const meId = useWeddingStore((s) => s.userId);
   const setSheet = useUIStore((st) => st.setHomeSheet);
   const now = useNow(30_000);
   const list = [...logs].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, limit);
@@ -21,15 +23,7 @@ export function RecentActivity({ limit = 6 }: { limit?: number }) {
       ) : (
         <ul className="space-y-1 px-5 pb-5">
           {list.map((l) => (
-            <li key={l.id} className="flex items-start gap-3 py-1.5">
-              <span className="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-surface-2 text-fg-3 [&>svg]:size-3.5">
-                {l.action === "create" ? <Plus /> : l.action === "delete" ? <Trash2 /> : <Pencil />}
-              </span>
-              <div className="min-w-0 flex-1">
-                <p className="text-[0.9375rem] text-fg leading-snug">{l.description}</p>
-                <p className="text-[0.75rem] text-fg-3">{now ? relativeTime(l.created_at, now) : ""}</p>
-              </div>
-            </li>
+            <ActivityRow key={l.id} log={l} wedding={wedding} meId={meId} now={now} className="py-1.5" />
           ))}
         </ul>
       )}

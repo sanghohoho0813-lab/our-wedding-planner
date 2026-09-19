@@ -131,6 +131,12 @@ check("하객 통계 갱신", (await page.getByText(/참석 확정 1명/).count(
 
 // --- 삭제 + 실행 취소 ---
 await nav("할 일 · 일정", "할 일 추가");
+// 완료한 일은 접혀 있으므로 펼치고 찾는다
+const doneToggle = page.locator("button[aria-expanded]").filter({ hasText: "완료" }).first();
+if ((await doneToggle.count()) > 0 && (await doneToggle.getAttribute("aria-expanded")) === "false") {
+  await doneToggle.click();
+  await page.waitForTimeout(300);
+}
 await page.getByText("QA 테스트 할 일").first().click();
 await page.waitForTimeout(400);
 await page.locator("aside").getByRole("button", { name: "삭제" }).click();
@@ -225,6 +231,66 @@ await page.waitForTimeout(400);
 const snoozed = await page.evaluate(() => localStorage.getItem("owp:backupNudgeSnoozedUntil"));
 check("'나중에' → 7일 스누즈 저장 + 배너 사라짐", !!snoozed && (await page.getByText(/이 브라우저에만 저장되고 있어요/).count()) === 0);
 
+// --- 홈: 오늘 카드 ---
+await nav("홈", "우리 결혼식까지");
+check("홈에 '오늘' 카드", (await page.getByRole("heading", { name: /^오늘/ }).count()) > 0);
+check("오늘 카드가 마감/일정 또는 '여유 있는 날'을 알려줌",
+  (await page.getByText(/지난 마감 \d+개|오늘 마감 \d+개|여유 있는 날이에요/).count()) > 0);
+check("최근 활동에 누가 했는지 표시", (await page.getByText("나 ·").count()) > 0);
+const wideOverflow = await page.evaluate(() => ({ inner: window.innerWidth, scroll: document.documentElement.scrollWidth }));
+check("데스크톱 홈 가로 넘침 없음", wideOverflow.scroll <= wideOverflow.inner, JSON.stringify(wideOverflow));
+
+// --- 할 일: 한 줄 추가 ---
+await nav("할 일 · 일정", "할 일 추가");
+await page.getByPlaceholder("할 일 한 줄로 추가").fill("한 줄 추가 테스트");
+await page.getByPlaceholder("할 일 한 줄로 추가").press("Enter");
+await page.waitForTimeout(600);
+const dInline = await store();
+check("할 일 한 줄 추가 (시트 없이 엔터로)", dInline.tasks.some((t) => t.title === "한 줄 추가 테스트"));
+check("추가 후 입력칸이 비워짐", (await page.getByPlaceholder("할 일 한 줄로 추가").inputValue()) === "");
+check("'내 담당' 필터는 신랑/신부를 정하기 전에는 숨김",
+  (await page.getByRole("button", { name: "내 담당", exact: true }).count()) === 0);
+
+// --- 설정 › 계정: 나는 신랑/신부 → 내 담당 필터가 생긴다 ---
+await goto("/settings/account");
+await page.getByText("나는 누구인가요?").first().waitFor({ timeout: 15000 });
+await page.getByLabel("내 이름").fill("상호");
+await page.getByRole("radio", { name: /^신랑/ }).click();
+await page.waitForTimeout(700);
+const dMe = await store();
+const membersMap = dMe.wedding.details?.members ?? {};
+const meEntry = Object.values(membersMap)[0];
+check("설정에서 이름 · 신랑/신부 저장", meEntry?.name === "상호" && meEntry?.side === "groom", JSON.stringify(meEntry));
+await goto("/plan");
+await page.getByPlaceholder("할 일 한 줄로 추가").waitFor({ timeout: 15000 });
+check("정하고 나면 '내 담당' 필터가 생김", (await page.getByRole("button", { name: "내 담당", exact: true }).count()) > 0);
+const doneGroup = page.locator("button[aria-expanded]").filter({ hasText: "완료" }).first();
+check("완료한 일은 기본으로 접혀 있음", (await doneGroup.getAttribute("aria-expanded")) === "false");
+await doneGroup.click();
+await page.waitForTimeout(300);
+check("완료 그룹을 펼칠 수 있음", (await doneGroup.getAttribute("aria-expanded")) === "true" && (await page.getByText("신랑 부모님께 인사드리기").count()) > 0);
+await page.getByRole("button", { name: "내 담당", exact: true }).click();
+await page.waitForTimeout(400);
+const mineCount = await page.locator("li").filter({ has: page.getByRole("checkbox") }).count();
+check("내 담당 필터가 목록을 좁힘", mineCount > 0 && mineCount < dMe.tasks.length, `${mineCount}건`);
+await page.getByRole("button", { name: "전체", exact: true }).click();
+await page.waitForTimeout(300);
+
+// --- 하객: 그룹 접기 + 한 줄 추가 ---
+await nav("하객 · 초대", "신부측");
+const groupBtn = page.getByRole("button", { name: /신부측 · 학교 동창/ }).first();
+check("하객 그룹 머리글이 접기 버튼", (await groupBtn.count()) > 0 && (await groupBtn.getAttribute("aria-expanded")) === "true");
+await groupBtn.click();
+await page.waitForTimeout(300);
+check("그룹을 접으면 명단이 숨겨짐", (await groupBtn.getAttribute("aria-expanded")) === "false" && (await page.getByText("김아름").count()) === 0);
+await groupBtn.click();
+await page.waitForTimeout(300);
+check("다시 펼치면 보임", (await page.getByText("김아름").count()) > 0);
+await page.getByPlaceholder("이름만 적어 하객 추가").fill("한줄하객");
+await page.getByPlaceholder("이름만 적어 하객 추가").press("Enter");
+await page.waitForTimeout(600);
+check("하객 한 줄 추가", (await store()).guests.some((g) => g.name === "한줄하객"));
+
 // --- 데이터 관리: Audit 표 ---
 await goto("/settings/data");
 check("이관 Audit 표 노출", (await page.getByText("원본 결혼계획표 이관 결과").count()) > 0 && (await page.getByText("하객 목록").count()) > 0);
@@ -305,6 +371,40 @@ for (const path of ["/plan", "/budget", "/wedding", "/guests", "/honeymoon", "/s
   const o = await mp.evaluate(() => ({ inner: window.innerWidth, scroll: document.documentElement.scrollWidth }));
   check(`모바일 ${path} 가로 넘침 없음`, o.inner === 390 && o.scroll === 390, JSON.stringify(o));
 }
+
+// ---------------- 스와이프 (움직임 최소화를 끈 기기) ----------------
+const sw = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 390, height: 844 }, locale: "ko-KR", timezoneId: "Asia/Seoul", hasTouch: true, isMobile: true, reducedMotion: "no-preference" });
+const sp = await sw.newPage();
+sp.on("pageerror", (e) => errors.push("swipe pageerror: " + e.message));
+const swStore = () => sp.evaluate(() => JSON.parse(localStorage.getItem("owp:data:v2:00000000-0000-4000-8000-000000000001")));
+const swipeRow = async (title, dir) => {
+  const row = sp.locator("li").filter({ hasText: title }).first();
+  // 상단 고정 헤더에 가리지 않도록 화면 한가운데로 보낸다
+  await row.evaluate((el) => el.scrollIntoView({ block: "center" }));
+  await sp.waitForTimeout(500);
+  const b = await row.boundingBox();
+  const x0 = dir > 0 ? b.x + 50 : b.x + b.width - 50;
+  await sp.mouse.move(x0, b.y + b.height / 2);
+  await sp.mouse.down();
+  for (let i = 1; i <= 12; i++) await sp.mouse.move(x0 + dir * i * 16, b.y + b.height / 2, { steps: 3 });
+  await sp.waitForTimeout(120);
+  await sp.mouse.up();
+  await sp.waitForTimeout(800);
+};
+await sp.goto(base + "/plan", { waitUntil: "domcontentloaded", timeout: 60000 });
+await sp.getByPlaceholder("할 일 한 줄로 추가").waitFor({ timeout: 30000 });
+const swBefore = (await swStore()).tasks.find((t) => t.title === "반지 맞추기");
+await swipeRow("반지 맞추기", 1);
+const swAfter = (await swStore()).tasks.find((t) => t.title === "반지 맞추기");
+check("오른쪽으로 밀어 완료 처리", swBefore.status !== "done" && swAfter.status === "done", `${swBefore.status} → ${swAfter.status}`);
+await swipeRow("신혼집 구하기", -1);
+check("왼쪽으로 밀어 마감일 시트", (await sp.getByText("마감일 변경").count()) > 0);
+await sp.keyboard.press("Escape");
+await sp.waitForTimeout(400);
+await sp.locator("li").filter({ hasText: "신혼집 구하기" }).first().getByText("신혼집 구하기").click();
+await sp.waitForTimeout(600);
+check("스와이프를 넣어도 탭으로 상세가 열림", (await sp.getByRole("dialog").count()) > 0);
+await sw.close();
 
 console.log("\nERRORS:", errors.length ? errors.slice(0, 6) : "none");
 const passed = results.filter((r) => r.ok).length;

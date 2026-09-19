@@ -1,5 +1,5 @@
 "use client";
-import { Activity, Pencil, Plus, Star, StickyNote, Trash2 } from "lucide-react";
+import { Activity, Plus, Star, StickyNote, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { relativeTime } from "@/lib/date";
@@ -9,6 +9,7 @@ import { useWeddingStore } from "@/lib/store/wedding-store";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Sheet } from "@/components/ui/Sheet";
+import { ActivityRow } from "@/components/home/ActivityRow";
 import { MemoSheet } from "@/components/memos/MemoSheet";
 import { useFavorites } from "@/components/home/Favorites";
 
@@ -18,6 +19,8 @@ export function HomeSheets() {
   const setSheet = useUIStore((s) => s.setHomeSheet);
   const memos = useWeddingStore((s) => s.data!.memos);
   const logs = useWeddingStore((s) => s.data!.activity_logs);
+  const wedding = useWeddingStore((s) => s.data!.wedding);
+  const meId = useWeddingStore((s) => s.userId);
   const remove = useWeddingStore((s) => s.remove);
   const favs = useFavorites();
   const now = useNow(30_000);
@@ -83,15 +86,7 @@ export function HomeSheets() {
         ) : (
           <ul className="divide-y divide-line">
             {[...logs].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 80).map((l) => (
-              <li key={l.id} className="flex items-start gap-3 py-3">
-                <span className="mt-0.5 inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-surface-2 text-fg-3 [&>svg]:size-3.5">
-                  {l.action === "create" ? <Plus /> : l.action === "delete" ? <Trash2 /> : <Pencil />}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[0.9375rem] text-fg">{l.description}</p>
-                  <p className="text-[0.75rem] text-fg-3">{now ? relativeTime(l.created_at, now) : ""}</p>
-                </div>
-              </li>
+              <ActivityRow key={l.id} log={l} wedding={wedding} meId={meId} now={now} className="py-3" />
             ))}
           </ul>
         )}

@@ -4,20 +4,27 @@ import { CalendarClock, CalendarX2, CheckSquare } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { computeNextActions } from "@/lib/compute";
+import { mySide } from "@/lib/members";
 import { formatDDay } from "@/lib/date";
 import { useWeddingStore } from "@/lib/store/wedding-store";
 import { nowISO } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
 import { Card, CardHeader } from "@/components/ui/Card";
+import { Chip } from "@/components/ui/Chip";
 import { CheckCircle } from "@/components/ui/CheckCircle";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { TaskSheet } from "@/components/tasks/TaskSheet";
 import { QuickDateSheet } from "@/components/tasks/QuickDateSheet";
 
 export function NextActions({ limit = 5 }: { limit?: number }) {
-  const tasks = useWeddingStore((s) => s.data!.tasks);
+  const allTasks = useWeddingStore((s) => s.data!.tasks);
+  const wedding = useWeddingStore((s) => s.data!.wedding);
+  const meId = useWeddingStore((s) => s.userId);
   const patch = useWeddingStore((s) => s.patch);
+  const side = mySide(wedding, meId);
+  const [onlyMine, setOnlyMine] = useState(false);
+  const tasks = onlyMine && side ? allTasks.filter((t) => t.assignee === side || t.assignee === "both") : allTasks;
   const [editId, setEditId] = useState<string | null>(null);
   const [dateId, setDateId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -26,7 +33,23 @@ export function NextActions({ limit = 5 }: { limit?: number }) {
 
   return (
     <Card className="flex flex-col">
-      <CardHeader title="지금 해야 할 일" icon={<CheckSquare />} href="/plan" />
+      <CardHeader
+        title="지금 해야 할 일"
+        icon={<CheckSquare />}
+        href={side ? undefined : "/plan"}
+        action={
+          side ? (
+            <div className="flex shrink-0 gap-1">
+              <Chip size="sm" active={!onlyMine} onClick={() => setOnlyMine(false)}>
+                전체
+              </Chip>
+              <Chip size="sm" active={onlyMine} onClick={() => setOnlyMine(true)}>
+                내 담당
+              </Chip>
+            </div>
+          ) : undefined
+        }
+      />
       {items.length === 0 ? (
         <EmptyState compact title="남은 할 일이 없어요" description="새로운 할 일을 추가해 준비를 이어가요." actionLabel="할 일 추가" onAction={() => setCreating(true)} />
       ) : (

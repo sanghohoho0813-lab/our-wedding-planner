@@ -1,0 +1,28 @@
+import { chromium } from "playwright";
+const base = "http://localhost:3001";
+const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });
+const ctx = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, locale: "ko-KR", reducedMotion: "no-preference" });
+const page = await ctx.newPage();
+const swipe = async (title, dir) => {
+  const row = page.locator("li").filter({ hasText: title }).first();
+  await row.scrollIntoViewIfNeeded();
+  await page.waitForTimeout(500);
+  const box = await row.boundingBox();
+  const x0 = dir > 0 ? box.x + 50 : box.x + box.width - 50;
+  await page.mouse.move(x0, box.y + box.height / 2);
+  await page.mouse.down();
+  for (let i = 1; i <= 12; i++) await page.mouse.move(x0 + dir * i * 16, box.y + box.height / 2, { steps: 3 });
+  await page.waitForTimeout(120);
+  await page.mouse.up();
+  await page.waitForTimeout(900);
+};
+await page.goto(base + "/plan", { waitUntil: "domcontentloaded" });
+await page.getByPlaceholder("할 일 한 줄로 추가").waitFor({ timeout: 30000 });
+await swipe("신혼집 구하기", -1);
+console.log("왼쪽으로 밀기 → 마감일 시트:", (await page.getByText("마감일 변경").count()) > 0 ? "열림" : "안 열림");
+await page.keyboard.press("Escape");
+await page.waitForTimeout(500);
+await page.locator("li").filter({ hasText: "신혼집 구하기" }).first().getByText("신혼집 구하기").click();
+await page.waitForTimeout(700);
+console.log("탭 → 상세:", (await page.getByRole("dialog").count()) > 0 ? "열림" : "안 열림");
+await browser.close();

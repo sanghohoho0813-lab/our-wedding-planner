@@ -1,5 +1,5 @@
 "use client";
-import { Plus, Search, Wallet } from "lucide-react";
+import { ChevronDown, Plus, Search, Wallet } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { useMediaQuery } from "@/lib/hooks";
@@ -15,6 +15,7 @@ import { FavoriteButton } from "@/components/ui/FavoriteButton";
 import { inputCls } from "@/components/ui/Field";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { MasterDetail } from "@/components/layout/MasterDetail";
+import { InlineAdd } from "@/components/ui/InlineAdd";
 import { BudgetItemDetail } from "./BudgetItemDetail";
 import { BudgetItemSheet } from "./BudgetItemSheet";
 
@@ -69,12 +70,22 @@ function ItemCard({ s, onOpen, selected }: { s: ItemSummary; onOpen: (id: string
 export function BudgetItemsView({ embedded }: { embedded?: boolean } = {}) {
   const params = useSearchParams();
   const data = useWeddingStore((s) => s.data!);
+  const add = useWeddingStore((s) => s.add);
   const [category, setCategory] = useState<string | null>(params.get("category"));
   const [q, setQ] = useState(params.get("q") ?? "");
   const [sort, setSort] = useState<Sort>("category");
   const [onlyUnpaid, setOnlyUnpaid] = useState(false);
   const [onlyFav, setOnlyFav] = useState(params.get("filter") === "favorite");
   const [showEmpty, setShowEmpty] = useState(false);
+  // 카테고리가 많으면 스크롤이 길어진다. 머리글을 눌러 접을 수 있게 한다.
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const toggleGroup = (key: string) =>
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
   const [editId, setEditId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const wide = useMediaQuery("(min-width: 1280px)");
@@ -128,6 +139,16 @@ export function BudgetItemsView({ embedded }: { embedded?: boolean } = {}) {
         }
       >
         <div className="space-y-2">
+          <InlineAdd
+            placeholder="항목 이름만 적어 추가"
+            onAdd={(name) =>
+              add("budget_items", {
+                name,
+                // 지금 보고 있는 카테고리로 바로 넣는다
+                category_id: category ? data.budget_categories.find((c) => c.name === category)?.id ?? null : null,
+              })
+            }
+          />
           <div className="flex gap-1.5 overflow-x-auto scrollbar-none -mx-1 px-1">
             <Chip size="sm" active={category === null} onClick={() => setCategory(null)}>전체</Chip>
             {cats.map((c) => (
@@ -188,18 +209,31 @@ export function BudgetItemsView({ embedded }: { embedded?: boolean } = {}) {
               {groups.map((g) => (
                 <section key={g.key}>
                   {g.name && (
-                    <div className="mb-2 flex items-center justify-between px-1">
-                      <h2 className="text-[1rem] font-semibold text-fg">{g.name}</h2>
-                      <span className="tabular text-[0.875rem] text-fg-2">
-                        {formatKRW(g.total)} <span className="text-fg-3">· {((g.total / Math.max(b.totalBudget, b.totalEffective, 1)) * 100).toFixed(1)}%</span>
-                      </span>
-                    </div>
+                    <h2 className="mb-2">
+                      <button
+                        type="button"
+                        onClick={() => toggleGroup(g.key)}
+                        aria-expanded={!collapsed.has(g.key)}
+                        className="flex w-full items-center justify-between gap-2 rounded-[10px] px-1 py-1.5 text-left hover:bg-surface-2"
+                      >
+                        <span className="flex min-w-0 items-center gap-1.5">
+                          <ChevronDown className={cn("size-4 shrink-0 text-fg-3 transition-transform", collapsed.has(g.key) && "-rotate-90")} />
+                          <span className="truncate text-[1rem] font-semibold text-fg">{g.name}</span>
+                          <span className="shrink-0 text-[0.8125rem] text-fg-3">{g.items.length}건</span>
+                        </span>
+                        <span className="shrink-0 tabular text-[0.875rem] text-fg-2">
+                          {formatKRW(g.total)} <span className="text-fg-3">· {((g.total / Math.max(b.totalBudget, b.totalEffective, 1)) * 100).toFixed(1)}%</span>
+                        </span>
+                      </button>
+                    </h2>
                   )}
-                  <ul className="grid gap-3 md:grid-cols-2">
-                    {g.items.map((s) => (
-                      <ItemCard key={s.item.id} s={s} onOpen={open} selected={selectedId === s.item.id} />
-                    ))}
-                  </ul>
+                  {!collapsed.has(g.key) && (
+                    <ul className="grid gap-3 md:grid-cols-2">
+                      {g.items.map((s) => (
+                        <ItemCard key={s.item.id} s={s} onOpen={open} selected={selectedId === s.item.id} />
+                      ))}
+                    </ul>
+                  )}
                 </section>
               ))}
             </div>

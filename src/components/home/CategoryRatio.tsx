@@ -13,7 +13,7 @@ export const CATEGORY_COLORS = ["var(--accent)", "var(--sage)", "var(--gold)", "
 
 type Basis = "actual" | "planned";
 
-export function CategoryRatio({ limit = 6, showAmount = false }: { limit?: number; showAmount?: boolean }) {
+export function CategoryRatio({ limit = 6, showAmount = false , className }: { limit?: number; showAmount?: boolean ; className?: string }) {
   const data = useWeddingStore((s) => s.data!);
   const [basis, setBasis] = useState<Basis>("actual");
   const b = computeBudget(data.wedding, data.budget_categories, data.budget_items, data.payments);
@@ -28,7 +28,7 @@ export function CategoryRatio({ limit = 6, showAmount = false }: { limit?: numbe
   const unallocatedPct = basis === "planned" && b.totalBudget > 0 ? (b.unallocated / Math.max(b.totalBudget, b.totalEffective)) * 100 : 0;
   const max = Math.max(1, ...cats.map(pctOf), unallocatedPct);
   return (
-    <Card>
+    <Card className={className}>
       <CardHeader
         title="카테고리별 예산 비율"
         icon={<BarChart3 />}

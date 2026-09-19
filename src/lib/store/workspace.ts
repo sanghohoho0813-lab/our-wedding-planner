@@ -6,12 +6,14 @@ export interface Workspace {
   weddingId: string | null;
   userId: string | null;
   email: string | null;
+  /** 가입할 때 적은 이름(없으면 null) */
+  name: string | null;
   mode: "local" | "supabase";
   state: "loading" | "ready" | "no-workspace" | "signed-out" | "error";
   error?: string;
 }
 
-const LOCAL: Workspace = { weddingId: LOCAL_WEDDING_ID, userId: LOCAL_USER_ID, email: null, mode: "local", state: "ready" };
+const LOCAL: Workspace = { weddingId: LOCAL_WEDDING_ID, userId: LOCAL_USER_ID, email: null, name: null, mode: "local", state: "ready" };
 
 /**
  * 워크스페이스(결혼 공간) 결정.
@@ -40,8 +42,9 @@ export function useWorkspace(): Workspace {
           .maybeSingle();
         if (cancelled) return;
         if (error) return setWs((p) => ({ ...p, state: "error", error: error.message }));
-        if (!member) return setWs({ weddingId: null, userId: auth.user.id, email: auth.user.email ?? null, mode: "supabase", state: "no-workspace" });
-        setWs({ weddingId: member.wedding_id as string, userId: auth.user.id, email: auth.user.email ?? null, mode: "supabase", state: "ready" });
+        const name = (auth.user.user_metadata?.display_name as string | undefined)?.trim() || null;
+        if (!member) return setWs({ weddingId: null, userId: auth.user.id, email: auth.user.email ?? null, name, mode: "supabase", state: "no-workspace" });
+        setWs({ weddingId: member.wedding_id as string, userId: auth.user.id, email: auth.user.email ?? null, name, mode: "supabase", state: "ready" });
       } catch (e) {
         if (!cancelled) setWs((p) => ({ ...p, state: "error", error: e instanceof Error ? e.message : "연결에 실패했어요." }));
       }

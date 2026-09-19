@@ -1,6 +1,6 @@
 "use client";
 import { AnimatePresence, motion } from "framer-motion";
-import { Mail, MessageCircle, Plus, Search, Users } from "lucide-react";
+import { ChevronDown, Mail, MessageCircle, Plus, Search, Users } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { useMediaQuery } from "@/lib/hooks";
@@ -11,6 +11,7 @@ import { useWeddingStore } from "@/lib/store/wedding-store";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
+import { InlineAdd } from "@/components/ui/InlineAdd";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { inputCls } from "@/components/ui/Field";
 import { Segmented } from "@/components/ui/Segmented";
@@ -84,6 +85,7 @@ function GuestRow({ g, onOpen, selected }: { g: Guest; onOpen: (id: string) => v
 export function GuestsView({ embedded }: { embedded?: boolean } = {}) {
   const params = useSearchParams();
   const guests = useWeddingStore((s) => s.data!.guests);
+  const add = useWeddingStore((s) => s.add);
   const [side, setSide] = useState<SideFilter>("all");
   const [rsvp, setRsvp] = useState<RsvpFilter>("all");
   const [q, setQ] = useState(params.get("q") ?? "");
@@ -91,6 +93,15 @@ export function GuestsView({ embedded }: { embedded?: boolean } = {}) {
   const [creating, setCreating] = useState(false);
   const wide = useMediaQuery("(min-width: 1280px)");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // 43명이 한 화면에 쭉 이어지면 찾기 어렵다. 그룹을 접었다 펼 수 있게 한다.
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const toggleGroup = (key: string) =>
+    setCollapsed((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
   const open = (id: string) => (wide ? setSelectedId(id) : setEditId(id));
   const stats = computeGuestStats(guests);
 
@@ -127,6 +138,10 @@ export function GuestsView({ embedded }: { embedded?: boolean } = {}) {
           </Button>
         }
       >
+        <InlineAdd
+          placeholder={side === "all" ? "이름만 적어 하객 추가" : `${side === "groom" ? "신랑측" : "신부측"} 하객 이름 추가`}
+          onAdd={(name) => add("guests", { name, side: side === "all" ? "groom" : side })}
+        />
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 xl:grid-cols-7">
           {[
             ["총 하객", `${stats.total}명`],
@@ -193,19 +208,36 @@ export function GuestsView({ embedded }: { embedded?: boolean } = {}) {
             <div className="space-y-4">
               {groups.map((g) => (
                 <section key={g.key} className="card overflow-hidden">
-                  <h2 className="flex items-center justify-between border-b border-line px-4 py-2 text-[0.8125rem] font-semibold text-fg-3">
-                    <span>
-                      {g.side === "groom" ? "신랑측" : "신부측"} · {g.relation}
-                    </span>
-                    <span className="tabular">{g.items.length}명</span>
+                  <h2>
+                    <button
+                      type="button"
+                      onClick={() => toggleGroup(g.key)}
+                      aria-expanded={!collapsed.has(g.key)}
+                      className="flex w-full items-center justify-between gap-2 border-b border-line px-4 py-2.5 text-left text-[0.8125rem] font-semibold text-fg-3 hover:bg-surface-2"
+                    >
+                      <span className="flex min-w-0 items-center gap-1.5">
+                        <ChevronDown className={cn("size-4 shrink-0 transition-transform", collapsed.has(g.key) && "-rotate-90")} />
+                        <span className="truncate">
+                          {g.side === "groom" ? "신랑측" : "신부측"} · {g.relation}
+                        </span>
+                      </span>
+                      <span className="shrink-0 tabular">
+                        {g.items.filter((x) => x.rsvp === "yes").length > 0 && (
+                          <span className="mr-2 text-success">참석 {g.items.filter((x) => x.rsvp === "yes").length}</span>
+                        )}
+                        {g.items.length}명
+                      </span>
+                    </button>
                   </h2>
-                  <ul className="divide-y divide-line">
-                    <AnimatePresence initial={false}>
-                      {g.items.map((guest) => (
-                        <GuestRow key={guest.id} g={guest} onOpen={open} selected={selectedId === guest.id} />
-                      ))}
-                    </AnimatePresence>
-                  </ul>
+                  {!collapsed.has(g.key) && (
+                    <ul className="divide-y divide-line">
+                      <AnimatePresence initial={false}>
+                        {g.items.map((guest) => (
+                          <GuestRow key={guest.id} g={guest} onOpen={open} selected={selectedId === guest.id} />
+                        ))}
+                      </AnimatePresence>
+                    </ul>
+                  )}
                 </section>
               ))}
             </div>

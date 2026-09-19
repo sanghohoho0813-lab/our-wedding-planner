@@ -1,6 +1,6 @@
 "use client";
 import { Link2, Phone, X } from "lucide-react";
-import { useEffect, useRef, type InputHTMLAttributes, type ReactNode, type TextareaHTMLAttributes } from "react";
+import { cloneElement, isValidElement, useEffect, useId, useRef, type InputHTMLAttributes, type ReactElement, type ReactNode, type TextareaHTMLAttributes } from "react";
 import { addDays, formatKoreanDate, todayISO } from "@/lib/date";
 import { useDebouncedValue } from "@/lib/hooks";
 import { cn } from "@/lib/utils";
@@ -24,12 +24,23 @@ export function FieldRow({
   className?: string;
   right?: ReactNode;
 }) {
+  // 라벨을 눌러도 입력칸에 커서가 가도록 id 를 이어 준다(스크린리더에도 같은 이름으로 읽힌다).
+  const id = useId();
+  const labelText = typeof label === "string" ? label : undefined;
+  const child =
+    isValidElement(children) && labelText
+      ? cloneElement(children as ReactElement<Record<string, unknown>>, {
+          id: (children as ReactElement<{ id?: string }>).props.id ?? id,
+          "aria-label": (children as ReactElement<{ "aria-label"?: string }>).props["aria-label"] ?? labelText,
+        })
+      : children;
+
   return (
     <div className={cn("space-y-1.5", className)}>
       {(label || right) && (
         <div className="flex items-center justify-between">
           {label && (
-            <label className="block text-[0.875rem] font-medium text-fg-2">
+            <label htmlFor={labelText ? id : undefined} className="block text-[0.875rem] font-medium text-fg-2">
               {label}
               {required && <span className="ml-0.5 text-accent">*</span>}
             </label>
@@ -37,7 +48,7 @@ export function FieldRow({
           {right}
         </div>
       )}
-      {children}
+      {child}
       {hint && <p className="text-[0.8125rem] text-fg-3">{hint}</p>}
     </div>
   );

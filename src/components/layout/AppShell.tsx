@@ -9,6 +9,7 @@ import { PageSkeleton } from "@/components/ui/Skeleton";
 import { ErrorCard } from "./ErrorCard";
 import { BottomNav } from "./BottomNav";
 import { HomeSheets } from "./HomeSheets";
+import { MemberSync } from "./MemberSync";
 import { MenuDrawer } from "./MenuDrawer";
 import { PageTransition } from "./PageTransition";
 import { QuickAdd } from "./QuickAdd";
@@ -62,6 +63,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </>
       )}
       {ws.mode === "supabase" && ws.userId && <SettingsSync userId={ws.userId} />}
+      {ready && ws.mode === "supabase" && ws.userId && <MemberSync userId={ws.userId} email={ws.email} name={ws.name} />}
     </div>
   );
 }

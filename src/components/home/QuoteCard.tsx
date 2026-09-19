@@ -1,6 +1,8 @@
-export function QuoteCard() {
+import { cn } from "@/lib/utils";
+
+export function QuoteCard({ className }: { className?: string } = {}) {
   return (
-    <div className="relative overflow-hidden rounded-[22px] border border-line bg-accent-softer p-6 min-h-[11rem] flex flex-col justify-between">
+    <div className={cn("relative overflow-hidden rounded-[22px] border border-line bg-accent-softer p-6 min-h-[11rem] flex flex-col justify-between", className)}>
       <div className="pointer-events-none absolute -right-8 -top-8 size-40 rounded-full bg-accent-soft/70 blur-2xl" />
       <svg viewBox="0 0 120 80" className="pointer-events-none absolute right-4 bottom-4 h-16 w-24 text-accent/60" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
         <circle cx="45" cy="45" r="24" />

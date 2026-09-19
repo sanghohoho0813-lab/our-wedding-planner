@@ -37,7 +37,19 @@ export function BottomNav() {
           const active = isActive(item.href, item.tab);
           const Icon = item.icon;
           return (
-            <Link key={item.label} href={item.href} prefetch className={itemCls(active)} aria-current={active ? "page" : undefined}>
+            <Link
+              key={item.label}
+              href={item.href}
+              prefetch
+              className={itemCls(active)}
+              aria-current={active ? "page" : undefined}
+              onClick={(e) => {
+                // 지금 보고 있는 탭을 다시 누르면 맨 위로 (앱에서 익숙한 동작)
+                if (!active) return;
+                e.preventDefault();
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+            >
               <span className={cn("inline-flex h-7 w-12 items-center justify-center rounded-full transition-colors", active && "bg-accent-soft")}>
                 <Icon className="size-[1.25rem]" strokeWidth={active ? 2.4 : 2} />
               </span>
