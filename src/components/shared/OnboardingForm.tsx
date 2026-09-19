@@ -1,15 +1,20 @@
 "use client";
+import { Check, Database, FileUp, Sparkles } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DEFAULT_WEDDING_DATE } from "@/lib/config";
-import { migratedRows, ORIGINAL_WEDDING } from "@/lib/db/migration";
-import { MIGRATION_TOTAL } from "@/lib/db/migration";
+import { buildMigratedData, MIGRATION_TOTAL, ORIGINAL_WEDDING } from "@/lib/db/migration";
+import { readLocalWorkspace, uploadWorkspace, type LocalSnapshot } from "@/lib/db/handoff";
+import { SupabaseAdapter } from "@/lib/db/supabase";
+import { formatKoreanDate } from "@/lib/date";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { DateField, FieldRow, inputCls } from "@/components/ui/Field";
 import { MoneyField } from "@/components/ui/MoneyField";
 import { Segmented } from "@/components/ui/Segmented";
-import { Toggle } from "@/components/ui/Toggle";
+
+type Seed = "local" | "original" | "empty";
 
 export function OnboardingForm() {
   const router = useRouter();
@@ -21,10 +26,25 @@ export function OnboardingForm() {
   const [groom, setGroom] = useState("");
   const [bride, setBride] = useState("");
   const [budget, setBudget] = useState<number>(ORIGINAL_WEDDING.total_budget);
-  const [seed, setSeed] = useState(true);
+  const [seed, setSeed] = useState<Seed>("original");
+  const [local, setLocal] = useState<LocalSnapshot | null>(null);
   const [code, setCode] = useState(invited);
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [err, setErr] = useState<string | null>(null);
+
+  // 이 브라우저에서 쓰던 기록이 있으면 그것을 기본값으로 삼는다(그동안 고친 내용을 잃지 않게).
+  useEffect(() => {
+    const snap = readLocalWorkspace();
+    if (!snap) return;
+    setLocal(snap);
+    setSeed("local");
+    setName(snap.data.wedding.name);
+    setDate(snap.data.wedding.wedding_date);
+    setGroom(snap.data.wedding.groom_name);
+    setBride(snap.data.wedding.bride_name);
+    setBudget(snap.data.wedding.total_budget);
+  }, []);
 
   const create = async () => {
     if (!date) return setErr("결혼식 날짜를 선택해 주세요.");
@@ -32,6 +52,8 @@ export function OnboardingForm() {
     setErr(null);
     const sb = getSupabaseBrowser();
     try {
+      const { data: auth } = await sb.auth.getUser();
+      const userId = auth.user?.id ?? null;
       const { data: wid, error } = await sb.rpc("create_wedding", {
         p_name: name,
         p_wedding_date: date,
@@ -40,17 +62,23 @@ export function OnboardingForm() {
         p_total_budget: budget,
       });
       if (error) throw error;
-      if (seed) {
-        for (const { table, rows } of migratedRows(wid as string)) {
-          if (rows.length === 0) continue;
-          const { error: e } = await sb.from(table).insert(rows);
-          if (e) throw e;
-        }
+      const weddingId = wid as string;
+
+      if (seed !== "empty") {
+        const adapter = new SupabaseAdapter(sb);
+        const source = seed === "local" && local ? local.data : buildMigratedData(weddingId, userId);
+        // 위에서 입력한 이름 · 날짜 · 예산이 우선이고, 부수 정보(details)만 함께 옮긴다.
+        await uploadWorkspace(adapter, weddingId, userId, source, {
+          wedding: false,
+          onProgress: (p) => setProgress({ done: p.done, total: p.total }),
+        });
+        await adapter.updateWedding(weddingId, { details: source.wedding.details ?? {} });
       }
       router.replace("/");
       router.refresh();
     } catch (e) {
       setErr(e instanceof Error ? e.message : "문제가 발생했어요.");
+      setProgress(null);
       setLoading(false);
     }
   };
@@ -69,6 +97,28 @@ export function OnboardingForm() {
     router.replace("/");
     router.refresh();
   };
+
+  const options: { value: Seed; icon: React.ReactNode; label: string; desc: string }[] = [
+    ...(local
+      ? [
+          {
+            value: "local" as const,
+            icon: <FileUp className="size-4" />,
+            label: `이 기기에서 쓰던 기록 그대로 (${local.rows}건)`,
+            desc: local.updatedAt
+              ? `마지막 수정 ${formatKoreanDate(local.updatedAt.slice(0, 10))} · 그동안 고친 내용까지 함께 올라가요`
+              : "그동안 고친 내용까지 함께 올라가요",
+          },
+        ]
+      : []),
+    {
+      value: "original",
+      icon: <Database className="size-4" />,
+      label: `원본 결혼계획표 불러오기 (${MIGRATION_TOTAL}건)`,
+      desc: "스프레드시트에서 옮긴 할 일 · 예산 · 하객 · 업체 그대로",
+    },
+    { value: "empty", icon: <Sparkles className="size-4" />, label: "빈 상태로 시작", desc: "처음부터 직접 채울게요" },
+  ];
 
   return (
     <div className="space-y-5">
@@ -103,16 +153,46 @@ export function OnboardingForm() {
           <FieldRow label="총 예산 (나중에 바꿀 수 있어요)">
             <MoneyField value={budget} onChange={setBudget} />
           </FieldRow>
-          <Toggle
-            checked={seed}
-            onChange={setSeed}
-            label="기존 결혼계획표 데이터 가져오기"
-            description={`할 일·예산·하객·업체 등 원본 스프레드시트 ${MIGRATION_TOTAL}건을 그대로 옮겨옵니다`}
-          />
+
+          <div className="space-y-2" role="radiogroup" aria-label="시작 데이터">
+            <p className="text-[0.875rem] font-medium text-fg-2">무엇부터 채울까요?</p>
+            {options.map((o) => (
+              <button
+                key={o.value}
+                type="button"
+                role="radio"
+                aria-checked={seed === o.value}
+                onClick={() => setSeed(o.value)}
+                className={cn(
+                  "flex w-full items-start gap-3 rounded-[14px] border px-4 py-3 text-left transition-colors",
+                  seed === o.value ? "border-accent bg-accent-softer" : "border-line bg-surface hover:bg-surface-2",
+                )}
+              >
+                <span
+                  className={cn(
+                    "mt-0.5 inline-flex size-8 shrink-0 items-center justify-center rounded-full",
+                    seed === o.value ? "bg-accent text-accent-fg" : "bg-surface-2 text-fg-3",
+                  )}
+                >
+                  {seed === o.value ? <Check className="size-4" /> : o.icon}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[1rem] font-medium text-fg">{o.label}</span>
+                  <span className="mt-0.5 block text-[0.875rem] leading-snug text-fg-3">{o.desc}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+
           {err && <p className="rounded-[10px] bg-danger-soft px-3 py-2 text-[0.875rem] text-danger">{err}</p>}
           <Button full size="lg" loading={loading} onClick={create}>
             시작하기
           </Button>
+          {progress && progress.total > 0 && (
+            <p className="text-center text-[0.875rem] text-fg-3 tabular">
+              기록을 옮기는 중 {progress.done} / {progress.total}
+            </p>
+          )}
         </div>
       ) : (
         <div className="space-y-4">

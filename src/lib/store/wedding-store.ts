@@ -2,7 +2,7 @@
 import { create } from "zustand";
 import type { ChangeEvent, DataAdapter, RealtimeStatus } from "@/lib/db/adapter";
 import { DEFAULTS, type DataTable, type RowValues } from "@/lib/db/defaults";
-import type { ActivityLog, TableMap, TableName, Wedding, WeddingData } from "@/lib/db/types";
+import type { ActivityLog, TableMap, Wedding, WeddingData } from "@/lib/db/types";
 import { ENTITY_LABEL, VENDOR_CATEGORY_LABEL } from "@/lib/labels";
 import { formatKRW } from "@/lib/money";
 import { josa, nowISO, uid } from "@/lib/utils";
@@ -343,26 +343,12 @@ export const useWeddingStore = create<WeddingState>((set, get) => {
         set({ data: next });
         return;
       }
-      // Supabase: 결혼 정보를 먼저 맞추고 테이블별로 행을 넣는다(백업 복원 · 원본 재이관)
+      // Supabase: 결혼 정보를 맞추고, 외래키 순서대로 묶어 넣는다(백업 복원 · 원본 재이관).
+      // 활동 기록의 user_id 같은 로컬 전용 값은 uploadWorkspace 가 정리한다.
       set((s) => ({ pending: s.pending + 1 }));
       try {
-        const w = next.wedding;
-        const base = {
-          name: w.name,
-          wedding_date: w.wedding_date,
-          wedding_time: w.wedding_time,
-          total_budget: w.total_budget,
-        };
-        try {
-          await adapter.updateWedding(weddingId, { ...base, details: w.details });
-        } catch {
-          // details 컬럼이 아직 없는 데이터베이스(0002 마이그레이션 전)면 나머지만 저장한다
-          await adapter.updateWedding(weddingId, base);
-        }
-        const tables = Object.keys(next).filter((k) => k !== "wedding") as TableName[];
-        for (const t of tables) {
-          for (const row of next[t] as TableMap[TableName][]) await adapter.insert(t, { ...row, wedding_id: weddingId });
-        }
+        const { uploadWorkspace } = await import("@/lib/db/handoff");
+        await uploadWorkspace(adapter, weddingId, get().userId, next);
         await get().reload();
       } finally {
         set((s) => ({ pending: Math.max(0, s.pending - 1), lastSavedAt: Date.now() }));

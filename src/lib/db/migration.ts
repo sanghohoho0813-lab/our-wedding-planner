@@ -4,7 +4,13 @@ import { MIGRATION_AUDIT, MIGRATION_WARNINGS, ORIGINAL_ROWS, ORIGINAL_WEDDING } 
 import { TABLE_NAMES, type TableMap, type TableName, type Wedding, type WeddingData } from "./types";
 
 export { MIGRATION_AUDIT, MIGRATION_WARNINGS, ORIGINAL_WEDDING };
-export const MIGRATED_TABLES = Object.keys(ORIGINAL_ROWS) as TableName[];
+/**
+ * 원본 데이터를 넣는 순서.
+ * Supabase 에는 외래키가 있어서 budget_categories → budget_items → payments 순서를 지켜야 한다.
+ * (생성기가 만든 ORIGINAL_ROWS 의 키 순서에 기대면, 생성기를 고칠 때 조용히 깨진다.)
+ * TABLE_NAMES 는 이 의존 순서대로 정의되어 있으므로 그대로 따른다.
+ */
+export const MIGRATED_TABLES = TABLE_NAMES.filter((t) => (ORIGINAL_ROWS[t]?.length ?? 0) > 0);
 
 export function emptyData(wedding: Wedding): WeddingData {
   const base = { wedding } as WeddingData;

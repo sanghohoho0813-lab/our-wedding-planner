@@ -33,6 +33,15 @@ export class SupabaseAdapter implements DataAdapter {
     if (error) throw error;
   }
 
+  /** 묶음 저장. 한 번에 너무 많이 보내면 거절당하므로 나눠 보내고, 같은 id 는 덮어쓴다. */
+  async insertMany<T extends TableName>(table: T, rows: TableMap[T][]) {
+    const CHUNK = 200;
+    for (let i = 0; i < rows.length; i += CHUNK) {
+      const { error } = await this.sb.from(table).upsert(rows.slice(i, i + CHUNK), { onConflict: "id" });
+      if (error) throw error;
+    }
+  }
+
   async update<T extends TableName>(table: T, id: string, patch: Partial<TableMap[T]>) {
     const { error } = await this.sb.from(table).update(patch as unknown as TableMap[T]).eq("id", id);
     if (error) throw error;

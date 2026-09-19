@@ -73,6 +73,18 @@ export class LocalAdapter implements DataAdapter {
     });
   }
 
+  async insertMany<T extends TableName>(table: T, rows: TableMap[T][]) {
+    if (rows.length === 0) return;
+    this.mutate(rows[0].wedding_id, (d) => {
+      const list = d[table] as TableMap[T][];
+      for (const row of rows) {
+        const idx = list.findIndex((r) => r.id === row.id);
+        if (idx >= 0) list[idx] = row;
+        else list.push(row);
+      }
+    });
+  }
+
   async update<T extends TableName>(table: T, id: string, patch: Partial<TableMap[T]>) {
     const wid = this.findWedding(table, id);
     if (!wid) return;

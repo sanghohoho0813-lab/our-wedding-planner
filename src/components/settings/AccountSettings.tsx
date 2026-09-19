@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader } from "@/components/ui/Card";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { ConnectionCheck } from "./ConnectionCheck";
 import { SettingsNav } from "./SettingsNav";
 
 export function AccountSettings() {
@@ -107,6 +108,8 @@ export function AccountSettings() {
             )}
           </div>
         </Card>
+
+        <ConnectionCheck />
 
         <Card>
           <CardHeader title="내 계정" />

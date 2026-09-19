@@ -92,12 +92,18 @@ npm run dev
 
 1. **새** Supabase 프로젝트 생성 (무료, Seoul 리전). 쓰던 프로젝트에 설치하면 `tasks` · `payments` 같은 이름이 겹칩니다
 2. SQL Editor 에서 **`supabase/setup.sql`** 전체를 붙여넣고 한 번 Run (세 개 마이그레이션이 순서대로 들어 있음)
-3. `NEXT_PUBLIC_SUPABASE_URL` · `NEXT_PUBLIC_SUPABASE_ANON_KEY` 환경변수 등록 후 재배포
-4. 한 사람이 가입하며 원본 데이터를 가져오고, 설정 › 계정에서 **초대 링크**를 상대에게 전달
+3. Vercel 에 배포하고 `NEXT_PUBLIC_SUPABASE_URL` · `NEXT_PUBLIC_SUPABASE_ANON_KEY` 등록 후 재배포
+4. 한 사람이 가입하면서 시작 데이터를 고르고(**이 기기에서 쓰던 기록 그대로** / 원본 151건 / 빈 상태),
+   설정 › 계정에서 **초대 링크**를 상대에게 전달
+5. 설정 › 계정 › **연결 점검** 으로 표 설치 · 쓰기 권한 · 실시간까지 한 번에 확인
 
 `0002`는 `weddings.details` 컬럼과 결혼식 날짜 범위 제약(1970~2100)을 추가해 1900-01-01 같은 값을 막습니다.
 `0003`은 모든 테이블에 `REPLICA IDENTITY FULL` 을 걸어 **상대가 삭제한 항목도 실시간으로 전달**되게 합니다.
 `setup.sql` 맨 앞에는 이름이 겹치는 표가 있으면 아무것도 건드리지 않고 멈추는 안전장치가 있습니다.
+
+로컬 모드로 쓰던 기록은 가입할 때 **그대로 올라갑니다**(`src/lib/db/handoff.ts`). 옮길 때 두 가지를 맞춰 줍니다.
+외래키 때문에 예산 카테고리 → 항목 → 결제 순서로 넣고, 로컬 전용 값인 활동 기록의 `user_id` 를 실제 계정으로 바꿉니다.
+같은 id 는 덮어쓰므로 중간에 끊겨도 다시 눌러 이어갈 수 있습니다.
 다른 프로젝트에 잘못 실행했는지 확인하려면 `supabase/inspect.sql`(읽기 전용), 지우려면 `supabase/uninstall.sql` 을 쓰세요.
 연결 상태는 설정 › 계정의 배지와 상단 프로필 옆 초록 점으로 확인할 수 있습니다.
 
@@ -127,9 +133,12 @@ src/
     store/         wedding-store(낙관적 저장·실행 취소·활동 로그) · workspace · settings · ui
     compute/       progress · budget · schedule · guests · search
     date.ts        Asia/Seoul · 엄격한 ISO 검증 · 스프레드시트 serial 변환 (fallback 날짜 없음)
+    db/handoff.ts  로컬 기록 → Supabase 이사 (순서 · user_id 정리 · 묶음 저장)
 scripts/build_migration.py
+scripts/verify_supabase_sql.sh   setup.sql 을 진짜 PostgreSQL 에 설치해 두 사람 시나리오까지 검증
+scripts/supabase/                shim.sql(Supabase 흉내) · verify.sql(권한·초대) · contract.sql(스키마 계약)
 supabase/migrations/
-qa/                shot.mjs(뷰포트 캡처) · flow.mjs(기능·데이터 회귀) · perf.mjs(전환 성능) · shot-ui.mjs
+qa/                shot.mjs(뷰포트 캡처) · flow.mjs(기능·데이터 회귀) · perf.mjs(전환 성능) · dump-data.mjs(앱 데이터 추출)
 ```
 
 ## QA
@@ -139,6 +148,13 @@ npm run build && npx next start -p 3001
 BASE=http://localhost:3001 node qa/flow.mjs   # 70개 검사: 데이터 대조 · CRUD · 탭/필터 URL · 당일 진행 · 스냅샷 복원 · 오프라인 · 모바일 가로 넘침
 BASE=http://localhost:3001 node qa/perf.mjs   # 메뉴/탭 전환 시간
 BASE=http://localhost:3001 node qa/shot.mjs / home 1440 900
+
+# Supabase SQL: 실제 PostgreSQL 에 설치해 두 사람 시나리오까지 (PostgreSQL 16 필요)
+BASE=http://localhost:3001 node qa/dump-data.mjs /tmp/wedding-data.json
+bash scripts/verify_supabase_sql.sh /tmp/wedding-data.json   # 44가지
 ```
+
+회귀 테스트는 로컬 저장 모드에서 돕니다. 로그인 · 온보딩 화면은 Supabase 모드에서만 열리므로
+그 부분은 위의 SQL 검증기와 타입 검사로 지킵니다.
 
 360 · 390 · 430 · 768 · 1024 · 1440 · 1920 7개 폭에서 주요 7개 화면을 캡처해 가로 스크롤과 콘솔 오류가 없는지 확인합니다.
