@@ -2,10 +2,31 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { isSupabaseConfigured } from "@/lib/config";
+import { isSupabaseConfigured, SUPABASE_HOST } from "@/lib/config";
 import { getSupabaseBrowser } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { FieldRow, inputCls } from "@/components/ui/Field";
+
+/** Supabase 가 돌려주는 영문 오류를 무엇을 고치면 되는지 아는 말로 바꾼다. */
+function friendlyError(raw: string): string {
+  const m = raw.toLowerCase();
+  if (m.includes("invalid path"))
+    return `Supabase 주소가 잘못됐어요. 지금 ${SUPABASE_HOST} 로 연결하고 있어요. NEXT_PUBLIC_SUPABASE_URL 은 https://xxxx.supabase.co 형태여야 하고, 뒤에 /rest/v1 같은 경로가 붙으면 안 됩니다. Vercel 에서 고친 뒤 Redeploy 해 주세요.`;
+  if (m.includes("invalid api key") || m.includes("no api key"))
+    return "anon key 가 잘못됐어요. Supabase → Project Settings → API 의 anon public 키를 다시 복사해 넣고 Redeploy 해 주세요.";
+  if (m.includes("invalid login credentials")) return "이메일 또는 비밀번호가 맞지 않아요.";
+  if (m.includes("email not confirmed")) return "메일함에서 가입 확인 링크를 먼저 눌러 주세요.";
+  if (m.includes("user already registered") || m.includes("already been registered"))
+    return "이미 가입된 이메일이에요. 로그인해 주세요.";
+  if (m.includes("password should be at least")) return "비밀번호는 6자 이상이어야 해요.";
+  if (m.includes("signups not allowed") || m.includes("signup is disabled"))
+    return "Supabase 에서 회원가입이 꺼져 있어요. Authentication → Providers → Email 을 켜주세요.";
+  if (m.includes("email rate limit") || m.includes("over_email_send_rate_limit"))
+    return "메일을 너무 자주 보냈어요. 잠시 뒤에 다시 시도해 주세요.";
+  if (m.includes("failed to fetch") || m.includes("networkerror") || m.includes("load failed"))
+    return `Supabase(${SUPABASE_HOST})에 연결하지 못했어요. 주소가 맞는지, 인터넷이 연결됐는지 확인해 주세요.`;
+  return raw;
+}
 
 export function AuthForm({ mode }: { mode: "login" | "signup" }) {
   const router = useRouter();
@@ -52,7 +73,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
         router.refresh();
       }
     } catch (e) {
-      setErr(e instanceof Error ? e.message : "문제가 발생했어요.");
+      setErr(e instanceof Error ? friendlyError(e.message) : "문제가 발생했어요.");
     } finally {
       setLoading(false);
     }
@@ -65,7 +86,7 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
     const sb = getSupabaseBrowser();
     const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: `${location.origin}/auth/callback` } });
     setLoading(false);
-    if (error) setErr(error.message);
+    if (error) setErr(friendlyError(error.message));
     else setMsg("로그인 링크를 이메일로 보냈어요.");
   };
 
@@ -92,7 +113,12 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
           placeholder="6자 이상"
         />
       </FieldRow>
-      {err && <p className="rounded-[10px] bg-danger-soft px-3 py-2 text-[0.875rem] text-danger">{err}</p>}
+      {err && (
+        <div className="rounded-[10px] bg-danger-soft px-3 py-2 text-[0.875rem] text-danger">
+          <p>{err}</p>
+          <p className="mt-1 text-[0.75rem] opacity-80">연결 대상: {SUPABASE_HOST}</p>
+        </div>
+      )}
       {msg && <p className="rounded-[10px] bg-success-soft px-3 py-2 text-[0.875rem] text-success">{msg}</p>}
       <Button type="submit" full size="lg" loading={loading}>
         {mode === "login" ? "로그인" : "가입하기"}

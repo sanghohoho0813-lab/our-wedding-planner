@@ -174,6 +174,23 @@ Secret 으로 저장된 변수를 편집하면 **Value 칸이 비어 보입니�
 입력된 값이 아니라 예시입니다. Secret 은 저장한 값을 다시 보여주지 않기 때문입니다.
 값을 **처음부터 다시 붙여넣고** 저장해야 합니다. `NEXT_PUBLIC_` 경고 말풍선이 뜨면 **Mark as Safe** 를 누르면 됩니다.
 
+### 로그인할 때 "Invalid path specified in request URL" 이 떠요
+
+`NEXT_PUBLIC_SUPABASE_URL` 뒤에 경로가 더 붙어 있을 때 나는 오류입니다.
+예를 들어 `https://xxxx.supabase.co/rest/v1` 을 넣으면 로그인 요청이
+`https://xxxx.supabase.co/rest/v1/auth/v1/token` 으로 가서 Supabase 가 거절합니다.
+
+주소는 **도메인까지만** 넣습니다.
+
+```
+O  https://xxxx.supabase.co
+X  https://xxxx.supabase.co/rest/v1
+X  https://supabase.com/dashboard/project/xxxx
+```
+
+앱이 경로가 붙어 있으면 알아서 떼어내지만, Vercel 의 값도 도메인까지만 남기는 것이 좋습니다.
+고친 뒤에는 **Redeploy** 해야 반영됩니다.
+
 ### 다 넣었는데 앱이 여전히 "로컬 저장 모드" 예요
 
 1. **Redeploy** 를 했는지 확인하세요. `NEXT_PUBLIC_` 값은 빌드할 때 코드에 박히므로, 저장만 해서는 반영되지 않습니다.

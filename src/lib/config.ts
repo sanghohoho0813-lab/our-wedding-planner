@@ -15,11 +15,32 @@ function readEnv(raw: string | undefined): string {
   return v;
 }
 
+/**
+ * Supabase 주소는 도메인까지만 써야 한다.
+ * 뒤에 /rest/v1 같은 경로가 붙어 있으면 로그인 요청이 /rest/v1/auth/v1/token 으로 가서
+ * "Invalid path specified in request URL" 이 난다. 붙어 있으면 여기서 떼어낸다.
+ * https:// 가 빠진 경우도 채워 준다.
+ */
+function normalizeSupabaseUrl(v: string): string {
+  if (!v) return "";
+  const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(v) ? v : `https://${v}`;
+  try {
+    const u = new URL(withScheme);
+    if (u.protocol !== "http:" && u.protocol !== "https:") return v;
+    return u.origin;
+  } catch {
+    return v.replace(/\/+$/, "");
+  }
+}
+
 const RAW_URL = readEnv(process.env.NEXT_PUBLIC_SUPABASE_URL);
 const RAW_KEY = readEnv(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
-export const SUPABASE_URL = RAW_URL.replace(/\/+$/, "");
+export const SUPABASE_URL = normalizeSupabaseUrl(RAW_URL);
 export const SUPABASE_ANON_KEY = RAW_KEY;
+
+/** 화면에 "어느 프로젝트에 연결했는지" 보여줄 때 쓴다 (공개되어도 되는 값). */
+export const SUPABASE_HOST = SUPABASE_URL.replace(/^https?:\/\//i, "");
 
 /** JWT 형태의 Supabase 키에서 role 값을 꺼낸다. 형식이 다르면 null. */
 function keyRole(token: string): string | null {
@@ -50,9 +71,9 @@ export const supabaseEnvIssue: string | null = (() => {
     return "환경변수 값에 공백이나 줄바꿈이 섞여 있어요. 앞뒤 공백 없이 한 줄로 다시 넣어주세요.";
   }
   if (!/^https:\/\//i.test(SUPABASE_URL)) {
-    return `NEXT_PUBLIC_SUPABASE_URL 이 https:// 로 시작해야 해요 (지금: ${SUPABASE_URL}).`;
+    return `NEXT_PUBLIC_SUPABASE_URL 이 주소 형태가 아니에요 (지금: ${RAW_URL}). https://xxxx.supabase.co 를 넣어주세요.`;
   }
-  if (/supabase\.com/i.test(SUPABASE_URL) || /\/dashboard|\/project\//i.test(SUPABASE_URL)) {
+  if (/(^|\.)supabase\.com$/i.test(SUPABASE_HOST) || /\/dashboard|\/project\//i.test(RAW_URL)) {
     return "NEXT_PUBLIC_SUPABASE_URL 에 대시보드 주소가 들어갔어요. Project Settings → API 의 Project URL(https://xxxx.supabase.co)을 넣어주세요.";
   }
   if (SUPABASE_ANON_KEY.startsWith("sb_secret_") || keyRole(SUPABASE_ANON_KEY) === "service_role") {
