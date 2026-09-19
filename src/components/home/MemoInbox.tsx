@@ -18,8 +18,8 @@ export function MemoInbox({ limit = 4 }: { limit?: number }) {
   const now = useNow(30_000);
   const list = [...memos].filter((m) => !m.converted_to).sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, limit);
   return (
-    <Card>
-      <CardHeader
+    <Card tint="neutral">
+      <CardHeader tint="neutral"
         title="메모함"
         icon={<StickyNote />}
         action={

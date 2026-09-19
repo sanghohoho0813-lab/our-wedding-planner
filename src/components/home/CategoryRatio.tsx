@@ -9,7 +9,12 @@ import { Card, CardHeader } from "@/components/ui/Card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 
-export const CATEGORY_COLORS = ["var(--accent)", "var(--sage)", "var(--gold)", "var(--blue)", "var(--terracotta)", "var(--rose)"];
+/**
+ * 카테고리 막대는 "같은 한 종류(지출 비중)의 크기 비교"라 색을 돌려쓰지 않는다.
+ * 길이가 이미 크기를 말하고 있어서, 막대마다 색을 바꾸면 없는 구분을 만들어 낼 뿐이다.
+ * 예산 영역 색 하나로 통일하고, 그 외 · 미배정만 회색으로 뺀다.
+ */
+export const CATEGORY_BAR_COLOR = "var(--tint-budget)";
 
 type Basis = "actual" | "planned";
 
@@ -28,8 +33,8 @@ export function CategoryRatio({ limit = 6, showAmount = false , className }: { l
   const unallocatedPct = basis === "planned" && b.totalBudget > 0 ? (b.unallocated / Math.max(b.totalBudget, b.totalEffective)) * 100 : 0;
   const max = Math.max(1, ...cats.map(pctOf), unallocatedPct);
   return (
-    <Card className={className}>
-      <CardHeader
+    <Card tint="budget" className={className}>
+      <CardHeader tint="budget"
         title="카테고리별 예산 비율"
         icon={<BarChart3 />}
         subtitle={basis === "actual" ? "실제 지출 기준" : "예상 포함 기준 (실제 없으면 견적)"}
@@ -47,7 +52,7 @@ export function CategoryRatio({ limit = 6, showAmount = false , className }: { l
         <EmptyState compact title={basis === "actual" ? "아직 실제 지출이 없어요" : "아직 예산 항목이 없어요"} description={basis === "actual" ? "'예상 포함'으로 바꾸면 견적 기준 비중을 볼 수 있어요." : "비용을 추가하면 카테고리별 비중이 자동으로 계산돼요."} />
       ) : (
         <ul className="space-y-3 px-5 pb-5">
-          {shown.map((c, i) => (
+          {shown.map((c) => (
             <li key={c.id}>
               <Link href="/budget?tab=items" className="block group">
                 <div className="mb-1 flex items-center justify-between gap-3 text-[0.875rem]">
@@ -57,7 +62,7 @@ export function CategoryRatio({ limit = 6, showAmount = false , className }: { l
                     {pctOf(c).toFixed(1)}%
                   </span>
                 </div>
-                <ProgressBar value={(pctOf(c) / max) * 100} color={CATEGORY_COLORS[i % CATEGORY_COLORS.length]} height="h-2" label={`${c.name} ${pctOf(c).toFixed(1)}%`} />
+                <ProgressBar value={(pctOf(c) / max) * 100} color={CATEGORY_BAR_COLOR} height="h-2" label={`${c.name} ${pctOf(c).toFixed(1)}%`} />
               </Link>
             </li>
           ))}

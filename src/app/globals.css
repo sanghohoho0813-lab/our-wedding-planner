@@ -47,6 +47,23 @@
   --accent-fg: #ffffff;
   --accent-text: #a8635d;
 
+
+  /* ---------- 영역 구분 색 (dataviz 검증기 통과: 채도 · 색각 · 대비) ----------
+     홈 카드와 메뉴에서 "이건 예산, 이건 하객" 이 한눈에 잡히도록 영역마다 고정된 색을 준다.
+     순서는 고정이며 절대 돌려쓰지 않는다. 아이콘 색은 자기 틴트 배경 위에서 3:1 이상. */
+  --tint-plan: #c25b78;
+  --tint-plan-soft: #fae9ee;
+  --tint-schedule: #3a72b8;
+  --tint-schedule-soft: #e7eff9;
+  --tint-budget: #5f9034;
+  --tint-budget-soft: #eaf2e3;
+  --tint-guests: #8a5fb0;
+  --tint-guests-soft: #f1eaf8;
+  --tint-prep: #c2792a;
+  --tint-prep-soft: #fbeedc;
+  --tint-travel: #00918c;
+  --tint-travel-soft: #e0f2f0;
+
   --radius: 16px;
   --radius-sm: 10px;
   --radius-lg: 22px;
@@ -117,6 +134,20 @@
   --info: #97abc7;
   --info-soft: #2a3038;
 
+  /* 어두운 배경(#262321)에서 다시 검증한 값 — 밝기만 뒤집지 않고 따로 고른다 */
+  --tint-plan: #cf6a86;
+  --tint-plan-soft: #3a2830;
+  --tint-schedule: #5b8fd0;
+  --tint-schedule-soft: #232e3c;
+  --tint-budget: #74a24a;
+  --tint-budget-soft: #26311f;
+  --tint-guests: #9b74c4;
+  --tint-guests-soft: #2e2639;
+  --tint-prep: #c47f35;
+  --tint-prep-soft: #372a1c;
+  --tint-travel: #159f95;
+  --tint-travel-soft: #1a302e;
+
   --accent: #d9a39d;
   --accent-strong: #e5b8b3;
   --accent-soft: #3d2f2d;
@@ -184,6 +215,18 @@
   --color-gold: var(--gold);
   --color-blue: var(--blue);
   --color-terracotta: var(--terracotta);
+  --color-tint-plan: var(--tint-plan);
+  --color-tint-plan-soft: var(--tint-plan-soft);
+  --color-tint-schedule: var(--tint-schedule);
+  --color-tint-schedule-soft: var(--tint-schedule-soft);
+  --color-tint-budget: var(--tint-budget);
+  --color-tint-budget-soft: var(--tint-budget-soft);
+  --color-tint-guests: var(--tint-guests);
+  --color-tint-guests-soft: var(--tint-guests-soft);
+  --color-tint-prep: var(--tint-prep);
+  --color-tint-prep-soft: var(--tint-prep-soft);
+  --color-tint-travel: var(--tint-travel);
+  --color-tint-travel-soft: var(--tint-travel-soft);
   --font-sans: var(--font-sans);
   --font-script: var(--font-script);
   --font-hand: var(--font-hand);

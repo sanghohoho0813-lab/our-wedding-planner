@@ -3,12 +3,15 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Heart } from "lucide-react";
 import { isActiveNav, PRIMARY_NAV, UTILITY_NAV, type NavItem } from "@/lib/nav";
+import { tint, TINT_BY_PATH } from "@/lib/tint";
 import { useWeddingStore } from "@/lib/store/wedding-store";
 import { cn } from "@/lib/utils";
 import { Logo } from "./Logo";
 
 function NavLink({ item, active, onNavigate, compact }: { item: NavItem; active: boolean; onNavigate?: () => void; compact?: boolean }) {
   const Icon = item.icon;
+  // 메뉴마다 자기 영역 색을 단다. 홈 카드와 같은 색이라 "초록은 예산" 이 머리에 남는다.
+  const c = tint(TINT_BY_PATH[item.href]);
   return (
     <Link
       href={item.href}
@@ -18,10 +21,10 @@ function NavLink({ item, active, onNavigate, compact }: { item: NavItem; active:
       className={cn(
         "flex items-center gap-3 rounded-[12px] px-3 font-medium transition-colors duration-150",
         compact ? "h-11 text-[0.9375rem]" : "h-12 text-[1rem]",
-        active ? "bg-accent-soft font-semibold text-accent-text" : "text-fg-2 hover:bg-surface-2 hover:text-fg",
+        active ? cn(c.soft, "font-semibold text-fg") : "text-fg-2 hover:bg-surface-2 hover:text-fg",
       )}
     >
-      <Icon className={cn("size-5 shrink-0", active ? "text-accent-text" : "text-fg-3")} strokeWidth={active ? 2.3 : 2} />
+      <Icon className={cn("size-5 shrink-0", active ? c.fg : "text-fg-3")} strokeWidth={active ? 2.3 : 2} />
       <span className="truncate">{item.label}</span>
     </Link>
   );

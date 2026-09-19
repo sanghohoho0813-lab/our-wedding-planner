@@ -32,8 +32,8 @@ export function NextActions({ limit = 5 }: { limit?: number }) {
   const undated = tasks.filter((t) => t.status !== "done" && !t.due_date).length;
 
   return (
-    <Card className="flex flex-col">
-      <CardHeader
+    <Card tint="plan" className="flex flex-col">
+      <CardHeader tint="plan"
         title="지금 해야 할 일"
         icon={<CheckSquare />}
         href={side ? undefined : "/plan"}

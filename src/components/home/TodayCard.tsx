@@ -34,10 +34,13 @@ export function TodayCard() {
   const dateLabel = `${Number(today.slice(5, 7))}월 ${Number(today.slice(8, 10))}일 (${weekdayKo(today)})`;
 
   return (
-    <section className="card overflow-hidden">
+    <section className="card relative overflow-hidden">
+      <span aria-hidden className="absolute inset-x-0 top-0 h-[3px] bg-tint-schedule" />
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-5 py-3">
         <h2 className="flex items-center gap-2 text-[1.0625rem] font-semibold text-fg">
-          <CalendarDays className="size-[1.125rem] text-accent" />
+          <span className="inline-flex size-8 items-center justify-center rounded-[10px] bg-tint-schedule-soft text-tint-schedule">
+            <CalendarDays className="size-[1.0625rem]" />
+          </span>
           오늘
           <span className="text-[0.875rem] font-normal text-fg-3">{dateLabel}</span>
         </h2>

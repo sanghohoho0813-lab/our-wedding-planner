@@ -19,7 +19,12 @@ export interface UnifiedEvent {
   is_done: boolean;
 }
 
-export function collectEvents(data: WeddingData): UnifiedEvent[] {
+/**
+ * 날짜가 붙은 모든 것을 한 줄로 모은다.
+ * includeTasks 를 켜면 마감일이 있는 할 일도 함께 나온다 — 일정 화면에서는
+ * "할 일이냐 일정이냐" 를 따질 필요 없이 그 날 할 것이 전부 보여야 하기 때문이다.
+ */
+export function collectEvents(data: WeddingData, opts: { includeTasks?: boolean } = {}): UnifiedEvent[] {
   const out: UnifiedEvent[] = [];
   const push = (e: Omit<UnifiedEvent, "key">) => out.push({ ...e, key: e.id ? `ev:${e.id}` : `${e.source?.table}:${e.source?.id}:${e.title}:${e.date}` });
 
@@ -84,6 +89,25 @@ export function collectEvents(data: WeddingData): UnifiedEvent[] {
     if (!m.date || m.status === "canceled") continue;
     if (m.event_id && data.events.some((e) => e.id === m.event_id)) continue;
     push({ id: null, title: m.title, date: m.date, start_time: m.time, end_time: null, type: "meeting", location: m.place, memo: m.memo, source: { table: "invitation_meetings", id: m.id, href: "/guests?tab=meetings" }, editable: false, is_done: m.status === "done" });
+  }
+
+  if (opts.includeTasks) {
+    for (const t of data.tasks) {
+      if (!t.due_date) continue;
+      push({
+        id: null,
+        title: t.title,
+        date: t.due_date,
+        start_time: null,
+        end_time: null,
+        type: "task",
+        location: t.category,
+        memo: t.memo,
+        source: { table: "tasks", id: t.id, href: "/plan" },
+        editable: false,
+        is_done: t.status === "done",
+      });
+    }
   }
 
   const itemById = new Map(data.budget_items.map((i) => [i.id, i]));

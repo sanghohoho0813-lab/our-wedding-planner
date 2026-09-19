@@ -1,5 +1,5 @@
 "use client";
-import { Plus, Settings2, TrendingDown, TrendingUp } from "lucide-react";
+import { BarChart3, ChevronDown, PieChart, Plus, Settings2, TrendingDown, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { computeBudget, HEALTH_LABEL } from "@/lib/compute";
@@ -14,7 +14,7 @@ import { Donut } from "@/components/ui/Donut";
 import { MoneyField } from "@/components/ui/MoneyField";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { CATEGORY_COLORS } from "@/components/home/CategoryRatio";
+import { categoryColor, CATEGORY_MAX } from "@/lib/tint";
 import { UpcomingPayments } from "@/components/home/UpcomingPayments";
 import { BudgetItemSheet } from "./BudgetItemSheet";
 import { CategoryManagerSheet } from "./CategoryManagerSheet";
@@ -24,10 +24,20 @@ export function BudgetDashboard({ embedded }: { embedded?: boolean } = {}) {
   const updateWedding = useWeddingStore((s) => s.updateWedding);
   const [catOpen, setCatOpen] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [showEmpty, setShowEmpty] = useState(false);
   const b = computeBudget(data.wedding, data.budget_categories, data.budget_items, data.payments);
   const healthTone = b.health === "over" ? "danger" : b.health === "caution" ? "warning" : "success";
-  const cats = [...b.categories].sort((x, y) => y.effective - x.effective);
-  const donutSegments = cats.filter((c) => c.effective > 0).map((c, i) => ({ value: c.effective, color: CATEGORY_COLORS[i % CATEGORY_COLORS.length], label: c.name }));
+  const allCats = [...b.categories].sort((x, y) => y.effective - x.effective);
+  // 금액이 0원인 카테고리는 기본으로 접는다 — 상세 탭의 "금액 없는 항목" 규칙과 같다.
+  // 안 그러면 0원 줄이 목록을 덮어서, 정작 돈이 어디로 갔는지가 안 보인다.
+  const emptyCats = allCats.filter((c) => c.effective === 0 && c.planned === 0);
+  const cats = showEmpty ? allCats : allCats.filter((c) => !emptyCats.includes(c));
+  // 도넛은 조각이 많아지면 색으로 구분이 안 된다. 큰 3개만 색을 주고 나머지는 '그 외' 하나로 접는다.
+  // (색약에서 구분되는 한계가 3종이다 — src/lib/tint.ts 의 CATEGORY_COLORS 주석 참고)
+  const spend = cats.filter((c) => c.effective > 0);
+  const donutSegments = spend.slice(0, CATEGORY_MAX).map((c, i) => ({ value: c.effective, color: categoryColor(i), label: c.name }));
+  const restTotal = spend.slice(CATEGORY_MAX).reduce((n, c) => n + c.effective, 0);
+  if (restTotal > 0) donutSegments.push({ value: restTotal, color: "var(--text-3)", label: `그 외 ${spend.length - CATEGORY_MAX}개` });
   if (b.unallocated > 0) donutSegments.push({ value: b.unallocated, color: "var(--surface-3)", label: "미배정" });
 
   const stats: { label: string; value: number; sub?: string; tone?: string }[] = [
@@ -102,15 +112,19 @@ export function BudgetDashboard({ embedded }: { embedded?: boolean } = {}) {
         </Card>
       </div>
 
+      {/* 큰 화면에서는 오른쪽 카테고리 목록이 길어서 왼쪽이 통째로 비어 보인다.
+          결제 카드를 왼쪽 열에 같이 쌓아 그 빈자리를 채운다.
+          폰에서는 도넛 → 결제 → 카테고리 목록 순으로, '어디에 썼나 → 다음에 낼 것 → 자세히' 가 된다. */}
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
-        <Card>
-          <CardHeader title="카테고리 비중" />
+        <div className="space-y-4">
+        <Card tint="budget">
+          <CardHeader tint="budget" title="카테고리 비중" icon={<PieChart />} />
           <div className="flex flex-col items-center gap-5 px-5 pb-5 sm:flex-row">
             <Donut size={170} thickness={22} segments={donutSegments.length ? donutSegments : [{ value: 1, color: "var(--surface-3)" }]}>
               <span className="text-[1.5rem] font-bold tabular text-fg">{Math.round(b.usedPct)}%</span>
               <span className="text-[0.75rem] text-fg-3">사용률</span>
             </Donut>
-            <ul className="w-full space-y-2 text-[0.875rem]">
+            <ul data-testid="donut-legend" className="w-full space-y-2 text-[0.875rem]">
               {donutSegments.slice(0, 7).map((s) => (
                 <li key={s.label} className="flex items-center gap-2">
                   <span className="size-2.5 shrink-0 rounded-full" style={{ background: s.color }} />
@@ -121,13 +135,15 @@ export function BudgetDashboard({ embedded }: { embedded?: boolean } = {}) {
             </ul>
           </div>
         </Card>
+          <UpcomingPayments limit={8} />
+        </div>
 
-        <Card>
-          <CardHeader title="카테고리별 예산" href="/budget?tab=items" actionLabel="상세 예산" />
+        <Card tint="budget">
+          <CardHeader tint="budget" title="카테고리별 예산" icon={<BarChart3 />} href="/budget?tab=items" actionLabel="상세 예산" />
           {cats.length === 0 ? (
             <p className="px-5 pb-5 text-[0.9375rem] text-fg-3">카테고리를 추가해 보세요.</p>
           ) : (
-            <ul className="divide-y divide-line">
+            <ul data-testid="category-list" className="divide-y divide-line">
               {cats.map((c, i) => {
                 const over = c.planned > 0 && c.effective > c.planned;
                 return (
@@ -135,7 +151,7 @@ export function BudgetDashboard({ embedded }: { embedded?: boolean } = {}) {
                     <Link href={`/budget/items?category=${c.id}`} className="block px-5 py-3 hover:bg-surface-2">
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex min-w-0 items-center gap-2">
-                          <span className="size-2.5 shrink-0 rounded-full" style={{ background: CATEGORY_COLORS[i % CATEGORY_COLORS.length] }} />
+                          <span className="size-2.5 shrink-0 rounded-full" style={{ background: categoryColor(i) }} />
                           <span className="truncate text-[1rem] font-medium text-fg">{c.name}</span>
                           <span className="shrink-0 text-[0.8125rem] text-fg-3">{c.itemCount}개</span>
                         </div>
@@ -146,7 +162,7 @@ export function BudgetDashboard({ embedded }: { embedded?: boolean } = {}) {
                       </div>
                       {c.planned > 0 && (
                         <div className="mt-2">
-                          <ProgressBar value={(c.effective / c.planned) * 100} color={over ? "var(--danger)" : CATEGORY_COLORS[i % CATEGORY_COLORS.length]} height="h-1.5" />
+                          <ProgressBar value={(c.effective / c.planned) * 100} color={over ? "var(--danger)" : "var(--tint-budget)"} height="h-1.5" />
                           <div className="mt-1 flex justify-between text-[0.75rem] text-fg-3">
                             <span>계획 {formatKRW(c.planned)}</span>
                             <span className={over ? "text-danger" : undefined}>{over ? `초과 ${formatKRW(c.effective - c.planned)}` : `여유 ${formatKRW(c.planned - c.effective)}`}</span>
@@ -159,10 +175,20 @@ export function BudgetDashboard({ embedded }: { embedded?: boolean } = {}) {
               })}
             </ul>
           )}
+          {emptyCats.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setShowEmpty((v) => !v)}
+              aria-expanded={showEmpty}
+              className="flex w-full items-center justify-center gap-1.5 border-t border-line px-5 py-3 text-[0.875rem] text-fg-3 transition-colors hover:bg-surface-2 hover:text-fg-2"
+            >
+              {showEmpty ? "금액 없는 카테고리 접기" : `금액 없는 카테고리 ${emptyCats.length}개 보기`}
+              <ChevronDown className={cn("size-4 transition-transform", showEmpty && "rotate-180")} />
+            </button>
+          )}
         </Card>
       </div>
 
-      <UpcomingPayments limit={8} />
 
       <CategoryManagerSheet open={catOpen} onClose={() => setCatOpen(false)} />
       <BudgetItemSheet open={creating} onClose={() => setCreating(false)} />

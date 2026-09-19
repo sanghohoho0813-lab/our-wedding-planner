@@ -20,6 +20,7 @@ function Stat({
   href,
   children,
   tone,
+  bar,
   index,
 }: {
   icon: React.ReactNode;
@@ -29,6 +30,7 @@ function Stat({
   href: string;
   children?: React.ReactNode;
   tone: string;
+  bar: string;
   index: number;
 }) {
   const reduce = useReducedMotion();
@@ -38,7 +40,8 @@ function Stat({
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.05 * index, duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
     >
-      <Link href={href} className="card card-hover block h-full p-4 sm:p-5">
+      <Link href={href} className="card card-hover relative block h-full overflow-hidden p-4 sm:p-5">
+        <span aria-hidden className={cn("absolute inset-x-0 top-0 h-[3px]", bar)} />
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-3">
           <div className="flex items-center gap-2 sm:block">
             <span className={cn("inline-flex size-8 shrink-0 items-center justify-center rounded-full [&>svg]:size-4 sm:size-10 sm:[&>svg]:size-5", tone)}>{icon}</span>
@@ -69,32 +72,35 @@ export function StatCards() {
   return (
     <section className="space-y-3">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat index={0} icon={<ClipboardCheck />} label="준비 진행률" tone="bg-accent-soft text-accent-text" href="/plan" value={<><AnimatedNumber value={progress.percent} />%</>}>
+        <Stat index={0} bar="bg-tint-plan" icon={<ClipboardCheck />} label="준비 진행률" tone="bg-tint-plan-soft text-tint-plan" href="/plan" value={<><AnimatedNumber value={progress.percent} />%</>}>
           <ProgressBar value={progress.percent} className="mt-3" />
         </Stat>
         <Stat
           index={1}
+          bar="bg-tint-plan"
           icon={<CheckSquare />}
           label="전체 할 일"
-          tone="bg-success-soft text-success"
+          tone="bg-tint-plan-soft text-tint-plan"
           href="/plan"
           value={<><AnimatedNumber value={progress.total} />개</>}
-          sub={`완료 ${progress.done} · 진행 중 ${progress.doing} · 남은 일 ${progress.remaining}`}
+          sub={`완료 ${progress.done} · 진행 ${progress.doing} · 남은 ${progress.remaining}`}
         />
         <Stat
           index={2}
+          bar="bg-tint-budget"
           icon={<Wallet />}
           label="총 예산"
-          tone="bg-warning-soft text-warning"
+          tone="bg-tint-budget-soft text-tint-budget"
           href="/budget"
           value={<AnimatedNumber value={budget.totalBudget} format={(n) => (n >= 10000000 ? formatCompactKRW(n) : formatKRW(n))} />}
           sub={budget.totalBudget > 0 ? `사용 ${formatKRW(budget.totalActual)} · ${Math.round(budget.usedPct)}%` : "총 예산을 정해보세요"}
         />
         <Stat
           index={3}
+          bar="bg-tint-schedule"
           icon={<Calendar />}
           label="이번 주 일정"
-          tone="bg-info-soft text-info"
+          tone="bg-tint-schedule-soft text-tint-schedule"
           href="/plan?tab=calendar"
           value={<><AnimatedNumber value={weekEvents.length} />개</>}
           sub={nearest !== null ? `가장 가까운 일정 ${formatDDay(nearest)}` : "예정된 일정이 없어요"}

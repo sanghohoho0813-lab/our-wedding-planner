@@ -226,6 +226,7 @@ export interface Gift extends BaseRow {
 }
 
 export type EventType =
+  | "task"
   | "fitting"
   | "visit"
   | "shoot"

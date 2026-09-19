@@ -18,8 +18,8 @@ export function UpcomingPayments({ limit = 5 }: { limit?: number }) {
   const list = [...b.overduePayments, ...b.upcomingPayments].slice(0, limit);
   const dueTotal = [...b.overduePayments, ...b.upcomingPayments].reduce((n, p) => n + p.payment.amount, 0);
   return (
-    <Card>
-      <CardHeader title="다가오는 결제" icon={<CreditCard />} href="/budget?tab=items" subtitle={list.length > 0 ? `결제 예정 ${list.length}건 · ${formatKRW(dueTotal)}` : `아직 결제 일정이 ${b.totalUnpaid > 0 ? "없어요" : "없어요"}`} />
+    <Card tint="budget">
+      <CardHeader tint="budget" title="다가오는 결제" icon={<CreditCard />} href="/budget?tab=items" subtitle={list.length > 0 ? `결제 예정 ${list.length}건 · ${formatKRW(dueTotal)}` : `아직 결제 일정이 ${b.totalUnpaid > 0 ? "없어요" : "없어요"}`} />
       {list.length === 0 ? (
         <EmptyState compact title="예정된 결제가 없어요" description="예산 항목에서 결제 예정일을 등록하면 여기에 보여요." />
       ) : (

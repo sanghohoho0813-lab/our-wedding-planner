@@ -118,6 +118,7 @@ export const MUSIC_SLOT_LABEL = Object.fromEntries(MUSIC_SLOT.map((o) => [o.valu
 export const OUTFIT_KINDS = ["신랑 예복", "신부 드레스", "2부 드레스", "한복", "구두", "액세서리", "기타"];
 
 export const EVENT_TYPE: Option<EventType>[] = [
+  { value: "task", label: "할 일" },
   { value: "fitting", label: "피팅" },
   { value: "visit", label: "방문" },
   { value: "shoot", label: "촬영" },

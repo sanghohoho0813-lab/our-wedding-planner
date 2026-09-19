@@ -16,8 +16,8 @@ export function RecentActivity({ limit = 6 }: { limit?: number }) {
   const now = useNow(30_000);
   const list = [...logs].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, limit);
   return (
-    <Card>
-      <CardHeader title="최근 활동" icon={<Activity />} action={<Button size="sm" variant="ghost" onClick={() => setSheet("activity")}>전체 보기</Button>} />
+    <Card tint="neutral">
+      <CardHeader tint="neutral" title="최근 활동" icon={<Activity />} action={<Button size="sm" variant="ghost" onClick={() => setSheet("activity")}>전체 보기</Button>} />
       {list.length === 0 ? (
         <EmptyState compact title="아직 기록이 없어요" description="할 일, 예산, 하객 정보를 수정하면 여기에 남아요." />
       ) : (

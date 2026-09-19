@@ -4,6 +4,12 @@ const base = process.env.BASE ?? "http://localhost:3001";
 const browser = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium-1194/chrome-linux/chrome" });
 
 const results = [];
+const toRgb = (hex) => {
+  const h = hex.replace("#", "").trim();
+  if (h.length !== 6) return hex;
+  const n = parseInt(h, 16);
+  return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`;
+};
 const check = (name, ok, info = "") => {
   results.push({ name, ok });
   console.log(`${ok ? "PASS" : "FAIL"} ${name}${info ? " — " + info : ""}`);
@@ -441,6 +447,111 @@ const gAfter2 = (await swStore()).guests.find((g) => g.name === "공윤재");
 check("하객을 왼쪽으로 밀어 청첩장 전달", gAfter2.invitation_sent !== gAfter.invitation_sent);
 
 await sw.close();
+
+// ---------------- 할 일 · 일정 통합 추가 ----------------
+// "할 일이냐 일정이냐" 를 묻지 않는다. 시간/장소를 적으면 일정, 아니면 할 일.
+const ug = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 1440, height: 900 }, locale: "ko-KR", timezoneId: "Asia/Seoul" });
+const up = await ug.newPage();
+const uStore = () => up.evaluate(() => JSON.parse(localStorage.getItem("owp:data:v2:00000000-0000-4000-8000-000000000001")));
+const uDlg = () => up.getByRole("dialog").last();
+await up.goto(base + "/", { waitUntil: "domcontentloaded", timeout: 60000 });
+await up.getByText("우리 결혼식까지").first().waitFor({ timeout: 30000 });
+
+const quickAddLabels = await up.evaluate(async () => {
+  document.querySelector('button[aria-label="빠른 추가"]').click();
+  await new Promise((r) => setTimeout(r, 600));
+  return [...document.querySelectorAll('[role="dialog"] li button .font-semibold')].map((e) => e.textContent.trim());
+});
+check("빠른 추가는 '할 일 · 일정' 하나로 합쳐짐 (따로 고르지 않음)",
+  quickAddLabels.includes("할 일 · 일정") && !quickAddLabels.includes("할 일 추가") && !quickAddLabels.includes("일정 추가"),
+  quickAddLabels.join(" / "));
+
+await up.getByRole("button", { name: "할 일 · 일정" }).click();
+await uDlg().getByPlaceholder("예: 청첩장 주문, 예복 피팅").waitFor({ timeout: 10000 });
+
+// (1) 시간 없이 → 할 일
+const tasksBefore = (await uStore()).tasks.length;
+await uDlg().getByPlaceholder("예: 청첩장 주문, 예복 피팅").fill("QA 통합 · 할 일 쪽");
+await uDlg().getByRole("button", { name: "오늘", exact: true }).click();
+check("시간을 안 적으면 (날짜만 적어도) 버튼이 '할 일로 추가'", (await uDlg().getByRole("button", { name: "할 일로 추가" }).count()) > 0);
+await uDlg().getByRole("button", { name: "할 일로 추가" }).click();
+await up.waitForTimeout(600);
+const afterTask = await uStore();
+const madeTask = afterTask.tasks.find((t) => t.title === "QA 통합 · 할 일 쪽");
+check("시간 없이 추가 → tasks 로 저장 (마감일은 들어감)", afterTask.tasks.length === tasksBefore + 1 && !!madeTask && !!madeTask.due_date, JSON.stringify(madeTask && { due: madeTask.due_date }));
+
+// (2) 시간을 적으면 → 일정
+const eventsBefore = (await uStore()).events.length;
+await up.evaluate(() => document.querySelector('button[aria-label="빠른 추가"]').click());
+await up.waitForTimeout(600);
+await up.getByRole("button", { name: "할 일 · 일정" }).click();
+await uDlg().getByPlaceholder("예: 청첩장 주문, 예복 피팅").waitFor({ timeout: 10000 });
+await uDlg().getByPlaceholder("예: 청첩장 주문, 예복 피팅").fill("QA 통합 · 일정 쪽");
+await uDlg().locator('input[type="time"]').fill("14:30");
+await up.waitForTimeout(400);
+check("시간을 적으면 버튼이 '일정으로 추가' 로 바뀜", (await uDlg().getByRole("button", { name: "일정으로 추가" }).count()) > 0);
+await uDlg().getByRole("button", { name: "일정으로 추가" }).click();
+await up.waitForTimeout(600);
+const afterEv = await uStore();
+const madeEv = afterEv.events.find((e) => e.title === "QA 통합 · 일정 쪽");
+check("시간을 적고 추가 → events 로 저장", afterEv.events.length === eventsBefore + 1 && !!madeEv && madeEv.start_time === "14:30", JSON.stringify(madeEv && { t: madeEv.start_time }));
+
+// (3) 어느 쪽으로 저장되든 일정 화면에 같이 보인다 (잘못 골라서 잃어버릴 일이 없다)
+await up.goto(base + "/plan?tab=calendar&view=list", { waitUntil: "domcontentloaded", timeout: 60000 });
+await up.waitForTimeout(1200);
+const calText = await up.locator("main").innerText();
+check("일정 화면에 할 일도 함께 보임 (마감일 있는 할 일)", calText.includes("QA 통합 · 할 일 쪽"));
+check("일정 화면에 일정도 보임", calText.includes("QA 통합 · 일정 쪽"));
+
+// ---------------- 영역 색 구분 ----------------
+// 홈 카드마다 무슨 영역인지 색 띠로 먼저 알려준다 — 띠가 전부 같은 색이면 구분이 안 된 것.
+await up.goto(base + "/", { waitUntil: "domcontentloaded", timeout: 60000 });
+await up.getByText("우리 결혼식까지").first().waitFor({ timeout: 30000 });
+await up.waitForTimeout(900);
+const bars = await up.evaluate(() =>
+  [...document.querySelectorAll(".card > span[aria-hidden], .card a > span[aria-hidden]")]
+    .map((e) => getComputedStyle(e).backgroundColor)
+    .filter((c) => c && c !== "rgba(0, 0, 0, 0)"),
+);
+check("홈 카드에 영역 색 띠가 붙어 있음", bars.length >= 8, `${bars.length}개`);
+check("색 띠가 한 가지 색이 아님 (영역별로 다름)", new Set(bars).size >= 4, `${new Set(bars).size}종`);
+
+const tintVars = await up.evaluate(() => {
+  const cs = getComputedStyle(document.documentElement);
+  return ["plan", "schedule", "budget", "guests", "prep", "travel"].map((k) => cs.getPropertyValue(`--tint-${k}`).trim());
+});
+check("영역 색 6종이 전부 정의되어 있고 서로 다름", tintVars.every(Boolean) && new Set(tintVars).size === 6, tintVars.join(" "));
+
+// 도넛은 큰 3개만 색을 주고 나머지는 '그 외' 로 접는다.
+// (범례↔조각을 아무 짝이나 맞춰 봐야 하는 형태라 모든 쌍이 구분돼야 한다 —
+//  6종이면 색약에서 주황↔초록이 겹친다. 근거는 src/lib/tint.ts 주석)
+await up.goto(base + "/budget", { waitUntil: "domcontentloaded", timeout: 60000 });
+await up.waitForTimeout(1200);
+const donutLegend = await up.locator("main").innerText();
+const emptyFold = await up.locator('button[aria-expanded]').filter({ hasText: "금액 없는 카테고리" }).first();
+check("예산 요약: 0원 카테고리는 기본으로 접힘", (await emptyFold.count()) > 0 && (await emptyFold.getAttribute("aria-expanded")) === "false",
+  (await emptyFold.count()) > 0 ? (await emptyFold.innerText()).replace(/\n/g, " ") : "버튼 없음");
+if ((await emptyFold.count()) > 0) {
+  const beforeRows = await up.locator('[data-testid="category-list"] > li').count();
+  await emptyFold.click();
+  await up.waitForTimeout(400);
+  const afterRows = await up.locator('[data-testid="category-list"] > li').count();
+  check("펼치면 0원 카테고리도 보임", afterRows > beforeRows, `${beforeRows} → ${afterRows}`);
+}
+
+check("예산 도넛은 큰 것만 남기고 '그 외' 로 접힘", /그 외 \d+개/.test(donutLegend), (donutLegend.match(/그 외 \d+개/) ?? [])[0] ?? "없음");
+const donutColors = await up.evaluate(() =>
+  [...document.querySelectorAll('[data-testid="donut-legend"] li span[style*="background"]')].map((d) => getComputedStyle(d).backgroundColor),
+);
+const neutralish = await up.evaluate(() => {
+  const cs = getComputedStyle(document.documentElement);
+  return ["--text-3", "--surface-3"].map((v) => cs.getPropertyValue(v).trim());
+});
+check("도넛 범례에 색이 붙은 조각은 3개 이하 (나머지는 회색)",
+  donutColors.length > 0 && donutColors.filter((c) => !neutralish.some((n) => toRgb(n) === c)).length <= 3,
+  `${donutColors.length}조각 중 유채색 ${donutColors.filter((c) => !neutralish.some((n) => toRgb(n) === c)).length}개`);
+
+await ug.close();
 
 console.log("\nERRORS:", errors.length ? errors.slice(0, 6) : "none");
 const passed = results.filter((r) => r.ok).length;

@@ -32,8 +32,8 @@ export function Favorites({ limit = 6 , className }: { limit?: number ; classNam
   const favs = useFavorites();
   const setSheet = useUIStore((st) => st.setHomeSheet);
   return (
-    <Card className={className}>
-      <CardHeader title="즐겨찾기" icon={<Star />} action={<Button size="sm" variant="ghost" onClick={() => setSheet("favorites")}>전체 보기</Button>} />
+    <Card tint="neutral" className={className}>
+      <CardHeader tint="neutral" title="즐겨찾기" icon={<Star />} action={<Button size="sm" variant="ghost" onClick={() => setSheet("favorites")}>전체 보기</Button>} />
       {favs.length === 0 ? (
         <EmptyState compact title="즐겨찾기한 항목이 없어요" description="자주 확인하는 할 일, 예산, 업체에 별표를 눌러보세요." />
       ) : (

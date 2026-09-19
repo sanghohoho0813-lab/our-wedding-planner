@@ -15,8 +15,11 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { Segmented } from "@/components/ui/Segmented";
 import { Sheet } from "@/components/ui/Sheet";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { AddSheet } from "@/components/plan/AddSheet";
+import { TaskSheet } from "@/components/tasks/TaskSheet";
 import { EventSheet } from "./EventSheet";
-import { EventTypeIcon } from "./EventTypeIcon";
+import { EventTypeChip, EVENT_TINT } from "./EventTypeIcon";
+import { tint } from "@/lib/tint";
 
 type View = "list" | "month";
 const VIEWS: readonly View[] = ["list", "month"];
@@ -25,9 +28,7 @@ function EventRow({ e, onOpen }: { e: UnifiedEvent; onOpen: (e: UnifiedEvent) =>
   return (
     <li>
       <button type="button" onClick={() => onOpen(e)} className={cn("flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-surface-2", e.is_done && "opacity-60")}>
-        <span className={cn("inline-flex size-9 shrink-0 items-center justify-center rounded-[10px]", e.type === "wedding" ? "bg-accent-soft text-accent-text" : "bg-surface-2 text-fg-2")}>
-          <EventTypeIcon type={e.type} className="size-4" />
-        </span>
+        <EventTypeChip type={e.type} done={e.is_done} />
         <span className="min-w-0 flex-1">
           <span className={cn("block truncate text-[1rem] font-medium text-fg", e.is_done && "line-through")}>{e.title}</span>
           <span className="block truncate text-[0.8125rem] text-fg-3">
@@ -54,8 +55,10 @@ export function CalendarView({ embedded }: { embedded?: boolean } = {}) {
   const [editId, setEditId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [info, setInfo] = useState<UnifiedEvent | null>(null);
+  const [taskId, setTaskId] = useState<string | null>(null);
 
-  const events = useMemo(() => collectEvents(data), [data]);
+  // 일정 화면은 '그날 할 것' 을 전부 보여준다. 마감일 있는 할 일도 함께 모은다.
+  const events = useMemo(() => collectEvents(data, { includeTasks: true }), [data]);
   const byDate = useMemo(() => {
     const m = new Map<string, UnifiedEvent[]>();
     for (const e of events) m.set(e.date, [...(m.get(e.date) ?? []), e]);
@@ -64,6 +67,8 @@ export function CalendarView({ embedded }: { embedded?: boolean } = {}) {
 
   const open = (e: UnifiedEvent) => {
     if (e.editable && e.id) setEditId(e.id);
+    // 할 일에서 온 줄은 할 일 시트를 바로 연다(같은 화면 안에서 고칠 수 있게)
+    else if (e.type === "task" && e.source?.table === "tasks") setTaskId(e.source.id);
     else setInfo(e);
   };
 
@@ -92,7 +97,7 @@ export function CalendarView({ embedded }: { embedded?: boolean } = {}) {
         description="예복 피팅, 업체 방문, 결제일이 자동으로 모여요"
         actions={
           <Button onClick={() => setCreating(true)}>
-            <Plus className="size-4" /> 일정 추가
+            <Plus className="size-4" /> 추가
           </Button>
         }
       >
@@ -117,7 +122,7 @@ export function CalendarView({ embedded }: { embedded?: boolean } = {}) {
           </div>
           {upcomingGroups.length === 0 ? (
             <div className="card">
-              <EmptyState title="예정된 일정이 없어요" description="첫 일정을 추가해 보세요." actionLabel="일정 추가" onAction={() => setCreating(true)} />
+              <EmptyState title="예정된 일정이 없어요" description="할 일과 일정을 한곳에서 추가할 수 있어요." actionLabel="추가하기" onAction={() => setCreating(true)} />
             </div>
           ) : (
             upcomingGroups.map((g) => {
@@ -192,9 +197,11 @@ export function CalendarView({ embedded }: { embedded?: boolean } = {}) {
                     >
                       {cell.day}
                     </span>
+                    {/* 점은 '몇 개' 가 아니라 '무슨 종류' 를 말한다 — 개수는 aria-label 에 이미 있다.
+                        같은 종류가 여러 개면 점 하나로 합쳐서, 달을 훑을 때 색만 보고 성격이 잡히게 한다. */}
                     <span className="mt-0.5 flex h-2 items-center gap-0.5">
-                      {evs.slice(0, 3).map((e) => (
-                        <span key={e.key} className={cn("size-1.5 rounded-full", e.type === "payment" ? "bg-warning" : e.type === "wedding" ? "bg-accent" : "bg-sage")} />
+                      {[...new Set(evs.map((e) => EVENT_TINT[e.type]))].slice(0, 3).map((t) => (
+                        <span key={t} className={cn("size-1.5 rounded-full", tint(t).bar)} />
                       ))}
                     </span>
                   </button>
@@ -224,7 +231,9 @@ export function CalendarView({ embedded }: { embedded?: boolean } = {}) {
         </div>
       )}
 
-      <EventSheet open={!!editId || creating} onClose={() => { setEditId(null); setCreating(false); }} eventId={editId} initial={{ date: view === "month" ? selected : today }} />
+      <EventSheet open={!!editId} onClose={() => setEditId(null)} eventId={editId} initial={{ date: view === "month" ? selected : today }} />
+      <AddSheet open={creating} onClose={() => setCreating(false)} initialDate={view === "month" ? selected : today} />
+      <TaskSheet open={!!taskId} onClose={() => setTaskId(null)} taskId={taskId} />
 
       <Sheet open={!!info} onClose={() => setInfo(null)} title={info?.title} description={info ? `${formatKoreanDate(info.date)}${info.start_time ? ` · ${formatTime(info.start_time)}` : ""}` : undefined} size="sm">
         {info && (
