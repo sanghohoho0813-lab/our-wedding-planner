@@ -88,6 +88,20 @@ NEXT_PUBLIC_DEFAULT_WEDDING_DATE=2026-12-20
 >
 > 내 컴퓨터에서만 돌린다면 프로젝트 폴더에 `.env.local` 을 만들어 같은 3줄을 넣고 `npm run dev` 하면 됩니다.
 
+### Type 은 반드시 **Config** 로
+
+Vercel 의 환경변수에는 Type 이 두 가지 있습니다. 세 변수 모두 **Config** 를 고르세요.
+
+| Type | 저장 후 값 보기 | 이 앱에 맞나 |
+| --- | --- | --- |
+| **Config** | 볼 수 있음 | ✅ 세 변수 모두 이것 |
+| Secret | **못 봄**(쓰기 전용) | ❌ 편집할 때마다 값을 다시 붙여넣어야 함 |
+
+`NEXT_PUBLIC_` 로 시작하는 값은 어차피 브라우저에 그대로 실려 나갑니다. 숨겨지는 값이 아니라서 Secret 으로 둘 이유가 없습니다.
+Supabase 의 `anon` 키는 원래 공개되도록 설계된 키이고, 실제 보호는 데이터베이스의 행 수준 보안(RLS)이 합니다.
+**절대 넣으면 안 되는 것은 `service_role` 키** 하나뿐이고, 이 앱은 그 키를 어디에서도 쓰지 않습니다.
+(혹시 잘못 넣으면 앱이 홈 화면에서 경고를 띄우고 연결을 막습니다.)
+
 ## 5. 로그인 주소 등록
 
 Supabase **Authentication → URL Configuration** 에서
@@ -134,6 +148,39 @@ Supabase **Authentication → URL Configuration** 에서
 | 실시간 동기화 | 0003 부분 실행 여부, Database → Replication 에서 `supabase_realtime` |
 
 두 기기를 나란히 놓고 한쪽에서 하객 한 명의 참석을 바꿔 보세요. 반대쪽 숫자가 바로 따라 움직여야 합니다.
+
+## 문제 해결: 환경변수가 안 들어갈 때
+
+### Config 가 클릭이 안 돼요
+
+**이미 Secret 으로 저장한 변수는 Config 로 바꿀 수 없습니다.** Vercel 정책이라 화면에서도
+"Saved secrets are write-only, so this variable can't be changed to Config" 라고 잠겨 있습니다.
+지우고 다시 만드는 방법뿐입니다.
+
+1. 변수 줄 맨 오른쪽 **⋯ → Remove** 로 세 개를 모두 지웁니다.
+2. **Add New** 로 하나씩 다시 만들면서 Type 을 **Config** 로 고릅니다.
+3. Environments 는 **Production** 과 **Preview** 를 켭니다.
+4. 세 개를 다 넣은 뒤 Deployments → 맨 위 배포의 **⋯ → Redeploy**.
+
+### 새로 만들 때도 Config 가 회색이에요
+
+팀 정책이 켜져 있으면 새 변수가 무조건 Secret 으로 만들어집니다.
+**계정(팀) Settings → Security & Privacy → Environment Variable Policies** 에서
+**Enforce Sensitive Environment Variables** 를 **Disabled** 로 바꾸고 다시 만드세요.
+
+### Save 를 누르면 계속 오류가 나요
+
+Secret 으로 저장된 변수를 편집하면 **Value 칸이 비어 보입니다.** 회색 글씨(`https://aBcDe.supabase.co`)는
+입력된 값이 아니라 예시입니다. Secret 은 저장한 값을 다시 보여주지 않기 때문입니다.
+값을 **처음부터 다시 붙여넣고** 저장해야 합니다. `NEXT_PUBLIC_` 경고 말풍선이 뜨면 **Mark as Safe** 를 누르면 됩니다.
+
+### 다 넣었는데 앱이 여전히 "로컬 저장 모드" 예요
+
+1. **Redeploy** 를 했는지 확인하세요. `NEXT_PUBLIC_` 값은 빌드할 때 코드에 박히므로, 저장만 해서는 반영되지 않습니다.
+2. Settings → **Git** 에서 Production Branch 가 **`claude/sharp-bardeen-efzcvf`** 인지 확인하세요.
+   이 저장소에는 이 브랜치만 있어서 `main` 으로 잡혀 있으면 배포 자체가 만들어지지 않습니다.
+3. 값이 잘못된 경우에는 앱 홈 화면 맨 위에 무엇이 잘못됐는지 노란 띠로 알려줍니다.
+   (주소에 대시보드 URL 이 들어갔거나, 공백 · 줄바꿈이 섞였거나, `service_role` 키를 넣은 경우)
 
 ## 알아두면 좋은 것
 

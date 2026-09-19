@@ -2,7 +2,7 @@
 import { Check, Copy, Link2, LogOut, RefreshCw, Users, Wifi, WifiOff } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { isSupabaseConfigured } from "@/lib/config";
+import { isSupabaseConfigured, supabaseEnvIssue } from "@/lib/config";
 import { toast } from "@/lib/store/ui-store";
 import { useWeddingStore } from "@/lib/store/wedding-store";
 import { useWorkspace } from "@/lib/store/workspace";
@@ -96,6 +96,14 @@ export function AccountSettings() {
             ) : (
               <>
                 <Badge tone="warning">로컬 저장 모드</Badge>
+                {supabaseEnvIssue && (
+                  <p className="rounded-[12px] border border-warning/50 bg-warning-soft px-4 py-3 text-fg">
+                    <b>환경변수 값이 잘못됐어요.</b> {supabaseEnvIssue}
+                    <span className="mt-1 block text-fg-2">
+                      Vercel → Settings → Environment Variables 에서 고친 뒤 반드시 <b>Redeploy</b> 해야 반영돼요.
+                    </span>
+                  </p>
+                )}
                 <p className="text-fg-2">
                   지금은 이 기기에만 저장돼서 두 사람이 같이 볼 수 없어요. 함께 쓰려면 Supabase를 연결해야 합니다. 저장소의 <code className="rounded bg-surface-2 px-1">docs/SUPABASE.md</code> 에 순서대로 적어두었어요.
                 </p>

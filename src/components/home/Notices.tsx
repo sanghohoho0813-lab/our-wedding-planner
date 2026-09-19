@@ -1,10 +1,10 @@
 "use client";
 import { AnimatePresence, motion } from "framer-motion";
-import { Download, HardDriveDownload, UserRound, X } from "lucide-react";
+import { AlertTriangle, Download, HardDriveDownload, UserRound, X } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { backupStatus, BACKUP_NUDGE_DAYS, markBackedUp, snoozeBackupNudge } from "@/lib/backup";
-import { isSupabaseConfigured } from "@/lib/config";
+import { isSupabaseConfigured, supabaseEnvIssue } from "@/lib/config";
 import { todayISO } from "@/lib/date";
 import { download, toJSONBackup } from "@/lib/export";
 import { toast } from "@/lib/store/ui-store";
@@ -60,10 +60,20 @@ export function Notices() {
   };
 
   const showNames = !namesDismissed && !wedding.groom_name.trim() && !wedding.bride_name.trim();
-  if (!backup.show && !showNames) return null;
+  if (!supabaseEnvIssue && !backup.show && !showNames) return null;
 
   return (
     <div className="space-y-2">
+      {/* 환경변수를 넣었는데 값이 잘못된 경우. 넘길 수 없게 항상 띄운다. */}
+      {supabaseEnvIssue && (
+        <div role="alert" className="flex flex-wrap items-center gap-3 rounded-[14px] border border-warning/50 bg-warning-soft px-4 py-3">
+          <AlertTriangle className="size-5 shrink-0 text-warning" />
+          <p className="min-w-[14rem] flex-1 text-[0.9375rem] leading-snug text-fg">
+            <b>Supabase 설정을 확인해 주세요.</b> {supabaseEnvIssue}
+            <span className="block text-fg-2">고칠 때까지 이 기기에만 저장되고, 둘이 같이 볼 수 없어요.</span>
+          </p>
+        </div>
+      )}
       <AnimatePresence initial={false}>
         {backup.show && (
           <motion.div
