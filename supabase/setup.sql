@@ -102,6 +102,12 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
+-- 이 SQL 보다 먼저 가입한 사람(표가 없을 때 회원가입한 경우)도 프로필을 채워 둔다.
+insert into public.profiles (id, display_name)
+select u.id, coalesce(u.raw_user_meta_data->>'display_name', split_part(u.email, '@', 1))
+from auth.users u
+on conflict (id) do nothing;
+
 -- ---------- weddings & members ----------
 create table if not exists public.weddings (
   id uuid primary key default gen_random_uuid(),

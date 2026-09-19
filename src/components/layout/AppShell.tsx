@@ -2,10 +2,11 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { getAdapter } from "@/lib/db";
+
 import { useWorkspace } from "@/lib/store/workspace";
 import { useWeddingStore } from "@/lib/store/wedding-store";
 import { PageSkeleton } from "@/components/ui/Skeleton";
-import { Button } from "@/components/ui/Button";
+import { ErrorCard } from "./ErrorCard";
 import { BottomNav } from "./BottomNav";
 import { HomeSheets } from "./HomeSheets";
 import { MenuDrawer } from "./MenuDrawer";
@@ -47,13 +48,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         {ready ? (
           <PageTransition>{children}</PageTransition>
         ) : failed ? (
-          <div className="card mx-auto mt-10 max-w-md p-6 text-center">
-            <p className="font-semibold text-fg">데이터를 불러오지 못했어요</p>
-            <p className="mt-1 text-[0.9375rem] text-fg-3">{error ?? ws.error}</p>
-            <Button className="mt-4" onClick={() => reload()}>
-              다시 시도
-            </Button>
-          </div>
+          <ErrorCard raw={error ?? ws.error ?? null} supabase={ws.mode === "supabase"} onRetry={reload} />
         ) : (
           <PageSkeleton />
         )}

@@ -16,6 +16,26 @@ import { Segmented } from "@/components/ui/Segmented";
 
 type Seed = "local" | "original" | "empty";
 
+/**
+ * 초대 코드는 링크(?code=)로 들어온다. 그런데 가입 → 이메일 인증 → 돌아오기 를 거치면
+ * 그 링크가 사라져서 코드를 다시 물어보게 된다. 한 번 받은 코드는 이 기기에 적어 둔다.
+ */
+const INVITE_KEY = "owp:inviteCode";
+function rememberInvite(code: string) {
+  try {
+    if (code) localStorage.setItem(INVITE_KEY, code);
+  } catch {
+    /* 저장이 막혀 있어도 직접 입력하면 된다 */
+  }
+}
+function recallInvite(): string {
+  try {
+    return localStorage.getItem(INVITE_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
 export function OnboardingForm() {
   const router = useRouter();
   const params = useSearchParams();
@@ -32,6 +52,19 @@ export function OnboardingForm() {
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const [err, setErr] = useState<string | null>(null);
+
+  // 초대 코드 기억하기: 링크로 받은 코드는 저장하고, 링크 없이 들어오면 저장해 둔 코드를 채운다.
+  useEffect(() => {
+    if (invited) {
+      rememberInvite(invited);
+      return;
+    }
+    const saved = recallInvite();
+    if (saved) {
+      setCode(saved);
+      setTab("join");
+    }
+  }, [invited]);
 
   // 이 브라우저에서 쓰던 기록이 있으면 그것을 기본값으로 삼는다(그동안 고친 내용을 잃지 않게).
   useEffect(() => {
@@ -90,9 +123,21 @@ export function OnboardingForm() {
     const sb = getSupabaseBrowser();
     const { error } = await sb.rpc("join_wedding_by_code", { p_code: code.trim() });
     if (error) {
-      setErr(error.message.includes("invalid") ? "초대 코드를 찾을 수 없어요." : error.message);
+      const m = error.message.toLowerCase();
+      setErr(
+        m.includes("invalid")
+          ? "초대 코드를 찾을 수 없어요. 상대의 설정 › 계정 화면에 있는 8자리 코드를 확인해 주세요."
+          : m.includes("two members")
+            ? "이 공간에는 이미 두 사람이 참여해 있어요."
+            : error.message,
+      );
       setLoading(false);
       return;
+    }
+    try {
+      localStorage.removeItem(INVITE_KEY);
+    } catch {
+      /* 무시 */
     }
     router.replace("/");
     router.refresh();
@@ -196,7 +241,7 @@ export function OnboardingForm() {
         </div>
       ) : (
         <div className="space-y-4">
-          <FieldRow label="초대 코드" hint={invited ? "초대 링크에서 받은 코드예요. 참여하기만 누르면 됩니다." : "파트너의 설정 › 계정 화면에서 확인할 수 있어요."}>
+          <FieldRow label="초대 코드" hint={code ? "초대 링크에서 받은 코드예요. 참여하기만 누르면 됩니다." : "파트너의 설정 › 계정 화면에서 확인할 수 있어요."}>
             <input className={`${inputCls} uppercase tracking-widest`} value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="ABCD1234" maxLength={8} />
           </FieldRow>
           {err && <p className="rounded-[10px] bg-danger-soft px-3 py-2 text-[0.875rem] text-danger">{err}</p>}

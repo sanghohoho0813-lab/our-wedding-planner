@@ -27,7 +27,8 @@ fail() { printf 'FAIL %s\n' "$*"; exit 1; }
 # ---------- 임시 서버 ----------
 if ! "$PGBIN/pg_isready" -q 2>/dev/null; then
   say "임시 PostgreSQL 서버를 띄웁니다 ($PGDIR)"
-  rm -rf "$PGDIR"; mkdir -p "$PGDIR"; chown postgres:postgres "$PGDIR"
+  # PGDIR 에는 입력으로 받은 JSON 이 놓여 있을 수 있으므로 데이터 디렉터리만 지운다
+  rm -rf "$PGDIR/data" "$PGDIR/server.log"; mkdir -p "$PGDIR"; chown postgres:postgres "$PGDIR"
   su postgres -c "$PGBIN/initdb -D $PGDIR/data -U postgres -A trust --locale=C.UTF-8 --encoding=UTF8" >/dev/null
   su postgres -c "$PGBIN/pg_ctl -D $PGDIR/data -l $PGDIR/server.log -o '-k /tmp -p $PORT -c wal_level=logical' start" >/dev/null
   sleep 2
