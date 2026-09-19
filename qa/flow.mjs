@@ -378,6 +378,17 @@ await mp.getByText("이성일 부장님").first().click();
 await mp.waitForTimeout(600);
 check("모바일에서 항목 탭 → Bottom Sheet 상세", (await mp.getByRole("dialog").count()) > 0 && (await mp.getByText("동반 인원").count()) > 0);
 await mp.keyboard.press("Escape");
+await mp.waitForTimeout(400);
+const nameBox = await mp.locator("li").filter({ hasText: "강재순 대리님" }).first().getByText("강재순 대리님").boundingBox();
+check("좁은 화면에서 하객 이름이 잘리지 않을 만큼 넓음", nameBox.width >= 100, `${Math.round(nameBox.width)}px`);
+const chip = mp.getByRole("button", { name: /강재순 대리님 참석 여부/ }).first();
+check("좁은 화면은 참석 상태 칩 하나", (await chip.count()) > 0);
+const rsvpBefore = (await mp.evaluate(() => JSON.parse(localStorage.getItem("owp:data:v2:00000000-0000-4000-8000-000000000001")))).guests.find((g) => g.name === "강재순 대리님").rsvp;
+await chip.click();
+await mp.waitForTimeout(500);
+const rsvpAfter = (await mp.evaluate(() => JSON.parse(localStorage.getItem("owp:data:v2:00000000-0000-4000-8000-000000000001")))).guests.find((g) => g.name === "강재순 대리님").rsvp;
+check("칩을 누르면 참석 상태가 순환", rsvpBefore !== rsvpAfter, `${rsvpBefore} → ${rsvpAfter}`);
+await mp.keyboard.press("Escape");
 for (const path of ["/plan", "/budget", "/wedding", "/guests", "/honeymoon", "/settings/data"]) {
   await mp.goto(base + path, { waitUntil: "domcontentloaded" });
   await mp.waitForTimeout(900);
@@ -396,7 +407,8 @@ const swipeRow = async (title, dir) => {
   await row.evaluate((el) => el.scrollIntoView({ block: "center" }));
   await sp.waitForTimeout(500);
   const b = await row.boundingBox();
-  const x0 = dir > 0 ? b.x + 50 : b.x + b.width - 50;
+  // 버튼 위에서 시작하지 않도록 행의 가운데에서 민다
+  const x0 = b.x + b.width / 2;
   await sp.mouse.move(x0, b.y + b.height / 2);
   await sp.mouse.down();
   for (let i = 1; i <= 12; i++) await sp.mouse.move(x0 + dir * i * 16, b.y + b.height / 2, { steps: 3 });

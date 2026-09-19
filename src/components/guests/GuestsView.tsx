@@ -6,7 +6,7 @@ import { useMemo, useState } from "react";
 import { useMediaQuery } from "@/lib/hooks";
 import type { Guest, GuestSide, Rsvp } from "@/lib/db/types";
 import { computeGuestStats } from "@/lib/compute";
-import { RSVP } from "@/lib/labels";
+import { RSVP, RSVP_LABEL } from "@/lib/labels";
 import { useWeddingStore } from "@/lib/store/wedding-store";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
@@ -78,7 +78,19 @@ function GuestRow({ g, onOpen, selected }: { g: Guest; onOpen: (id: string) => v
       >
         <Mail className="size-[1.125rem]" />
       </button>
-      <div className="flex shrink-0 gap-1" role="radiogroup" aria-label={`${g.name} 참석 여부`}>
+      {/* 좁은 화면에서는 상태 칩 하나(눌러서 참석 → 미정 → 불참 순환). 이름이 잘리지 않게 한다. */}
+      <button
+        type="button"
+        aria-label={`${g.name} 참석 여부: ${RSVP_LABEL[g.rsvp]}. 눌러서 변경`}
+        onClick={() => {
+          const i = RSVP.findIndex((o) => o.value === g.rsvp);
+          patch("guests", g.id, { rsvp: RSVP[(i + 1) % RSVP.length].value });
+        }}
+        className={cn("h-9 shrink-0 rounded-full px-3 text-[0.8125rem] font-semibold transition-colors sm:hidden", RSVP_STYLE[g.rsvp])}
+      >
+        {RSVP_LABEL[g.rsvp]}
+      </button>
+      <div className="hidden shrink-0 gap-1 sm:flex" role="radiogroup" aria-label={`${g.name} 참석 여부`}>
         {RSVP.map((o) => (
           <button
             key={o.value}

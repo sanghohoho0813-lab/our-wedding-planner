@@ -1,6 +1,6 @@
 "use client";
 import { motion, useMotionValue, useReducedMotion, useTransform, type PanInfo } from "framer-motion";
-import { useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 export interface SwipeAction {
@@ -37,6 +37,8 @@ export function SwipeRow({
   const reduce = useReducedMotion();
   const x = useMotionValue(0);
   const [dir, setDir] = useState<"left" | "right" | null>(null);
+  // 밀고 손을 떼면 그 자리의 버튼이 눌리는 일이 있다. 방금 민 직후의 클릭은 막는다.
+  const justDragged = useRef(false);
   const leftOpacity = useTransform(x, [-THRESHOLD, -12, 0], [1, 0.4, 0]);
   const rightOpacity = useTransform(x, [0, 12, THRESHOLD], [0, 0.4, 1]);
 
@@ -44,6 +46,12 @@ export function SwipeRow({
 
   const end = (_: unknown, info: PanInfo) => {
     setDir(null);
+    if (Math.abs(info.offset.x) > 8) {
+      justDragged.current = true;
+      setTimeout(() => {
+        justDragged.current = false;
+      }, 250);
+    }
     if (info.offset.x > THRESHOLD && right) right.onAction();
     else if (info.offset.x < -THRESHOLD && left) left.onAction();
   };
@@ -78,6 +86,11 @@ export function SwipeRow({
         dragMomentum={false}
         onDragStart={(_, info) => setDir(info.offset.x >= 0 ? "right" : "left")}
         onDragEnd={end}
+        onClickCapture={(e) => {
+          if (!justDragged.current) return;
+          e.preventDefault();
+          e.stopPropagation();
+        }}
         style={{ x }}
         className={cn("relative bg-surface", dir && "shadow-[var(--shadow-sm)]")}
       >
