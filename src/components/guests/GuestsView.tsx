@@ -1,8 +1,8 @@
 "use client";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, ChevronDown, Mail, MessageCircle, ListPlus, Search, Users } from "lucide-react";
+import { Check, ChevronDown, Mail, MessageCircle, ListPlus, Mic, Search, Users } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMediaQuery } from "@/lib/hooks";
 import type { Guest, GuestSide, Rsvp } from "@/lib/db/types";
 import { computeGuestStats } from "@/lib/compute";
@@ -12,6 +12,8 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import { FilterBar } from "@/components/ui/FilterBar";
+import { VoiceGuestSheet } from "./VoiceGuestSheet";
+import { speechSupported } from "@/lib/speech";
 import { InlineAdd } from "@/components/ui/InlineAdd";
 import { SwipeHint } from "@/components/ui/SwipeHint";
 import { SwipeRow } from "@/components/ui/SwipeRow";
@@ -123,6 +125,11 @@ export function GuestsView({ embedded }: { embedded?: boolean } = {}) {
   const [q, setQ] = useState(params.get("q") ?? "");
   const [editId, setEditId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
+  const [voiceOpen, setVoiceOpen] = useState(false);
+  // 말로 입력되는 기기에서만 버튼을 보여준다 (아이폰 사파리는 들쭉날쭉하다).
+  // 브라우저에서만 알 수 있으므로 마운트 후에 켠다.
+  const [voiceReady, setVoiceReady] = useState(false);
+  useEffect(() => setVoiceReady(speechSupported()), []);
   const wide = useMediaQuery("(min-width: 1280px)");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // 43명이 한 화면에 쭉 이어지면 찾기 어렵다. 그룹을 접었다 펼 수 있게 한다.
@@ -167,6 +174,7 @@ export function GuestsView({ embedded }: { embedded?: boolean } = {}) {
         description={embedded ? undefined : `총 ${stats.total}명 · 참석 확정 ${stats.confirmed}명 · 예상 총 ${stats.expectedPeople}명`}
       >
         <InlineAdd
+          voice
           placeholder={side === "all" ? "이름만 적어 하객 추가" : `${side === "groom" ? "신랑측" : "신부측"} 하객 이름 추가`}
           onAdd={(name) => add("guests", { name, side: side === "all" ? "groom" : side })}
           trailing={
@@ -175,6 +183,15 @@ export function GuestsView({ embedded }: { embedded?: boolean } = {}) {
             </Button>
           }
         />
+        {voiceReady && (
+          <button
+            type="button"
+            onClick={() => setVoiceOpen(true)}
+            className="flex w-full items-center justify-center gap-1.5 rounded-full border border-dashed border-line py-2 text-[0.875rem] text-fg-3 transition-colors hover:border-line-strong hover:text-fg-2"
+          >
+            <Mic className="size-4" /> 말로 여러 명 한 번에 담기
+          </button>
+        )}
         {/* 총 하객 · 신랑측 · 신부측 · 청첩장 전달은 위 제목 줄에 이미 있다.
             폰에서는 거기 없는 셋만 한 줄로 두고, 넓어지면 전부 편다. */}
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 xl:grid-cols-7">
@@ -288,6 +305,7 @@ export function GuestsView({ embedded }: { embedded?: boolean } = {}) {
       />
 
       <GuestSheet open={!!editId || creating} onClose={() => { setEditId(null); setCreating(false); }} guestId={editId} initial={side !== "all" ? { side } : undefined} />
+      <VoiceGuestSheet open={voiceOpen} onClose={() => setVoiceOpen(false)} defaultSide={side === "bride" ? "bride" : "groom"} />
     </div>
   );
 }

@@ -16,6 +16,7 @@ import { FavoriteButton } from "@/components/ui/FavoriteButton";
 import { MoneyField } from "@/components/ui/MoneyField";
 import { Sheet } from "@/components/ui/Sheet";
 import { useEntityForm } from "@/components/shared/useEntityForm";
+import { DeleteButton } from "@/components/ui/DeleteButton";
 
 const PAYMENT_TITLES = ["계약금", "중도금", "잔금", "전액"];
 const EMPTY: never[] = [];
@@ -223,17 +224,12 @@ export function BudgetItemSheet({
       footer={
         isEdit ? (
           <div className="flex gap-2">
-            <Button
-              variant="danger"
-              className="flex-none px-4"
-              aria-label="삭제"
-              onClick={() => {
+            <DeleteButton
+              onDelete={() => {
                 if (row) remove("budget_items", row.id);
                 onClose();
               }}
-            >
-              <Trash2 className="size-4" />
-            </Button>
+            />
             <Button full variant="secondary" onClick={onClose}>
               닫기
             </Button>

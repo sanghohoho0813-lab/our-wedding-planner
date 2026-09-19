@@ -1,5 +1,4 @@
 "use client";
-import { Trash2 } from "lucide-react";
 import type { RowValues } from "@/lib/db/defaults";
 import { GUEST_RELATIONS, INVITATION_METHOD, MEAL, RSVP } from "@/lib/labels";
 import { useWeddingStore } from "@/lib/store/wedding-store";
@@ -12,6 +11,7 @@ import { Sheet } from "@/components/ui/Sheet";
 import { Stepper } from "@/components/ui/Stepper";
 import { Toggle } from "@/components/ui/Toggle";
 import { useEntityForm } from "@/components/shared/useEntityForm";
+import { DeleteButton } from "@/components/ui/DeleteButton";
 
 type GuestValues = RowValues<"guests">;
 
@@ -111,17 +111,12 @@ export function GuestSheet({
       footer={
         isEdit ? (
           <div className="flex gap-2">
-            <Button
-              variant="danger"
-              className="flex-none px-4"
-              aria-label="삭제"
-              onClick={() => {
+            <DeleteButton
+              onDelete={() => {
                 if (row) remove("guests", row.id);
                 onClose();
               }}
-            >
-              <Trash2 className="size-4" />
-            </Button>
+            />
             <Button full variant="secondary" onClick={onClose}>
               닫기
             </Button>

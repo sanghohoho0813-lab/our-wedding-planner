@@ -136,6 +136,7 @@ export function TasksView({ embedded }: { embedded?: boolean } = {}) {
         <ProgressBar value={progress.percent} height="h-1.5" />
         <div className="space-y-2">
           <InlineAdd
+            voice
             placeholder="할 일 한 줄로 추가"
             // 폰에서는 오른쪽 아래 + 버튼이 이미 자세한 입력을 연다. 큰 화면에서만 같은 줄 끝에 둔다.
             trailing={

@@ -574,7 +574,106 @@ check("도넛 범례에 색이 붙은 조각은 3개 이하 (나머지는 회색
   donutColors.length > 0 && donutColors.filter((c) => !neutralish.some((n) => toRgb(n) === c)).length <= 3,
   `${donutColors.length}조각 중 유채색 ${donutColors.filter((c) => !neutralish.some((n) => toRgb(n) === c)).length}개`);
 
-await ug.close();
+// ---------------- 삭제 ----------------
+// 삭제는 원래도 있었지만 글자 없는 휴지통 아이콘이라 아무도 못 찾았다. 이제 '삭제' 라고 쓰여 있다.
+const dg = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 390, height: 844 }, locale: "ko-KR", timezoneId: "Asia/Seoul", hasTouch: true });
+const dp = await dg.newPage();
+const dStore = () => dp.evaluate(() => JSON.parse(localStorage.getItem("owp:data:v2:00000000-0000-4000-8000-000000000001")));
+await dp.goto(base + "/plan", { waitUntil: "domcontentloaded", timeout: 60000 });
+await dp.getByPlaceholder("할 일 한 줄로 추가").first().waitFor({ timeout: 30000 });
+
+// 할 일
+await dp.getByPlaceholder("할 일 한 줄로 추가").fill("QA 지울 할 일");
+await dp.getByPlaceholder("할 일 한 줄로 추가").press("Enter");
+await dp.waitForTimeout(600);
+await dp.getByText("QA 지울 할 일").first().click();
+await dp.waitForTimeout(600);
+check("할 일 편집 창에 '삭제' 라고 쓰인 버튼", (await dp.getByRole("button", { name: "삭제" }).count()) > 0);
+await dp.getByRole("button", { name: "삭제" }).first().click();
+await dp.waitForTimeout(700);
+check("할 일 삭제됨", !(await dStore()).tasks.some((t) => t.title === "QA 지울 할 일"));
+check("삭제 후 '실행 취소' 가 뜸", (await dp.getByRole("button", { name: "실행 취소" }).count()) > 0);
+await dp.getByRole("button", { name: "실행 취소" }).first().click();
+await dp.waitForTimeout(600);
+check("실행 취소로 되살아남", (await dStore()).tasks.some((t) => t.title === "QA 지울 할 일"));
+await dp.getByText("QA 지울 할 일").first().click();
+await dp.waitForTimeout(500);
+await dp.getByRole("button", { name: "삭제" }).first().click();
+await dp.waitForTimeout(600);
+
+// 하객
+await dp.goto(base + "/guests", { waitUntil: "domcontentloaded", timeout: 60000 });
+await dp.getByPlaceholder(/하객 이름 추가|이름만 적어 하객 추가/).first().waitFor({ timeout: 30000 });
+await dp.getByPlaceholder(/하객 이름 추가|이름만 적어 하객 추가/).first().fill("QA지울하객");
+await dp.getByPlaceholder(/하객 이름 추가|이름만 적어 하객 추가/).first().press("Enter");
+await dp.waitForTimeout(700);
+await dp.getByText("QA지울하객").first().click();
+await dp.waitForTimeout(600);
+check("하객 편집 창에 '삭제' 버튼", (await dp.getByRole("button", { name: "삭제" }).count()) > 0);
+await dp.getByRole("button", { name: "삭제" }).first().click();
+await dp.waitForTimeout(700);
+check("하객 삭제됨", !(await dStore()).guests.some((g) => g.name === "QA지울하객"));
+
+// 비용
+await dp.goto(base + "/budget?tab=items", { waitUntil: "domcontentloaded", timeout: 60000 });
+await dp.waitForTimeout(1200);
+const firstItem = (await dStore()).budget_items[0];
+await dp.getByText(firstItem.name).first().click();
+await dp.waitForTimeout(700);
+check("비용 편집 창에 '삭제' 버튼", (await dp.getByRole("button", { name: "삭제" }).count()) > 0, firstItem.name);
+await dp.getByRole("dialog").last().getByRole("button", { name: "닫기" }).first().click().catch(() => {});
+await dp.waitForTimeout(400);
+
+// 메모
+await dp.goto(base + "/", { waitUntil: "domcontentloaded", timeout: 60000 });
+await dp.getByText("우리 결혼식까지").first().waitFor({ timeout: 30000 });
+await dp.getByRole("button", { name: "전체 메뉴" }).first().click();
+await dp.waitForTimeout(400);
+await dp.getByRole("button", { name: "메모함" }).click();
+await dp.waitForTimeout(600);
+check("메모함에 줄마다 삭제 버튼", (await dp.getByRole("button", { name: "삭제" }).count()) > 0);
+
+await dg.close();
+
+// ---------------- 말로 입력 ----------------
+// 브라우저 음성 인식은 자동화에서 실제로 소리를 넣을 수 없다.
+// 그래서 '지원 안 되는 기기에서 버튼을 감추는지' 와 '지원되면 보이는지' 를 각각 본다.
+const noVoice = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 390, height: 844 }, locale: "ko-KR", timezoneId: "Asia/Seoul", hasTouch: true });
+// 헤드리스 크로미움에도 API 자체는 있어서, 없는 기기(아이폰 구버전 등)를 흉내 내려면 지워야 한다
+await noVoice.addInitScript(() => {
+  delete window.SpeechRecognition;
+  delete window.webkitSpeechRecognition;
+});
+const nv = await noVoice.newPage();
+await nv.goto(base + "/guests", { waitUntil: "domcontentloaded", timeout: 60000 });
+await nv.waitForTimeout(1500);
+const nvHasMic = (await nv.getByRole("button", { name: "말로 입력" }).count()) + (await nv.getByText("말로 여러 명 한 번에 담기").count());
+check("음성 인식을 못 쓰는 브라우저에서는 마이크 버튼을 감춤", nvHasMic === 0, `${nvHasMic}개 보임`);
+await noVoice.close();
+
+const yesVoice = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 390, height: 844 }, locale: "ko-KR", timezoneId: "Asia/Seoul", hasTouch: true });
+// 음성 인식이 되는 기기인 척한다 (실제 소리는 넣지 못하므로 화면만 본다)
+await yesVoice.addInitScript(() => {
+  class FakeRec {
+    start() {}
+    stop() {}
+    abort() {}
+  }
+  Object.defineProperty(window, "SpeechRecognition", { value: FakeRec, configurable: true });
+});
+const yv = await yesVoice.newPage();
+await yv.goto(base + "/guests", { waitUntil: "domcontentloaded", timeout: 60000 });
+await yv.waitForTimeout(1500);
+check("음성 인식이 되는 기기에서는 마이크 버튼이 보임", (await yv.getByRole("button", { name: "말로 입력" }).count()) > 0);
+check("하객 화면에 '말로 여러 명 한 번에 담기'", (await yv.getByText("말로 여러 명 한 번에 담기").count()) > 0);
+await yv.getByText("말로 여러 명 한 번에 담기").click();
+await yv.waitForTimeout(600);
+const voiceSheet = await yv.getByRole("dialog").last().innerText();
+check("말로 하객 추가 창이 열림", voiceSheet.includes("말로 하객 추가"));
+check("창에서 소리 처리 방식을 알려줌", voiceSheet.includes("저장되지 않아요"), voiceSheet.split("\n").find((l) => l.includes("저장되지")) ?? "없음");
+check("담은 이름이 없으면 추가 버튼이 눌리지 않음",
+  await yv.getByRole("button", { name: "추가하기" }).first().isDisabled());
+await yesVoice.close();
 
 console.log("\nERRORS:", errors.length ? errors.slice(0, 6) : "none");
 const passed = results.filter((r) => r.ok).length;

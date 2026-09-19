@@ -1,5 +1,4 @@
 "use client";
-import { Trash2 } from "lucide-react";
 import type { RowValues } from "@/lib/db/defaults";
 import { ASSIGNEE, TASK_CATEGORIES, TASK_PRIORITY, TASK_STATUS } from "@/lib/labels";
 import { useWeddingStore } from "@/lib/store/wedding-store";
@@ -12,6 +11,7 @@ import { FavoriteButton } from "@/components/ui/FavoriteButton";
 import { Segmented } from "@/components/ui/Segmented";
 import { Sheet } from "@/components/ui/Sheet";
 import { useEntityForm } from "@/components/shared/useEntityForm";
+import { DeleteButton } from "@/components/ui/DeleteButton";
 
 type TaskValues = RowValues<"tasks">;
 
@@ -104,17 +104,12 @@ export function TaskSheet({
       footer={
         isEdit ? (
           <div className="flex gap-2">
-            <Button
-              variant="danger"
-              className="flex-none px-4"
-              aria-label="삭제"
-              onClick={() => {
+            <DeleteButton
+              onDelete={() => {
                 if (row) remove("tasks", row.id);
                 onClose();
               }}
-            >
-              <Trash2 className="size-4" />
-            </Button>
+            />
             {values.status !== "done" ? (
               <Button full onClick={() => setStatus("done")}>
                 완료로 표시

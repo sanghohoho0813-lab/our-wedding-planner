@@ -1,5 +1,4 @@
 "use client";
-import { Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
 import type { DataTable, RowValues } from "@/lib/db/defaults";
 import type { TableMap } from "@/lib/db/types";
@@ -10,6 +9,7 @@ import { FavoriteButton } from "@/components/ui/FavoriteButton";
 import { Sheet } from "@/components/ui/Sheet";
 import { useEntityForm } from "./useEntityForm";
 import { SchemaForm, type FieldDef } from "./SchemaForm";
+import { DeleteButton } from "@/components/ui/DeleteButton";
 
 export interface EntitySheetProps<T extends DataTable> {
   table: T;
@@ -83,17 +83,12 @@ export function EntitySheet<T extends DataTable>({
       footer={
         isEdit ? (
           <div className="flex gap-2">
-            <Button
-              variant="danger"
-              className="flex-none px-4"
-              aria-label="삭제"
-              onClick={() => {
+            <DeleteButton
+              onDelete={() => {
                 if (row) remove(table, row.id);
                 onClose();
               }}
-            >
-              <Trash2 className="size-4" />
-            </Button>
+            />
             <Button full variant="secondary" onClick={onClose}>
               닫기
             </Button>
