@@ -23,9 +23,10 @@ export function explainDbError(raw: string | null | undefined): DbErrorHelp {
       title: "데이터베이스에 표가 아직 없어요",
       detail: `결혼 준비 앱이 쓸 표가 만들어져 있지 않아요${where}. SQL 을 한 번 실행하면 됩니다.`,
       steps: [
-        "Supabase 에서 이 프로젝트를 열고 SQL Editor → New query 를 누르세요.",
-        "저장소의 supabase/setup.sql 파일 전체를 복사해 붙여넣고 Run 하세요.",
+        `Supabase 대시보드에서 이 프로젝트를 여세요. 주소가 ${SUPABASE_HOST || "위에 적힌 곳"} 과 같은 프로젝트인지 꼭 확인하세요. 다른 프로젝트에서 실행하면 이 화면이 계속 나옵니다.`,
+        "SQL Editor → New query 에 supabase/setup.sql 파일 전체를 붙여넣고 Run 하세요.",
         "“Success. No rows returned” 이 나오면 아래 다시 시도를 누르세요.",
+        "실행했는데도 계속 나온다면 SQL Editor 에서 notify pgrst, 'reload schema'; 를 한 번 실행한 뒤 다시 시도하세요.",
       ],
     };
   }
