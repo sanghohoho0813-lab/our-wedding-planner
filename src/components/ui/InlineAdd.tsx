@@ -1,6 +1,6 @@
 "use client";
 import { Plus } from "lucide-react";
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { inputCls } from "./Field";
 
@@ -14,11 +14,14 @@ export function InlineAdd({
   onAdd,
   className,
   label = "추가",
+  trailing,
 }: {
   placeholder: string;
   onAdd: (text: string) => void;
   className?: string;
   label?: string;
+  /** 같은 줄 끝에 붙일 것 (예: 자세히 입력하는 시트 열기) */
+  trailing?: ReactNode;
 }) {
   const [text, setText] = useState("");
   const ref = useRef<HTMLInputElement>(null);
@@ -64,6 +67,7 @@ export function InlineAdd({
       >
         {label}
       </button>
+      {trailing}
     </div>
   );
 }

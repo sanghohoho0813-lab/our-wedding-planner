@@ -22,12 +22,20 @@ export const PRIMARY_NAV: NavItem[] = [
 
 export const UTILITY_NAV: NavItem[] = [{ href: "/settings", label: "설정", short: "설정", icon: Settings2 }];
 
-/** 모바일 하단: 자주 쓰는 4개 + 전체 메뉴 */
+/**
+ * 모바일 하단 탭.
+ *
+ * 할 일과 일정은 한 화면이 됐으니 탭도 하나면 된다(일정은 그 안의 탭으로 간다).
+ * '메뉴' 도 뺐다 — 왼쪽 위 ☰ 가 같은 서랍을 여는데 바닥에 하나 더 둘 이유가 없다.
+ * 그렇게 비운 두 칸에 웨딩 준비 · 하객을 넣어서, 매일 여는 다섯 곳이 전부 바닥에 있다.
+ * 신혼여행 · 설정은 ☰ 서랍에 있다.
+ */
 export const BOTTOM_NAV: { href: string; label: string; icon: LucideIcon; tab?: string }[] = [
   { href: "/", label: "홈", icon: Home },
   { href: "/plan", label: "할 일", icon: CalendarCheck, tab: "tasks" },
   { href: "/budget", label: "예산", icon: Wallet },
-  { href: "/plan?tab=calendar", label: "일정", icon: CalendarCheck, tab: "calendar" },
+  { href: "/wedding", label: "준비", icon: Heart },
+  { href: "/guests", label: "하객", icon: Users },
 ];
 
 export const PAGE_TITLES: Record<string, string> = {

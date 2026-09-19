@@ -50,6 +50,8 @@ export function TaskRow({
         <div className={cn("flex items-center gap-3 px-4 py-3 min-h-[3.75rem] transition-colors hover:bg-surface-2", selected && "bg-accent-softer ring-1 ring-inset ring-accent/30")}>
         <CheckCircle checked={done} onChange={toggle} />
       <button type="button" onClick={() => onOpen(task.id)} className="min-w-0 flex-1 text-left">
+        {/* 첫 줄은 마감일 + 제목만. 배지까지 같은 줄에 두면 좁은 화면이나 큰 글씨에서
+            제목이 두어 글자로 잘려 버린다 — 정작 읽어야 하는 건 제목이다. */}
         <span className="flex items-center gap-2">
           {days !== null && !done && (
             <span className={cn("shrink-0 text-[0.875rem] font-semibold tabular", days < 0 ? "text-danger" : days <= 3 ? "text-accent-text" : "text-fg-3")}>
@@ -57,12 +59,14 @@ export function TaskRow({
             </span>
           )}
           <span className={cn("truncate text-[1rem] font-medium", done ? "text-fg-3 line-through decoration-fg-3/50" : "text-fg")}>{task.title}</span>
+        </span>
+        <span className="mt-0.5 flex items-center gap-1.5 text-[0.8125rem] text-fg-3">
           {task.priority === "high" && !done && <Badge tone="accent">중요</Badge>}
           {task.status === "doing" && <Badge tone="info">{TASK_STATUS_LABEL.doing}</Badge>}
           {task.status === "waiting" && <Badge tone="warning">{TASK_STATUS_LABEL.waiting}</Badge>}
-        </span>
-        <span className="mt-0.5 block truncate text-[0.8125rem] text-fg-3">
-          {[task.category, task.assignee !== "both" ? ASSIGNEE_LABEL[task.assignee] : null, task.memo ? "메모" : null].filter(Boolean).join(" · ") || " "}
+          <span className="truncate">
+            {[task.category, task.assignee !== "both" ? ASSIGNEE_LABEL[task.assignee] : null, task.memo ? "메모" : null].filter(Boolean).join(" · ") || " "}
+          </span>
         </span>
       </button>
         <FavoriteButton active={task.is_favorite} onChange={(v) => patch("tasks", task.id, { is_favorite: v }, { log: false })} className="-mr-2" />

@@ -1,6 +1,6 @@
 "use client";
 import { AnimatePresence } from "framer-motion";
-import { CheckSquare, ChevronDown, Plus, Search } from "lucide-react";
+import { CheckSquare, ChevronDown, ListPlus, Search } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { useMediaQuery, useTabs } from "@/lib/hooks";
@@ -14,6 +14,7 @@ import { useWeddingStore } from "@/lib/store/wedding-store";
 import { Button } from "@/components/ui/Button";
 import { Chip, ChipSelect } from "@/components/ui/Chip";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { FilterBar } from "@/components/ui/FilterBar";
 import { InlineAdd } from "@/components/ui/InlineAdd";
 import { SwipeHint } from "@/components/ui/SwipeHint";
 import { inputCls } from "@/components/ui/Field";
@@ -129,17 +130,19 @@ export function TasksView({ embedded }: { embedded?: boolean } = {}) {
       <PageHeader
         compact={embedded}
         title="할 일"
-        description={`완료 ${progress.done} / 전체 ${progress.total} · ${progress.percent}%`}
-        actions={
-          <Button onClick={() => setCreating(true)}>
-            <Plus className="size-4" /> 할 일 추가
-          </Button>
-        }
+        // 탭 바깥에서 이미 '남은 일 N개 · 완료 N/N' 을 보여준다. 같은 말을 두 번 하지 않는다.
+        description={embedded ? undefined : `완료 ${progress.done} / 전체 ${progress.total} · ${progress.percent}%`}
       >
         <ProgressBar value={progress.percent} height="h-1.5" />
         <div className="space-y-2">
           <InlineAdd
             placeholder="할 일 한 줄로 추가"
+            // 폰에서는 오른쪽 아래 + 버튼이 이미 자세한 입력을 연다. 큰 화면에서만 같은 줄 끝에 둔다.
+            trailing={
+              <Button variant="outline" className="hidden shrink-0 sm:inline-flex" onClick={() => setCreating(true)} aria-label="자세히 입력해서 할 일 추가">
+                <ListPlus className="size-4" /> 자세히
+              </Button>
+            }
             onAdd={(title) =>
               add("tasks", {
                 title,
@@ -150,32 +153,36 @@ export function TasksView({ embedded }: { embedded?: boolean } = {}) {
               })
             }
           />
-          <ChipSelect options={filters} value={filter} onChange={setFilter} scroll size="sm" />
-          <div className="flex flex-wrap items-center gap-2">
-            <label className="relative flex-1 min-w-[10rem]">
-              <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-fg-3" />
-              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="할 일 검색" className={`${inputCls} h-10 pl-10 rounded-full`} />
-            </label>
-            <div className="flex gap-1.5 overflow-x-auto scrollbar-none">
-              {SORTS.map((s) => (
-                <Chip key={s.value} size="sm" tone="neutral" active={sort === s.value} onClick={() => setSort(s.value)}>
-                  {s.label}
-                </Chip>
-              ))}
+          <FilterBar
+            activeCount={(q.trim() ? 1 : 0) + (sort !== "due" ? 1 : 0) + (category ? 1 : 0)}
+            chips={<ChipSelect options={filters} value={filter} onChange={setFilter} scroll size="sm" />}
+          >
+            <div className="space-y-2">
+              <label className="relative block">
+                <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-fg-3" />
+                <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="할 일 검색" className={`${inputCls} h-10 pl-10 rounded-full`} />
+              </label>
+              <div className="flex gap-1.5 overflow-x-auto scrollbar-none">
+                {SORTS.map((s) => (
+                  <Chip key={s.value} size="sm" tone="neutral" active={sort === s.value} onClick={() => setSort(s.value)}>
+                    {s.label}
+                  </Chip>
+                ))}
+              </div>
+              {usedCategories.length > 0 && (
+                <div className="flex gap-1.5 overflow-x-auto scrollbar-none -mx-1 px-1">
+                  <Chip size="sm" active={category === null} onClick={() => setCategory(null)}>
+                    모든 카테고리
+                  </Chip>
+                  {usedCategories.map((c) => (
+                    <Chip key={c} size="sm" active={category === c} onClick={() => setCategory(category === c ? null : c)}>
+                      {c}
+                    </Chip>
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
-          {usedCategories.length > 0 && (
-            <div className="flex gap-1.5 overflow-x-auto scrollbar-none -mx-1 px-1">
-              <Chip size="sm" active={category === null} onClick={() => setCategory(null)}>
-                모든 카테고리
-              </Chip>
-              {usedCategories.map((c) => (
-                <Chip key={c} size="sm" active={category === c} onClick={() => setCategory(category === c ? null : c)}>
-                  {c}
-                </Chip>
-              ))}
-            </div>
-          )}
+          </FilterBar>
         </div>
       </PageHeader>
 

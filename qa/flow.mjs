@@ -30,7 +30,8 @@ const goto = async (p) => {
 };
 const nav = async (menu, expect) => {
   await page.getByRole("navigation", { name: "주요 메뉴" }).getByRole("link", { name: menu, exact: true }).click();
-  await page.getByText(expect).first().waitFor({ timeout: 10000 });
+  // 화면마다 눈에 띄는 것이 글자일 수도, 입력칸 안내문일 수도 있다
+  await page.locator(`text=${expect}`).or(page.getByPlaceholder(expect)).first().waitFor({ timeout: 10000 });
 };
 const store = () => page.evaluate(() => JSON.parse(localStorage.getItem("owp:data:v2:00000000-0000-4000-8000-000000000001")));
 
@@ -66,7 +67,7 @@ check("실시간 시계 초 단위 갱신", t1 !== t2, `${t1} → ${t2}`);
 
 // --- 6개 메뉴 전환 ---
 for (const [menu, expect] of [
-  ["할 일 · 일정", "할 일 추가"],
+  ["할 일 · 일정", "할 일 한 줄로 추가"],
   ["예산", "카테고리 비중"],
   ["웨딩 준비", "코디네이션"],
   ["하객 · 초대", "신부측"],
@@ -92,8 +93,8 @@ for (const [tab, expect] of [
 }
 
 // --- 할 일: 생성 → 상세 패널 → 완료 → 유지 ---
-await nav("할 일 · 일정", "할 일 추가");
-await page.getByRole("button", { name: "할 일 추가" }).first().click();
+await nav("할 일 · 일정", "할 일 한 줄로 추가");
+await page.getByRole("button", { name: "자세히 입력해서 할 일 추가" }).first().click();
 await dlg().getByPlaceholder("예: 청첩장 주문").fill("QA 테스트 할 일");
 await dlg().getByRole("radio", { name: "진행 중" }).click();
 await dlg().getByRole("button", { name: "오늘", exact: true }).click();
@@ -136,7 +137,7 @@ check("하객 인라인 참석 변경 저장", d4.guests.find((g) => g.name === 
 check("하객 통계 갱신", (await page.getByText(/참석 확정 1명/).count()) > 0 || (await page.content()).includes("참석 확정"));
 
 // --- 삭제 + 실행 취소 ---
-await nav("할 일 · 일정", "할 일 추가");
+await nav("할 일 · 일정", "할 일 한 줄로 추가");
 // 완료한 일은 접혀 있으므로 펼치고 찾는다
 const doneToggle = page.locator("button[aria-expanded]").filter({ hasText: "완료" }).first();
 if ((await doneToggle.count()) > 0 && (await doneToggle.getAttribute("aria-expanded")) === "false") {
@@ -169,7 +170,7 @@ await page.getByRole("radio", { name: "Rose" }).click();
 await page.getByRole("radio", { name: "보통" }).click();
 
 // --- 할 일 필터 · 날짜 미정 · 당일 진행 (탭 안에서 라우팅 없이) ---
-await nav("할 일 · 일정", "할 일 추가");
+await nav("할 일 · 일정", "할 일 한 줄로 추가");
 await page.getByRole("button", { name: "날짜 미정", exact: true }).click();
 await page.waitForTimeout(300);
 check("필터 칩 클릭 → /plan 에 남고 ?filter= 만 바뀜 (/tasks 로 튕기지 않음)", page.url().endsWith("/plan?filter=undated"), page.url());
@@ -247,7 +248,7 @@ const wideOverflow = await page.evaluate(() => ({ inner: window.innerWidth, scro
 check("데스크톱 홈 가로 넘침 없음", wideOverflow.scroll <= wideOverflow.inner, JSON.stringify(wideOverflow));
 
 // --- 할 일: 한 줄 추가 ---
-await nav("할 일 · 일정", "할 일 추가");
+await nav("할 일 · 일정", "할 일 한 줄로 추가");
 await page.getByPlaceholder("할 일 한 줄로 추가").fill("한 줄 추가 테스트");
 await page.getByPlaceholder("할 일 한 줄로 추가").press("Enter");
 await page.waitForTimeout(600);
@@ -329,12 +330,12 @@ check("최근 찾은 말을 누르면 바로 검색", (await page.getByText("스
 const swActive = await page.evaluate(() => navigator.serviceWorker.ready.then((r) => !!r.active).catch(() => false));
 check("서비스 워커 등록됨 (프로덕션)", swActive);
 await goto("/plan");
-await page.getByText("할 일 추가").first().waitFor({ timeout: 30000 });
+await page.getByPlaceholder("할 일 한 줄로 추가").first().waitFor({ timeout: 30000 });
 await ctx.setOffline(true);
 let offlineOk = false;
 try {
   await page.goto(base + "/plan", { waitUntil: "domcontentloaded", timeout: 20000 });
-  await page.getByText("할 일 추가").first().waitFor({ timeout: 15000 });
+  await page.getByPlaceholder("할 일 한 줄로 추가").first().waitFor({ timeout: 15000 });
   offlineOk = true;
 } catch (e) {
   offlineOk = false;
@@ -364,20 +365,42 @@ check("메모함 시트 열림", (await mp.getByText("원본 '시트8'").count()
 await mp.getByRole("dialog").last().getByRole("button", { name: "닫기" }).first().click();
 await mp.waitForTimeout(400);
 await mp.goto(base + "/plan", { waitUntil: "domcontentloaded" });
-await mp.getByText("할 일 추가").first().waitFor({ timeout: 30000 });
+await mp.getByPlaceholder("할 일 한 줄로 추가").first().waitFor({ timeout: 30000 });
 check("폰에서 스와이프 안내가 처음 한 번 보임", (await mp.getByText(/밀어서/).count()) > 0);
 await mp.getByRole("button", { name: "안내 닫기" }).first().click();
 await mp.waitForTimeout(300);
 check("안내를 닫으면 사라지고 다시 뜨지 않음", (await mp.getByText(/밀어서/).count()) === 0);
 await mp.reload({ waitUntil: "domcontentloaded" });
-await mp.getByText("할 일 추가").first().waitFor({ timeout: 30000 });
+await mp.getByPlaceholder("할 일 한 줄로 추가").first().waitFor({ timeout: 30000 });
 check("새로고침해도 안내가 다시 뜨지 않음", (await mp.getByText(/밀어서/).count()) === 0);
-await mp.getByRole("navigation", { name: "주요 메뉴" }).getByRole("link", { name: "일정" }).click();
-await mp.waitForTimeout(800);
-check("모바일 하단 '일정' 탭 → 달력 화면으로 전환", (await mp.getByText("지난 일정 보기").count()) > 0, mp.url());
+const bottomTabs = await mp.getByRole("navigation", { name: "주요 메뉴" }).getByRole("link").allInnerTexts();
+check("모바일 하단 탭 = 홈 · 할 일 · 예산 · 준비 · 하객 (일정 · 메뉴 제거)",
+  bottomTabs.join("/") === "홈/할 일/예산/준비/하객", bottomTabs.join(" · "));
+check("하단에 '메뉴' 탭 없음 (왼쪽 위 ☰ 와 겹치지 않게)",
+  !bottomTabs.includes("메뉴") && (await mp.getByRole("button", { name: "전체 메뉴" }).count()) > 0);
+await mp.getByRole("navigation", { name: "주요 메뉴" }).getByRole("link", { name: "준비" }).click();
+await mp.waitForTimeout(900);
+check("모바일 하단 '준비' 탭 → 웨딩 준비 화면", (await mp.getByText("코디네이션").count()) > 0, mp.url());
+await mp.getByRole("navigation", { name: "주요 메뉴" }).getByRole("link", { name: "하객" }).click();
+await mp.waitForTimeout(900);
+check("모바일 하단 '하객' 탭 → 하객 화면", (await mp.getByText("청첩장 모임").count()) > 0, mp.url());
 await mp.getByRole("navigation", { name: "주요 메뉴" }).getByRole("link", { name: "할 일" }).click();
-await mp.waitForTimeout(800);
-check("모바일 하단 '할 일' 탭 → 할 일 화면으로 복귀", (await mp.getByPlaceholder("할 일 검색").count()) > 0, mp.url());
+await mp.waitForTimeout(900);
+check("모바일 하단 '할 일' 탭 → 할 일 화면으로 복귀", (await mp.getByPlaceholder("할 일 한 줄로 추가").count()) > 0, mp.url());
+
+// 검색 · 정렬 · 카테고리는 접혀 있다가 버튼으로 펼친다 (목록이 화면 밖으로 밀리지 않게)
+check("할 일: 검색 · 정렬은 기본으로 접혀 있음", (await mp.getByPlaceholder("할 일 검색").count()) === 0);
+await mp.getByRole("button", { name: "검색 · 정렬 열기" }).first().click();
+await mp.waitForTimeout(400);
+check("버튼을 누르면 검색 · 정렬 · 카테고리가 펼쳐짐",
+  (await mp.getByPlaceholder("할 일 검색").count()) > 0 && (await mp.getByRole("button", { name: "마감순" }).count()) > 0);
+await mp.getByPlaceholder("할 일 검색").fill("청첩장");
+await mp.waitForTimeout(500);
+await mp.getByRole("button", { name: "검색 · 정렬 닫기" }).first().click();
+await mp.waitForTimeout(400);
+check("접어도 걸어둔 조건은 버튼의 숫자로 남음",
+  (await mp.getByRole("button", { name: "검색 · 정렬 열기" }).first().innerText()).trim() === "1",
+  (await mp.getByRole("button", { name: "검색 · 정렬 열기" }).first().innerText()).trim());
 await mp.goto(base + "/guests", { waitUntil: "domcontentloaded" });
 await mp.waitForTimeout(900);
 await mp.getByText("이성일 부장님").first().click();

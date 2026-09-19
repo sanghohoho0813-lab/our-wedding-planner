@@ -1,6 +1,6 @@
 "use client";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, ChevronDown, Mail, MessageCircle, Plus, Search, Users } from "lucide-react";
+import { Check, ChevronDown, Mail, MessageCircle, ListPlus, Search, Users } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { useMediaQuery } from "@/lib/hooks";
@@ -11,6 +11,7 @@ import { useWeddingStore } from "@/lib/store/wedding-store";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
+import { FilterBar } from "@/components/ui/FilterBar";
 import { InlineAdd } from "@/components/ui/InlineAdd";
 import { SwipeHint } from "@/components/ui/SwipeHint";
 import { SwipeRow } from "@/components/ui/SwipeRow";
@@ -162,28 +163,31 @@ export function GuestsView({ embedded }: { embedded?: boolean } = {}) {
       <PageHeader
         compact={embedded}
         title="하객 목록"
-        description={`총 ${stats.total}명 · 참석 확정 ${stats.confirmed}명 · 예상 총 ${stats.expectedPeople}명`}
-        actions={
-          <Button onClick={() => setCreating(true)}>
-            <Plus className="size-4" /> 하객 추가
-          </Button>
-        }
+        // 탭 바깥 제목 줄에서 이미 같은 숫자를 보여준다.
+        description={embedded ? undefined : `총 ${stats.total}명 · 참석 확정 ${stats.confirmed}명 · 예상 총 ${stats.expectedPeople}명`}
       >
         <InlineAdd
           placeholder={side === "all" ? "이름만 적어 하객 추가" : `${side === "groom" ? "신랑측" : "신부측"} 하객 이름 추가`}
           onAdd={(name) => add("guests", { name, side: side === "all" ? "groom" : side })}
+          trailing={
+            <Button variant="outline" className="hidden shrink-0 sm:inline-flex" onClick={() => setCreating(true)} aria-label="자세히 입력해서 하객 추가">
+              <ListPlus className="size-4" /> 자세히
+            </Button>
+          }
         />
+        {/* 총 하객 · 신랑측 · 신부측 · 청첩장 전달은 위 제목 줄에 이미 있다.
+            폰에서는 거기 없는 셋만 한 줄로 두고, 넓어지면 전부 편다. */}
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 xl:grid-cols-7">
           {[
-            ["총 하객", `${stats.total}명`],
-            ["신랑측", `${stats.groom}명`],
-            ["신부측", `${stats.bride}명`],
-            ["참석 확정", `${stats.confirmed}명`],
-            ["미정", `${stats.maybe}명`],
-            ["예상 총 인원", `${stats.expectedPeople}명`],
-            ["청첩장 전달", `${stats.invited} / ${stats.total}`],
-          ].map(([k, v]) => (
-            <div key={k} className="card px-3 py-2.5">
+            ["참석 확정", `${stats.confirmed}명`, true],
+            ["미정", `${stats.maybe}명`, true],
+            ["예상 총 인원", `${stats.expectedPeople}명`, true],
+            ["총 하객", `${stats.total}명`, false],
+            ["신랑측", `${stats.groom}명`, false],
+            ["신부측", `${stats.bride}명`, false],
+            ["청첩장 전달", `${stats.invited} / ${stats.total}`, false],
+          ].map(([k, v, onPhone]) => (
+            <div key={k as string} className={cn("card px-3 py-2.5", !onPhone && "hidden sm:block")}>
               <p className="text-[0.75rem] text-fg-3">{k}</p>
               <p className="tabular text-[1.125rem] font-bold text-fg">{v}</p>
             </div>
@@ -200,25 +204,30 @@ export function GuestsView({ embedded }: { embedded?: boolean } = {}) {
             onChange={setSide}
             className="max-w-sm"
           />
-          <div className="flex flex-wrap items-center gap-2">
-            <label className="relative min-w-[10rem] flex-1">
+          <FilterBar
+            label="이름 검색"
+            activeCount={q.trim() ? 1 : 0}
+            chips={
+              <div className="flex gap-1.5 overflow-x-auto scrollbar-none">
+                {([
+                  ["all", "모두"],
+                  ["yes", "참석"],
+                  ["maybe", "미정"],
+                  ["no", "불참"],
+                  ["uninvited", "청첩장 미전달"],
+                ] as [RsvpFilter, string][]).map(([v, l]) => (
+                  <Chip key={v} size="sm" tone="neutral" active={rsvp === v} onClick={() => setRsvp(v)}>
+                    {l}
+                  </Chip>
+                ))}
+              </div>
+            }
+          >
+            <label className="relative block">
               <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-fg-3" />
               <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="이름 · 관계 검색" className={`${inputCls} h-10 rounded-full pl-10`} />
             </label>
-            <div className="flex gap-1.5 overflow-x-auto scrollbar-none">
-              {([
-                ["all", "모두"],
-                ["yes", "참석"],
-                ["maybe", "미정"],
-                ["no", "불참"],
-                ["uninvited", "청첩장 미전달"],
-              ] as [RsvpFilter, string][]).map(([v, l]) => (
-                <Chip key={v} size="sm" tone="neutral" active={rsvp === v} onClick={() => setRsvp(v)}>
-                  {l}
-                </Chip>
-              ))}
-            </div>
-          </div>
+          </FilterBar>
         </div>
       </PageHeader>
 

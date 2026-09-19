@@ -1,5 +1,4 @@
 "use client";
-import { Menu } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BOTTOM_NAV } from "@/lib/nav";
@@ -9,7 +8,6 @@ import { cn } from "@/lib/utils";
 
 export function BottomNav() {
   const pathname = usePathname();
-  const setDrawer = useUIStore((s) => s.setDrawer);
   const activeTab = useUIStore((s) => s.activeTab);
 
   const isActive = (href: string, tab?: string) => {
@@ -60,12 +58,6 @@ export function BottomNav() {
             </Link>
           );
         })}
-        <button type="button" onClick={() => setDrawer(true)} className={itemCls(false)} aria-label="전체 메뉴">
-          <span className="inline-flex h-7 w-12 items-center justify-center rounded-full">
-            <Menu className="size-[1.25rem]" />
-          </span>
-          메뉴
-        </button>
       </div>
     </nav>
   );

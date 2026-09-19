@@ -21,7 +21,7 @@ await page.getByText("우리 결혼식까지").first().waitFor({ timeout: 30000 
 await page.waitForTimeout(1200);
 
 const STEPS = [
-  { menu: "할 일 · 일정", expect: "할 일 추가" },
+  { menu: "할 일 · 일정", expect: "할 일 한 줄로 추가" },
   { menu: "예산", expect: "카테고리 비중" },
   { menu: "웨딩 준비", expect: "코디네이션" },
   { menu: "하객 · 초대", expect: "신부측" },
@@ -35,7 +35,7 @@ for (let round = 0; round < 2; round++) {
     requests = [];
     const t0 = Date.now();
     await page.getByRole("navigation", { name: "주요 메뉴" }).getByRole("link", { name: step.menu, exact: true }).click();
-    await page.getByText(step.expect).first().waitFor({ state: "visible", timeout: 10000 });
+    await page.locator(`text=${step.expect}`).or(page.getByPlaceholder(step.expect)).first().waitFor({ state: "visible", timeout: 10000 });
     const ms = Date.now() - t0;
     const rsc = requests.filter((u) => !u.includes("/_next/static") && !u.startsWith("data:")).length;
     if (round === 1) results.push({ menu: step.menu, ms, rsc });
@@ -46,9 +46,9 @@ for (let round = 0; round < 2; round++) {
 // 탭 전환 (라우팅 없음)
 const tabTimes = [];
 await page.getByRole("navigation", { name: "주요 메뉴" }).getByRole("link", { name: "할 일 · 일정", exact: true }).click();
-await page.getByText("할 일 추가").first().waitFor();
+await page.getByPlaceholder("할 일 한 줄로 추가").first().waitFor();
 for (let i = 0; i < 4; i++) {
-  for (const [label, kind, expect] of [["일정", "text", "지난 일정 보기"], ["할 일", "placeholder", "할 일 검색"]]) {
+  for (const [label, kind, expect] of [["일정", "text", "지난 일정 보기"], ["할 일", "placeholder", "할 일 한 줄로 추가"]]) {
     const t0 = Date.now();
     await page.getByRole("tab", { name: new RegExp("^" + label) }).click();
     const loc = kind === "placeholder" ? page.getByPlaceholder(expect) : page.getByText(expect);
