@@ -82,7 +82,19 @@ N="$("$PGBIN/psql" -At -d owp_partial -c "select count(*) from information_schem
 rm -f "$PART"
 
 # ---------------------------------------------------------------------
-say "4) 쓰던 프로젝트에 잘못 설치하면 멈추는가"
+say "4) 표 권한이 자동으로 붙지 않는 프로젝트에서도 되는가"
+# ---------------------------------------------------------------------
+# 일부 프로젝트는 "앞으로 만들 표에 자동으로 권한" 설정이 적용되지 않는다.
+# 그 상태를 만들어 두고 설치해, 로그인한 사람이 실제로 읽고 쓸 수 있는지 본다.
+fresh_db owp_nogrant
+psqlq -d owp_nogrant -c "alter default privileges in schema public revoke all on tables from anon, authenticated, service_role" >/dev/null
+psqlq -d owp_nogrant -f "$ROOT/supabase/setup.sql" >/dev/null 2>&1 || fail "권한 없는 프로젝트에서 설치 실패"
+CAN="$("$PGBIN/psql" -At -d owp_nogrant -c "select case when has_table_privilege('authenticated','public.wedding_members','select') and has_table_privilege('authenticated','public.guests','insert') then 'yes' else 'no' end")"
+[ "$CAN" = "yes" ] && pass "설치만 하면 로그인한 사람이 표를 읽고 쓸 수 있음" || fail "권한이 없습니다 (permission denied 가 납니다)"
+psqlq -d postgres -c "drop database if exists owp_nogrant" >/dev/null
+
+# ---------------------------------------------------------------------
+say "5) 쓰던 프로젝트에 잘못 설치하면 멈추는가"
 # ---------------------------------------------------------------------
 fresh_db owp_dirty
 psqlq -d owp_dirty -c "create table public.payments(id serial primary key, memo text); insert into public.payments(memo) values ('원래 쓰던 데이터')" >/dev/null
@@ -95,7 +107,7 @@ MADE="$("$PGBIN/psql" -At -d owp_dirty -c "select count(*) from information_sche
 [ "$MADE" = "0" ] && pass "아무 표도 만들지 않고 전부 되돌림" || fail "표가 만들어졌습니다"
 
 # ---------------------------------------------------------------------
-say "5) 지우기(uninstall)가 남의 표를 건드리지 않는가"
+say "6) 지우기(uninstall)가 남의 표를 건드리지 않는가"
 # ---------------------------------------------------------------------
 psqlq -d owp_fresh -c "create table public.my_other_app(id int)" >/dev/null
 psqlq -d owp_fresh -f "$ROOT/supabase/uninstall.sql" >/dev/null 2>&1 || fail "uninstall.sql 실패"

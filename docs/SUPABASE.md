@@ -58,6 +58,7 @@
 | `0001_init.sql` | 테이블, 권한(RLS), 초대 코드 기능 |
 | `0002_revision.sql` | 결혼 정보 보조 칸, 날짜 범위 안전장치 |
 | `0003_realtime.sql` | 실시간 동기화 (삭제까지 전달되게) |
+| `0004_grants.sql` | 로그인한 사람이 표를 읽고 쓸 수 있게 하는 권한 |
 
 세 번째까지 들어가야 **상대가 지운 항목이 내 화면에서도 사라집니다.** 여러 번 실행해도 안전합니다.
 
@@ -201,6 +202,13 @@ select count(*) from information_schema.tables where table_schema = 'public';
 ```
 
 표를 만들기 전에 먼저 회원가입했더라도 그대로 쓰면 됩니다. `setup.sql` 이 이미 가입한 사람의 프로필까지 채워 줍니다.
+
+### "permission denied for table wedding_members" 가 떠요
+
+표는 만들어졌는데 **읽고 쓸 권한이 안 붙은** 상태입니다.
+Supabase 새 프로젝트에는 보통 자동으로 붙지만, 프로젝트나 실행한 롤에 따라 빠지는 경우가 있습니다.
+`supabase/migrations/0004_grants.sql`(40줄)만 SQL Editor 에 붙여넣고 Run 하면 됩니다.
+`setup.sql` 전체를 다시 실행해도 같은 결과입니다.
 
 ### 로그인할 때 "Invalid path specified in request URL" 이 떠요
 
