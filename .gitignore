@@ -10,3 +10,6 @@ next-env.d.ts
 npm-debug.log*
 .vercel
 qa/*.png
+
+# QA 임시 프로브 (커밋하지 않는다)
+qa/_*.mjs
