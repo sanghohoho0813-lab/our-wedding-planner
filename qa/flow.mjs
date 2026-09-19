@@ -359,6 +359,13 @@ await mp.getByRole("dialog").last().getByRole("button", { name: "닫기" }).firs
 await mp.waitForTimeout(400);
 await mp.goto(base + "/plan", { waitUntil: "domcontentloaded" });
 await mp.getByText("할 일 추가").first().waitFor({ timeout: 30000 });
+check("폰에서 스와이프 안내가 처음 한 번 보임", (await mp.getByText(/밀어서/).count()) > 0);
+await mp.getByRole("button", { name: "안내 닫기" }).first().click();
+await mp.waitForTimeout(300);
+check("안내를 닫으면 사라지고 다시 뜨지 않음", (await mp.getByText(/밀어서/).count()) === 0);
+await mp.reload({ waitUntil: "domcontentloaded" });
+await mp.getByText("할 일 추가").first().waitFor({ timeout: 30000 });
+check("새로고침해도 안내가 다시 뜨지 않음", (await mp.getByText(/밀어서/).count()) === 0);
 await mp.getByRole("navigation", { name: "주요 메뉴" }).getByRole("link", { name: "일정" }).click();
 await mp.waitForTimeout(800);
 check("모바일 하단 '일정' 탭 → 달력 화면으로 전환", (await mp.getByText("지난 일정 보기").count()) > 0, mp.url());

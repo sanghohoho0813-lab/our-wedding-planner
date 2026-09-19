@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import { InlineAdd } from "@/components/ui/InlineAdd";
+import { SwipeHint } from "@/components/ui/SwipeHint";
 import { SwipeRow } from "@/components/ui/SwipeRow";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { inputCls } from "@/components/ui/Field";
@@ -208,6 +209,8 @@ export function GuestsView({ embedded }: { embedded?: boolean } = {}) {
           </div>
         </div>
       </PageHeader>
+
+      <SwipeHint storageKey="owp:hint:guestSwipe" left="청첩장" right="참석" className="mb-3" />
 
       <MasterDetail
         detail={<GuestDetail guestId={selectedId} />}

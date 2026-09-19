@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/Button";
 import { Chip, ChipSelect } from "@/components/ui/Chip";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { InlineAdd } from "@/components/ui/InlineAdd";
+import { SwipeHint } from "@/components/ui/SwipeHint";
 import { inputCls } from "@/components/ui/Field";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -177,6 +178,8 @@ export function TasksView({ embedded }: { embedded?: boolean } = {}) {
           )}
         </div>
       </PageHeader>
+
+      <SwipeHint storageKey="owp:hint:taskSwipe" left="마감일" right="완료" className="mb-3" />
 
       <MasterDetail
         detail={<TaskDetail taskId={selectedId} />}

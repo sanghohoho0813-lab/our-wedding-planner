@@ -52,15 +52,18 @@ export function InlineAdd({
           className={cn(inputCls, "h-11 rounded-full pl-10")}
         />
       </div>
-      {text.trim() && (
-        <button
-          type="button"
-          onClick={submit}
-          className="h-11 shrink-0 rounded-full bg-accent px-4 text-[0.9375rem] font-medium text-accent-fg transition-colors hover:bg-accent-strong"
-        >
-          {label}
-        </button>
-      )}
+      {/* 항상 자리를 지킨다. 글자를 치는 순간 입력칸이 줄어들면 커서가 튄다. */}
+      <button
+        type="button"
+        onClick={submit}
+        disabled={!text.trim()}
+        className={cn(
+          "h-11 shrink-0 rounded-full px-4 text-[0.9375rem] font-medium transition-colors",
+          text.trim() ? "bg-accent text-accent-fg hover:bg-accent-strong" : "bg-surface-2 text-fg-3",
+        )}
+      >
+        {label}
+      </button>
     </div>
   );
 }
