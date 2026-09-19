@@ -36,6 +36,7 @@ declare
   clashing text[] := array[]::text[];
   t text;
   already_installed boolean;
+  ours boolean;
 begin
   select exists (
     select 1 from information_schema.columns
@@ -44,6 +45,17 @@ begin
 
   if already_installed then
     return; -- 이 앱이 이미 설치된 프로젝트
+  end if;
+
+  -- 이 앱이 중간까지만 설치된 경우(파일을 일부만 붙여넣고 Run 한 경우)도 다시 이어서 실행할 수 있어야 한다.
+  -- generate_invite_code 는 이 앱만 만드는 함수라 '우리가 만든 흔적'으로 쓴다.
+  select exists (
+    select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public' and p.proname in ('generate_invite_code', 'is_wedding_member')
+  ) into ours;
+
+  if ours then
+    return; -- 앞부분만 실행된 상태. 이어서 나머지를 만든다.
   end if;
 
   foreach t in array array[
@@ -87,6 +99,10 @@ create table if not exists public.profiles (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- 다른 템플릿이 만든 profiles 가 이미 있을 수도 있다. 우리가 쓰는 칸만 채워 넣는다.
+alter table public.profiles add column if not exists display_name text;
+alter table public.profiles add column if not exists avatar_url text;
 
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$
@@ -631,4 +647,28 @@ begin
       end if;
     end loop;
   end if;
+end $$;
+
+-- =====================================================================
+-- 설치 확인
+-- 파일을 끝까지 붙여넣고 Run 했는지 여기서 알려준다.
+-- (일부만 붙여넣으면 이 검사까지 오지 못하므로, 이 메시지가 보이면 끝까지 실행된 것이다.)
+-- =====================================================================
+do $$
+declare n int;
+begin
+  select count(*) into n from information_schema.tables
+  where table_schema = 'public' and table_name in (
+    'profiles','weddings','wedding_members','tasks','budget_categories','budget_items','payments',
+    'vendors','venues','honeymoon','honeymoon_items','music_items','outfit_items','guests',
+    'invitation_meetings','gifts','events','memos','activity_logs','attachments','user_settings');
+
+  if n < 21 then
+    raise exception E'설치가 끝나지 않았습니다. 표가 %개만 만들어졌습니다.\n\n'
+      'setup.sql 파일을 처음부터 끝까지 전부 붙여넣었는지 확인한 뒤 다시 Run 해주세요.', n;
+  end if;
+
+  -- PostgREST 가 새 표를 바로 알아보도록 스키마 캐시를 깨운다
+  notify pgrst, 'reload schema';
+  raise notice '설치 완료: 표 %개가 준비되었습니다. 앱으로 돌아가 다시 시도를 누르세요.', n;
 end $$;

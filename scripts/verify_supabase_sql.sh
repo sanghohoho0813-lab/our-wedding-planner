@@ -67,7 +67,22 @@ N=$("$PGBIN/psql" -At -d owp_fresh -c "select count(*) from information_schema.t
 [ "$N" = "21" ] && pass "두 번 실행해도 표는 21개 그대로" || fail "표 개수가 달라졌습니다 ($N)"
 
 # ---------------------------------------------------------------------
-say "3) 쓰던 프로젝트에 잘못 설치하면 멈추는가"
+say "3) 파일을 일부만 붙여넣고 Run 했다가 다시 전체를 실행하면"
+# ---------------------------------------------------------------------
+fresh_db owp_partial
+CUT="$(grep -n 'drop trigger if exists on_auth_user_created' "$ROOT/supabase/setup.sql" | head -1 | cut -d: -f1)"
+PART="$(mktemp /tmp/owp-part-XXXX.sql)"
+head -n "$CUT" "$ROOT/supabase/setup.sql" > "$PART"
+psqlq -d owp_partial -f "$PART" >/dev/null 2>&1 || fail "앞부분 실행부터 실패"
+HAS_P="$("$PGBIN/psql" -At -d owp_partial -c "select count(*) from information_schema.tables where table_schema='public' and table_name='profiles'")"
+[ "$HAS_P" = "1" ] && pass "앞부분만 실행되면 profiles 까지 만들어짐(사용자가 겪은 상태)" || fail "앞부분 실행 결과가 예상과 다름"
+psqlq -d owp_partial -f "$ROOT/supabase/setup.sql" >/dev/null 2>&1 || fail "이어서 전체를 실행하지 못함(안전장치에 막힘)"
+N="$("$PGBIN/psql" -At -d owp_partial -c "select count(*) from information_schema.tables where table_schema='public'")"
+[ "$N" = "21" ] && pass "이어서 전체를 실행하면 표 21개가 완성됨" || fail "표가 $N 개만 있습니다"
+rm -f "$PART"
+
+# ---------------------------------------------------------------------
+say "4) 쓰던 프로젝트에 잘못 설치하면 멈추는가"
 # ---------------------------------------------------------------------
 fresh_db owp_dirty
 psqlq -d owp_dirty -c "create table public.payments(id serial primary key, memo text); insert into public.payments(memo) values ('원래 쓰던 데이터')" >/dev/null
@@ -80,7 +95,7 @@ MADE="$("$PGBIN/psql" -At -d owp_dirty -c "select count(*) from information_sche
 [ "$MADE" = "0" ] && pass "아무 표도 만들지 않고 전부 되돌림" || fail "표가 만들어졌습니다"
 
 # ---------------------------------------------------------------------
-say "4) 지우기(uninstall)가 남의 표를 건드리지 않는가"
+say "5) 지우기(uninstall)가 남의 표를 건드리지 않는가"
 # ---------------------------------------------------------------------
 psqlq -d owp_fresh -c "create table public.my_other_app(id int)" >/dev/null
 psqlq -d owp_fresh -f "$ROOT/supabase/uninstall.sql" >/dev/null 2>&1 || fail "uninstall.sql 실패"
@@ -92,6 +107,7 @@ OTHER="$("$PGBIN/psql" -At -d owp_fresh -c "select count(*) from information_sch
 # ---------------------------------------------------------------------
 psqlq -d postgres -c "drop database if exists owp_fresh" >/dev/null
 psqlq -d postgres -c "drop database if exists owp_dirty" >/dev/null
+psqlq -d postgres -c "drop database if exists owp_partial" >/dev/null
 rm -f "$DRIVER" "${LOADER:-}"
 if [ "${STARTED_HERE:-0}" = "1" ]; then
   su postgres -c "$PGBIN/pg_ctl -D $PGDIR/data stop" >/dev/null 2>&1 || true

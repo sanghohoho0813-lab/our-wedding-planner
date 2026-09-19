@@ -19,6 +19,7 @@ declare
   clashing text[] := array[]::text[];
   t text;
   already_installed boolean;
+  ours boolean;
 begin
   select exists (
     select 1 from information_schema.columns
@@ -27,6 +28,17 @@ begin
 
   if already_installed then
     return; -- 이 앱이 이미 설치된 프로젝트
+  end if;
+
+  -- 이 앱이 중간까지만 설치된 경우(파일을 일부만 붙여넣고 Run 한 경우)도 다시 이어서 실행할 수 있어야 한다.
+  -- generate_invite_code 는 이 앱만 만드는 함수라 '우리가 만든 흔적'으로 쓴다.
+  select exists (
+    select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public' and p.proname in ('generate_invite_code', 'is_wedding_member')
+  ) into ours;
+
+  if ours then
+    return; -- 앞부분만 실행된 상태. 이어서 나머지를 만든다.
   end if;
 
   foreach t in array array[
@@ -70,6 +82,10 @@ create table if not exists public.profiles (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- 다른 템플릿이 만든 profiles 가 이미 있을 수도 있다. 우리가 쓰는 칸만 채워 넣는다.
+alter table public.profiles add column if not exists display_name text;
+alter table public.profiles add column if not exists avatar_url text;
 
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer set search_path = public as $$

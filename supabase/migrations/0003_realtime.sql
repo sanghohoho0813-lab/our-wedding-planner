@@ -36,3 +36,27 @@ begin
     end loop;
   end if;
 end $$;
+
+-- =====================================================================
+-- 설치 확인
+-- 파일을 끝까지 붙여넣고 Run 했는지 여기서 알려준다.
+-- (일부만 붙여넣으면 이 검사까지 오지 못하므로, 이 메시지가 보이면 끝까지 실행된 것이다.)
+-- =====================================================================
+do $$
+declare n int;
+begin
+  select count(*) into n from information_schema.tables
+  where table_schema = 'public' and table_name in (
+    'profiles','weddings','wedding_members','tasks','budget_categories','budget_items','payments',
+    'vendors','venues','honeymoon','honeymoon_items','music_items','outfit_items','guests',
+    'invitation_meetings','gifts','events','memos','activity_logs','attachments','user_settings');
+
+  if n < 21 then
+    raise exception E'설치가 끝나지 않았습니다. 표가 %개만 만들어졌습니다.\n\n'
+      'setup.sql 파일을 처음부터 끝까지 전부 붙여넣었는지 확인한 뒤 다시 Run 해주세요.', n;
+  end if;
+
+  -- PostgREST 가 새 표를 바로 알아보도록 스키마 캐시를 깨운다
+  notify pgrst, 'reload schema';
+  raise notice '설치 완료: 표 %개가 준비되었습니다. 앱으로 돌아가 다시 시도를 누르세요.', n;
+end $$;
