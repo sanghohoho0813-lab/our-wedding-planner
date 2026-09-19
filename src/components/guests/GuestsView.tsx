@@ -1,6 +1,6 @@
 "use client";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, Mail, MessageCircle, Plus, Search, Users } from "lucide-react";
+import { Check, ChevronDown, Mail, MessageCircle, Plus, Search, Users } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 import { useMediaQuery } from "@/lib/hooks";
@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import { InlineAdd } from "@/components/ui/InlineAdd";
+import { SwipeRow } from "@/components/ui/SwipeRow";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { inputCls } from "@/components/ui/Field";
 import { Segmented } from "@/components/ui/Segmented";
@@ -33,7 +34,22 @@ function GuestRow({ g, onOpen, selected }: { g: Guest; onOpen: (id: string) => v
   const patch = useWeddingStore((s) => s.patch);
   const people = 1 + g.companions;
   return (
-    <motion.li layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className={cn("flex items-center gap-2 px-3 py-2.5 transition-colors hover:bg-surface-2 sm:px-4", selected && "bg-accent-softer ring-1 ring-inset ring-accent/30")}>
+    <motion.li layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+      <SwipeRow
+        right={{
+          icon: <Check />,
+          label: g.rsvp === "yes" ? "미정으로" : "참석",
+          tone: "success",
+          onAction: () => patch("guests", g.id, { rsvp: g.rsvp === "yes" ? "maybe" : "yes" }),
+        }}
+        left={{
+          icon: <Mail />,
+          label: g.invitation_sent ? "전달 취소" : "청첩장",
+          tone: "accent",
+          onAction: () => patch("guests", g.id, { invitation_sent: !g.invitation_sent }),
+        }}
+      >
+        <div className={cn("flex items-center gap-2 px-3 py-2.5 transition-colors hover:bg-surface-2 sm:px-4", selected && "bg-accent-softer ring-1 ring-inset ring-accent/30")}>
       <button type="button" onClick={() => onOpen(g.id)} className="min-w-0 flex-1 text-left">
         <span className="flex items-center gap-2">
           <span className={cn("inline-flex size-8 shrink-0 items-center justify-center rounded-full text-[0.8125rem] font-bold", g.side === "groom" ? "bg-info-soft text-info" : "bg-accent-soft text-accent-text")}>
@@ -78,6 +94,8 @@ function GuestRow({ g, onOpen, selected }: { g: Guest; onOpen: (id: string) => v
           </button>
         ))}
       </div>
+        </div>
+      </SwipeRow>
     </motion.li>
   );
 }

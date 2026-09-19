@@ -310,8 +310,14 @@ check("복원 직전 상태도 '통째로 바꾸기 직전' 스냅샷으로 남�
 
 // --- 검색 ---
 await goto("/search?q=스냅");
-await page.waitForTimeout(600);
+await page.waitForTimeout(1800);
 check("전역 검색", (await page.getByText("스트롤 스냅").count()) > 0);
+await goto("/search");
+await page.waitForTimeout(700);
+check("검색 첫 화면에 최근 찾은 말", (await page.getByText("최근 찾은 말").count()) > 0 && (await page.getByRole("button", { name: "스냅", exact: true }).count()) > 0);
+await page.getByRole("button", { name: "스냅", exact: true }).click();
+await page.waitForTimeout(900);
+check("최근 찾은 말을 누르면 바로 검색", (await page.getByText("스트롤 스냅").count()) > 0);
 
 // --- 오프라인(PWA): 서비스 워커 + 캐시된 화면 ---
 const swActive = await page.evaluate(() => navigator.serviceWorker.ready.then((r) => !!r.active).catch(() => false));
@@ -404,6 +410,17 @@ await sp.waitForTimeout(400);
 await sp.locator("li").filter({ hasText: "신혼집 구하기" }).first().getByText("신혼집 구하기").click();
 await sp.waitForTimeout(600);
 check("스와이프를 넣어도 탭으로 상세가 열림", (await sp.getByRole("dialog").count()) > 0);
+// 하객도 같은 스와이프 언어
+await sp.goto(base + "/guests", { waitUntil: "domcontentloaded", timeout: 60000 });
+await sp.getByText("공윤재").first().waitFor({ timeout: 20000 });
+const gBefore = (await swStore()).guests.find((g) => g.name === "공윤재");
+await swipeRow("공윤재", 1);
+const gAfter = (await swStore()).guests.find((g) => g.name === "공윤재");
+check("하객을 오른쪽으로 밀어 참석 확정", gBefore.rsvp !== "yes" && gAfter.rsvp === "yes", `${gBefore.rsvp} → ${gAfter.rsvp}`);
+await swipeRow("공윤재", -1);
+const gAfter2 = (await swStore()).guests.find((g) => g.name === "공윤재");
+check("하객을 왼쪽으로 밀어 청첩장 전달", gAfter2.invitation_sent !== gAfter.invitation_sent);
+
 await sw.close();
 
 console.log("\nERRORS:", errors.length ? errors.slice(0, 6) : "none");
