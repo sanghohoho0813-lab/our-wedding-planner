@@ -5,9 +5,13 @@ import { DEFAULTS, type DataTable, type RowValues } from "@/lib/db/defaults";
 import type { ActivityLog, TableMap, Wedding, WeddingData } from "@/lib/db/types";
 import { ENTITY_LABEL, VENDOR_CATEGORY_LABEL } from "@/lib/labels";
 import { formatKRW } from "@/lib/money";
-import { josa, nowISO, uid } from "@/lib/utils";
+import { josa, nowISO, particle, uid } from "@/lib/utils";
+import { readMembers } from "@/lib/members";
 import { explainDbError } from "@/lib/db/errors";
 import { markJustAdded } from "@/lib/fresh";
+import { enqueue, flushOutbox, onOutboxChange, onOutboxDropped, outboxSize, restoreOutbox, scheduleRetry, type Op } from "./outbox";
+import { didITouch, fieldLabel, findClashes, forget, rememberMine, valueLabel } from "./conflict";
+import { isTransient } from "./transient";
 import { toast } from "./ui-store";
 
 type Status = "idle" | "loading" | "ready" | "error";
@@ -29,6 +33,12 @@ interface WeddingState {
   adapter: DataAdapter | null;
   pending: number;
   lastSavedAt: number | null;
+  /** 아직 서버에 못 보낸 수정 건수 (연결되면 자동으로 보낸다) */
+  queued: number;
+  /** 서버에 못 붙고 있는 상태인가 */
+  offline: boolean;
+  /** 못 보낸 것들을 지금 바로 다시 보낸다 */
+  flush: () => Promise<void>;
   realtime: RealtimeStatus;
   init: (adapter: DataAdapter, weddingId: string, userId: string) => Promise<void>;
   reload: () => Promise<void>;
@@ -41,8 +51,22 @@ interface WeddingState {
   replaceAll: (data: WeddingData) => Promise<void>;
 }
 
+/**
+ * 상대를 부르는 말.
+ * 한 공간에 두 사람뿐이라 '나 아닌 멤버' 가 곧 상대다.
+ * 이름을 적어두지 않았으면 그냥 '상대' 라고 한다.
+ */
+function otherLabel(state: { data: WeddingData | null; userId: string | null }): string {
+  const w = state.data?.wedding;
+  if (!w) return "상대";
+  const entry = Object.entries(readMembers(w)).find(([id]) => id !== state.userId);
+  const name = entry?.[1]?.name?.trim();
+  return name ? `${name}님` : "상대";
+}
+
 const lastLogged = new Map<string, number>();
 let unsubscribe: (() => void) | null = null;
+let onlineHooked = false;
 
 function nameOf(table: DataTable, row: Record<string, unknown>): string {
   const candidates = ["title", "name", "recipient", "content", "kind"];
@@ -154,16 +178,34 @@ function describe(
   }
 }
 
+
 export const useWeddingStore = create<WeddingState>((set, get) => {
-  const run = (op: () => Promise<void>) => {
+  /**
+   * 화면은 이미 바뀌었고(낙관적 수정), 이제 서버로 보낸다.
+   *
+   * 실패했을 때가 중요하다.
+   * - 네트워크 문제면 **화면을 되돌리지 않고** 보낼 편지함에 넣어 두었다가 나중에 보낸다.
+   *   (전에는 여기서 reload() 를 불러서 방금 고친 내용을 지워 버렸다)
+   * - 권한 · 표 없음처럼 고쳐야 하는 문제면 무엇을 하면 되는지 알려주고 서버 상태로 되돌린다.
+   */
+  const run = (op: () => Promise<void>, undoable?: Op) => {
     set((s) => ({ pending: s.pending + 1 }));
     op()
-      .then(() => set((s) => ({ pending: Math.max(0, s.pending - 1), lastSavedAt: Date.now() })))
+      .then(() => set((s) => ({ pending: Math.max(0, s.pending - 1), lastSavedAt: Date.now(), queued: outboxSize() })))
       .catch((err: unknown) => {
         console.error(err);
         set((s) => ({ pending: Math.max(0, s.pending - 1) }));
-        // 왜 실패했는지 알 수 있는 오류면 그대로 알려준다.
-        // "저장에 실패했어요" 만 뜨면 무엇을 해야 하는지 알 길이 없다.
+        if (isTransient(err)) {
+          // 연결 문제다. 화면을 건드리지 않는다.
+          if (undoable) {
+            enqueue(undoable);
+            set({ queued: outboxSize(), offline: true });
+            scheduleRetry(get().adapter);
+          } else {
+            set({ offline: true });
+          }
+          return;
+        }
         const help = explainDbError(err instanceof Error ? err.message : String(err ?? ""));
         toast(help.known ? `${help.title} — ${help.steps[0] ?? ""}` : "저장에 실패했어요. 다시 시도해 주세요.", {
           tone: "error",
@@ -187,7 +229,19 @@ export const useWeddingStore = create<WeddingState>((set, get) => {
     const list = data[e.table] as { id: string }[];
     if (e.type === "delete") {
       if (!list.some((r) => r.id === e.id)) return;
+      // 내가 방금 고치던 걸 상대가 지웠다면 말없이 사라지게 두지 않는다.
+      // (내 수정은 이미 서버에 0건으로 처리돼 사라진 상태다)
+      const wasMine = didITouch(e.table, e.id);
+      forget(e.table, e.id);
       set({ data: { ...data, [e.table]: list.filter((r) => r.id !== e.id) } });
+      if (wasMine) {
+        const who = otherLabel(get());
+        const what = ENTITY_LABEL[e.table] ?? "항목";
+        toast(`${josa(who, "이/가")} 방금 이 ${josa(what, "을/를")} 지웠어요. 고치던 내용은 저장되지 않았어요.`, {
+          tone: "error",
+          duration: 9000,
+        });
+      }
       return;
     }
     const idx = list.findIndex((r) => r.id === e.row.id);
@@ -195,6 +249,30 @@ export const useWeddingStore = create<WeddingState>((set, get) => {
     if (idx >= 0) next[idx] = { ...next[idx], ...e.row };
     else next.push(e.row);
     set({ data: { ...data, [e.table]: next } });
+
+    // 상대가 내가 방금 쓴 칸을 다른 값으로 덮었으면 알려준다.
+    // 나중 것이 이기는 규칙은 그대로 두되, 조용히 사라지지는 않게 한다.
+    if (idx >= 0) {
+      const clashes = findClashes(e.table, e.row.id, e.row as unknown as Record<string, unknown>);
+      if (clashes.length > 0) {
+        const c = clashes[0];
+        const more = clashes.length > 1 ? ` 외 ${clashes.length - 1}곳` : "";
+        const who = otherLabel(get());
+        const what = `${fieldLabel(c.field)}${more}`;
+        const val = valueLabel(e.table, c.field, c.theirValue);
+        toast(`${josa(who, "이/가")} ${josa(what, "을/를")} '${val}'${particle(val, "(으)로")} 바꿨어요.`, {
+          tone: "error",
+          duration: 10000,
+          action: {
+            label: "내 값으로",
+            onClick: () => {
+              const patch = Object.fromEntries(clashes.map((x) => [x.field, x.mineValue]));
+              get().patch(e.table as DataTable, e.row.id, patch as never, { log: `${josa(ENTITY_LABEL[e.table] ?? "항목", "을/를")} 내가 쓴 값으로 되돌렸어요.` });
+            },
+          },
+        });
+      }
+    }
   };
 
   return {
@@ -206,29 +284,73 @@ export const useWeddingStore = create<WeddingState>((set, get) => {
     adapter: null,
     pending: 0,
     lastSavedAt: null,
+    queued: 0,
+    offline: false,
     realtime: "off",
 
     async init(adapter, weddingId, userId) {
       set({ status: "loading", adapter, weddingId, userId, error: null });
       try {
         const data = await adapter.loadWedding(weddingId);
-        set({ data, status: "ready" });
+        set({ data, status: "ready", queued: restoreOutbox() });
         unsubscribe?.();
         unsubscribe = adapter.subscribe?.(weddingId, applyChange, (realtime) => set({ realtime })) ?? null;
+        // 껐다 켠 사이에 못 보낸 것이 있으면 지금 보낸다
+        void get().flush();
+        if (typeof window !== "undefined" && !onlineHooked) {
+          onlineHooked = true;
+          onOutboxChange((n) => set({ queued: n, offline: n > 0 ? get().offline : false }));
+          onOutboxDropped((d) => {
+            const help = explainDbError(d[0].error);
+            toast(`저장하지 못한 수정 ${d.length}건이 있어요. ${help.known ? (help.steps[0] ?? help.title) : "화면을 새로 불러왔어요."}`, {
+              tone: "error",
+              duration: 10000,
+            });
+            void get().reload();
+          });
+          window.addEventListener("online", () => void get().flush());
+        }
       } catch (err) {
         console.error(err);
         set({ status: "error", error: err instanceof Error ? err.message : "데이터를 불러오지 못했어요." });
       }
     },
 
+    async flush() {
+      const { adapter } = get();
+      if (!adapter) return;
+      const before = outboxSize();
+      // 못 보낸 것에 대한 안내는 onOutboxDropped 한 곳에서 한다(자동 재시도도 거기로 온다)
+      const { left, sent, dropped } = await flushOutbox(adapter);
+      set({ queued: left, offline: left > 0 });
+      if (sent > 0 && left === 0) {
+        toast(`저장 대기 중이던 ${sent}건을 모두 저장했어요.`, { tone: "success" });
+        void get().reload();
+      } else if (before > 0 && left === 0 && dropped.length === 0) {
+        void get().reload();
+      }
+    },
+
+    /**
+     * 서버 상태를 다시 읽어온다.
+     *
+     * 실패했을 때 **이미 보고 있던 화면을 오류 화면으로 바꾸지 않는다.**
+     * 지하철에서 잠깐 끊겼다고 하객 명단이 통째로 사라지면, 그게 제일 나쁜 경험이다.
+     * 첫 로딩(아직 아무것도 못 받은 상태)일 때만 오류 화면을 보여준다.
+     */
     async reload() {
       const { adapter, weddingId } = get();
       if (!adapter || !weddingId) return;
       try {
         const data = await adapter.loadWedding(weddingId);
-        set({ data, status: "ready", error: null });
+        set({ data, status: "ready", error: null, offline: outboxSize() > 0 });
       } catch (err) {
-        set({ status: "error", error: err instanceof Error ? err.message : "데이터를 불러오지 못했어요." });
+        const msg = err instanceof Error ? err.message : "데이터를 불러오지 못했어요.";
+        if (get().data) {
+          set({ offline: true });
+          return;
+        }
+        set({ status: "error", error: msg });
       }
     },
 
@@ -246,7 +368,8 @@ export const useWeddingStore = create<WeddingState>((set, get) => {
         created_at: nowISO(),
       };
       set({ data: { ...data, activity_logs: [entry, ...data.activity_logs].slice(0, 200) } });
-      run(() => adapter.insert("activity_logs", entry));
+      // 끊긴 동안의 기록도 쌓아 두었다가 보낸다 (안 그러면 '누가 뭘 했는지' 가 빈다)
+      run(() => adapter.insert("activity_logs", entry), { kind: "insert", table: "activity_logs", row: entry });
     },
 
     add(table, values, opts) {
@@ -264,7 +387,7 @@ export const useWeddingStore = create<WeddingState>((set, get) => {
       set({ data: { ...data, [table]: [...(data[table] as unknown[]), row] } });
       // 방금 만든 것은 접힘·필터에 숨지 않게 표시해 둔다 (사라지면 저장이 안 된 줄 안다)
       markJustAdded(row.id);
-      run(() => adapter.insert(table, row));
+      run(() => adapter.insert(table, row), { kind: "insert", table, row });
       if (opts?.log !== false) {
         const desc = opts?.log ?? describe(table, "create", row as unknown as Record<string, unknown>, undefined, data);
         get().log(desc, table, row.id, "create");
@@ -283,7 +406,8 @@ export const useWeddingStore = create<WeddingState>((set, get) => {
       const next = [...list];
       next[idx] = nextRow;
       set({ data: { ...data, [table]: next } });
-      run(() => adapter.update(table, id, fullPatch));
+      rememberMine(table, id, fullPatch as Record<string, unknown>, list[idx] as unknown as Record<string, unknown>);
+      run(() => adapter.update(table, id, fullPatch), { kind: "update", table, id, patch: fullPatch as Record<string, unknown> });
       if (opts?.log !== false) {
         const key = `${table}:${id}:update`;
         const last = lastLogged.get(key) ?? 0;
@@ -305,7 +429,7 @@ export const useWeddingStore = create<WeddingState>((set, get) => {
       const row = list.find((r) => r.id === id);
       if (!row) return;
       set({ data: { ...data, [table]: list.filter((r) => r.id !== id) } });
-      run(() => adapter.remove(table, id));
+      run(() => adapter.remove(table, id), { kind: "remove", table, id });
       if (opts?.log !== false) {
         const desc = opts?.log ?? describe(table, "delete", row as unknown as Record<string, unknown>, undefined, data);
         get().log(desc, table, id, "delete");
@@ -325,7 +449,7 @@ export const useWeddingStore = create<WeddingState>((set, get) => {
       const list = data[table] as TableMap[typeof table][];
       if (list.some((r) => r.id === row.id)) return;
       set({ data: { ...data, [table]: [...list, row] } });
-      run(() => adapter.insert(table, row));
+      run(() => adapter.insert(table, row), { kind: "insert", table, row });
       toast("복원되었어요.", { tone: "success" });
     },
 
@@ -334,7 +458,7 @@ export const useWeddingStore = create<WeddingState>((set, get) => {
       if (!data || !adapter) return;
       const wedding = { ...data.wedding, ...patch, updated_at: nowISO() };
       set({ data: { ...data, wedding } });
-      run(() => adapter.updateWedding(wedding.id, patch));
+      run(() => adapter.updateWedding(wedding.id, patch), { kind: "wedding", id: wedding.id, patch });
       if (opts?.log !== false) {
         const key = "wedding:update";
         const last = lastLogged.get(key) ?? 0;

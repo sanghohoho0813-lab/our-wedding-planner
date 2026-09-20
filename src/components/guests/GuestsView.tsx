@@ -2,7 +2,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, ChevronDown, Mail, MessageCircle, ListPlus, Mic, Search, Users } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useMediaQuery } from "@/lib/hooks";
 import type { Guest, GuestSide, Rsvp } from "@/lib/db/types";
 import { computeGuestStats } from "@/lib/compute";
@@ -38,11 +38,29 @@ const RSVP_STYLE: Record<Rsvp, string> = {
   no: "bg-danger-soft text-danger",
 };
 
-function GuestRow({ g, onOpen, selected }: { g: Guest; onOpen: (id: string) => void; selected?: boolean }) {
+/**
+ * 하객 한 줄.
+ *
+ * 300명이 되면 이 컴포넌트가 300개다. 그래서 두 가지를 지킨다.
+ * - memo: 한 명의 참석 여부를 바꿨다고 나머지 299줄을 다시 그리지 않는다.
+ * - layout 애니메이션은 명단이 길면 끈다 (framer-motion 의 layout 은 매번 모든 줄의
+ *   위치를 재는데, 줄이 많아지면 필터 한 번에 0.5초씩 밀린다. 부드러움보다 반응이 먼저다).
+ */
+const GuestRow = memo(function GuestRow({
+  g,
+  onOpen,
+  selected,
+  animate,
+}: {
+  g: Guest;
+  onOpen: (id: string) => void;
+  selected?: boolean;
+  animate?: boolean;
+}) {
   const patch = useWeddingStore((s) => s.patch);
   const people = 1 + g.companions;
   return (
-    <motion.li layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+    <motion.li layout={animate} initial={animate ? { opacity: 0 } : false} animate={{ opacity: 1 }} exit={animate ? { opacity: 0 } : undefined}>
       <SwipeRow
         right={{
           icon: <Check />,
@@ -119,7 +137,10 @@ function GuestRow({ g, onOpen, selected }: { g: Guest; onOpen: (id: string) => v
       </SwipeRow>
     </motion.li>
   );
-}
+});
+
+/** 이 수를 넘으면 '부드러움' 보다 '빠름' 을 택한다 */
+const HEAVY_LIST = 80;
 
 export function GuestsView({ embedded }: { embedded?: boolean } = {}) {
   const params = useSearchParams();
@@ -146,7 +167,7 @@ export function GuestsView({ embedded }: { embedded?: boolean } = {}) {
       else next.add(key);
       return next;
     });
-  const open = (id: string) => (wide ? setSelectedId(id) : setEditId(id));
+  const open = useCallback((id: string) => (wide ? setSelectedId(id) : setEditId(id)), [wide]);
   const stats = computeGuestStats(guests);
 
   const list = useMemo(() => {
@@ -317,7 +338,7 @@ export function GuestsView({ embedded }: { embedded?: boolean } = {}) {
                     <ul className="divide-y divide-line">
                       <AnimatePresence initial={false}>
                         {g.items.map((guest) => (
-                          <GuestRow key={guest.id} g={guest} onOpen={open} selected={selectedId === guest.id} />
+                          <GuestRow key={guest.id} g={guest} onOpen={open} selected={selectedId === guest.id} animate={list.length <= HEAVY_LIST} />
                         ))}
                       </AnimatePresence>
                     </ul>

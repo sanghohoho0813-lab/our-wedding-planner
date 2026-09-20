@@ -7,7 +7,15 @@ import { useSettingsStore } from "@/lib/store/settings-store";
 /** Supabase 모드에서 user_settings 테이블과 동기화 */
 export function SettingsSync({ userId }: { userId: string }) {
   useEffect(() => {
-    const sb = getSupabaseBrowser();
+    // 설정 동기화는 있으면 좋은 기능이지 앱이 열리는 조건이 아니다.
+    // 여기서 던지면 화면 전체가 하얗게 되므로, 못 붙으면 조용히 포기한다.
+    let sb;
+    try {
+      sb = getSupabaseBrowser();
+    } catch (e) {
+      console.warn("설정 동기화를 건너뜁니다:", e);
+      return;
+    }
     let cancelled = false;
     void sb
       .from("user_settings")

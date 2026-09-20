@@ -64,7 +64,7 @@ export function TopBar() {
         </form>
 
         <div className="ml-auto flex items-center gap-0.5">
-          <SaveIndicator className="mr-1 hidden sm:inline-flex" />
+          <SaveIndicator className="mr-1" />
           <Link href="/search" className="lg:hidden" aria-label="검색">
             <IconButton label="검색" tabIndex={-1}>
               <Search className="size-5" />

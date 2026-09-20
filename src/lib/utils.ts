@@ -18,13 +18,20 @@ export function nowISO(): string {
   return new Date().toISOString();
 }
 
-/** 한국어 조사 처리: josa("청첩장", "이/가") → "청첩장이" */
-export function josa(word: string, pair: "이/가" | "을/를" | "은/는" | "과/와"): string {
-  const [withFinal, withoutFinal] = pair.split("/");
+/** 한국어 조사 처리: josa("청첩장", "이/가") → "청첩장이", josa("불참", "(으)로") → "불참으로" */
+export function josa(word: string, pair: "이/가" | "을/를" | "은/는" | "과/와" | "(으)로"): string {
   const last = word.charCodeAt(word.length - 1);
-  if (last < 0xac00 || last > 0xd7a3) return `${word}${withoutFinal}`;
-  const hasFinal = (last - 0xac00) % 28 !== 0;
-  return `${word}${hasFinal ? withFinal : withoutFinal}`;
+  const korean = last >= 0xac00 && last <= 0xd7a3;
+  const final = korean ? (last - 0xac00) % 28 : 0;
+  // '(으)로' 는 받침이 없거나 'ㄹ' 받침이면 '로'
+  if (pair === "(으)로") return `${word}${!korean || final === 0 || final === 8 ? "로" : "으로"}`;
+  const [withFinal, withoutFinal] = pair.split("/");
+  return `${word}${korean && final !== 0 ? withFinal : withoutFinal}`;
+}
+
+/** 조사만 떼어 온다: 따옴표 뒤에 붙일 때 쓴다 — `'${v}'${particle(v, "(으)로")}` */
+export function particle(word: string, pair: Parameters<typeof josa>[1]): string {
+  return josa(word, pair).slice(word.length);
 }
 
 export function clamp(n: number, min: number, max: number) {
