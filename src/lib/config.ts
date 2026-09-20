@@ -42,6 +42,12 @@ export const SUPABASE_ANON_KEY = RAW_KEY;
 /** 화면에 "어느 프로젝트에 연결했는지" 보여줄 때 쓴다 (공개되어도 되는 값). */
 export const SUPABASE_HOST = SUPABASE_URL.replace(/^https?:\/\//i, "");
 
+/** 내 컴퓨터에서 돌아가는 주소인가 (로컬 Supabase 스택 검증용) */
+function isLocalHost(host: string): boolean {
+  const name = host.split(":")[0].toLowerCase();
+  return name === "localhost" || name === "127.0.0.1" || name === "[::1]" || name === "::1";
+}
+
 /** JWT 형태의 Supabase 키에서 role 값을 꺼낸다. 형식이 다르면 null. */
 function keyRole(token: string): string | null {
   const parts = token.split(".");
@@ -70,7 +76,9 @@ export const supabaseEnvIssue: string | null = (() => {
   if (/\s/.test(SUPABASE_URL) || /\s/.test(SUPABASE_ANON_KEY)) {
     return "환경변수 값에 공백이나 줄바꿈이 섞여 있어요. 앞뒤 공백 없이 한 줄로 다시 넣어주세요.";
   }
-  if (!/^https:\/\//i.test(SUPABASE_URL)) {
+  // 내 컴퓨터에서 돌리는 Supabase(로컬 스택 · 직접 띄운 서버)만 http 를 허용한다.
+  // 그 외에는 https 를 강제한다 — 키가 평문으로 오가면 안 된다.
+  if (!/^https:\/\//i.test(SUPABASE_URL) && !isLocalHost(SUPABASE_HOST)) {
     return `NEXT_PUBLIC_SUPABASE_URL 이 주소 형태가 아니에요 (지금: ${RAW_URL}). https://xxxx.supabase.co 를 넣어주세요.`;
   }
   if (/(^|\.)supabase\.com$/i.test(SUPABASE_HOST) || /\/dashboard|\/project\//i.test(RAW_URL)) {

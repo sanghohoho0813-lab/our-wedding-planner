@@ -19,5 +19,10 @@ export interface DataAdapter {
   remove(table: TableName, id: string): Promise<void>;
   updateWedding(id: string, patch: Partial<Wedding>): Promise<void>;
   replaceAll?(weddingId: string, data: WeddingData): Promise<void>;
+  /**
+   * 이 결혼 공간의 모든 행을 지운다 (백업 복원 · 전체 비우기 전에).
+   * 없으면 복원이 '덮어쓰기' 가 아니라 '덧붙이기' 가 되어 데이터가 두 배가 된다.
+   */
+  clearWedding?(weddingId: string): Promise<void>;
   subscribe?(weddingId: string, handler: (e: ChangeEvent) => void, onStatus?: (s: RealtimeStatus) => void): () => void;
 }

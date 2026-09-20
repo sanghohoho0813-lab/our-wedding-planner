@@ -59,12 +59,19 @@ export function AuthForm({ mode }: { mode: "login" | "signup" }) {
     const sb = getSupabaseBrowser();
     try {
       if (mode === "signup") {
-        const { error } = await sb.auth.signUp({
+        const { data, error } = await sb.auth.signUp({
           email,
           password,
           options: { data: { display_name: name }, emailRedirectTo: `${location.origin}/auth/callback` },
         });
         if (error) throw error;
+        // 프로젝트 설정에 따라 가입과 동시에 로그인이 되는 경우가 있다.
+        // 그때도 "메일을 보냈어요" 라고 하면, 오지 않을 메일을 기다리며 멈춰 있게 된다.
+        if (data.session) {
+          router.replace(params.get("next") ?? "/");
+          router.refresh();
+          return;
+        }
         setMsg("가입 확인 메일을 보냈어요. 메일의 링크를 눌러 가입을 완료해 주세요.");
       } else {
         const { error } = await sb.auth.signInWithPassword({ email, password });

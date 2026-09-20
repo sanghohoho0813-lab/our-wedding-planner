@@ -1,5 +1,5 @@
 "use client";
-import { ChevronLeft, ChevronRight, ExternalLink, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, ExternalLink, Plus, Search } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -13,6 +13,9 @@ import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Segmented } from "@/components/ui/Segmented";
+import { FilterBar } from "@/components/ui/FilterBar";
+import { inputCls } from "@/components/ui/Field";
+import { wasJustAdded } from "@/lib/fresh";
 import { Sheet } from "@/components/ui/Sheet";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { AddSheet } from "@/components/plan/AddSheet";
@@ -52,6 +55,7 @@ export function CalendarView({ embedded }: { embedded?: boolean } = {}) {
   const [selected, setSelected] = useState(initialDate);
   const [ym, setYm] = useState({ y: Number(initialDate.slice(0, 4)), m: Number(initialDate.slice(5, 7)) });
   const [showPast, setShowPast] = useState(false);
+  const [q, setQ] = useState("");
   const [editId, setEditId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [info, setInfo] = useState<UnifiedEvent | null>(null);
@@ -73,7 +77,19 @@ export function CalendarView({ embedded }: { embedded?: boolean } = {}) {
   };
 
   const upcomingGroups = useMemo(() => {
-    const list = events.filter((e) => (showPast ? true : e.date >= today));
+    const term = q.trim().toLowerCase();
+    const match = (e: UnifiedEvent) =>
+      !term ||
+      [e.title, e.location, e.memo].some((f) => (f ?? "").toLowerCase().includes(term));
+    const list = events.filter((e) => {
+      if (!match(e)) return false;
+      // 찾는 중이면 지난 일정도 보여준다 (찾는 사람은 날짜를 모른다)
+      if (term) return true;
+      if (showPast || e.date >= today) return true;
+      // 방금 넣은 일정은 지난 날짜라도 무조건 보여준다.
+      // 저장은 됐는데 목록에서 안 보이면 "사라졌다" 고 느낀다.
+      return !!e.id && wasJustAdded(e.id);
+    });
     const groups: { date: string; items: UnifiedEvent[] }[] = [];
     for (const e of list) {
       const g = groups.at(-1);
@@ -81,7 +97,7 @@ export function CalendarView({ embedded }: { embedded?: boolean } = {}) {
       else groups.push({ date: e.date, items: [e] });
     }
     return groups;
-  }, [events, showPast, today]);
+  }, [events, showPast, today, q]);
 
   const grid = monthGrid(ym.y, ym.m);
   const selectedEvents = byDate.get(selected) ?? [];
@@ -114,15 +130,38 @@ export function CalendarView({ embedded }: { embedded?: boolean } = {}) {
 
       {view === "list" ? (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <p className="text-[0.875rem] text-fg-3">{showPast ? "전체 일정" : "오늘 이후 일정"}</p>
-            <Chip size="sm" tone="neutral" active={showPast} onClick={() => setShowPast((v) => !v)}>
-              지난 일정 보기
-            </Chip>
-          </div>
+          <FilterBar
+            label="일정 검색"
+            activeCount={q.trim() ? 1 : 0}
+            chips={
+              <div className="flex items-center gap-2">
+                <p className="flex-1 truncate text-[0.875rem] text-fg-3">
+                  {q.trim() ? `'${q.trim()}' 검색 결과` : showPast ? "전체 일정" : "오늘 이후 일정"}
+                </p>
+                <Chip size="sm" tone="neutral" active={showPast} onClick={() => setShowPast((v) => !v)}>
+                  지난 일정 보기
+                </Chip>
+              </div>
+            }
+          >
+            <label className="relative block">
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-fg-3" />
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="일정 제목 · 장소 검색"
+                className={`${inputCls} h-10 rounded-full pl-10`}
+              />
+            </label>
+          </FilterBar>
           {upcomingGroups.length === 0 ? (
             <div className="card">
-              <EmptyState title="예정된 일정이 없어요" description="할 일과 일정을 한곳에서 추가할 수 있어요." actionLabel="추가하기" onAction={() => setCreating(true)} />
+              <EmptyState
+                title={q.trim() ? "찾는 일정이 없어요" : "예정된 일정이 없어요"}
+                description={q.trim() ? "제목 · 장소 · 메모에서 찾아요. 지난 일정도 함께 찾습니다." : "할 일과 일정을 한곳에서 추가할 수 있어요."}
+                actionLabel={q.trim() ? undefined : "추가하기"}
+                onAction={q.trim() ? undefined : () => setCreating(true)}
+              />
             </div>
           ) : (
             upcomingGroups.map((g) => {
@@ -232,7 +271,7 @@ export function CalendarView({ embedded }: { embedded?: boolean } = {}) {
       )}
 
       <EventSheet open={!!editId} onClose={() => setEditId(null)} eventId={editId} initial={{ date: view === "month" ? selected : today }} />
-      <AddSheet open={creating} onClose={() => setCreating(false)} initialDate={view === "month" ? selected : today} />
+      <AddSheet open={creating} onClose={() => setCreating(false)} initialDate={view === "month" ? selected : today} defaultKind="event" />
       <TaskSheet open={!!taskId} onClose={() => setTaskId(null)} taskId={taskId} />
 
       <Sheet open={!!info} onClose={() => setInfo(null)} title={info?.title} description={info ? `${formatKoreanDate(info.date)}${info.start_time ? ` · ${formatTime(info.start_time)}` : ""}` : undefined} size="sm">

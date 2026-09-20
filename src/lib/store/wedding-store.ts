@@ -477,11 +477,13 @@ export const useWeddingStore = create<WeddingState>((set, get) => {
         set({ data: next });
         return;
       }
-      // Supabase: 결혼 정보를 맞추고, 외래키 순서대로 묶어 넣는다(백업 복원 · 원본 재이관).
+      // Supabase: **먼저 비우고** 결혼 정보를 맞춘 뒤, 외래키 순서대로 묶어 넣는다.
+      // (비우지 않으면 복원이 덧붙이기가 되어 모든 값이 두 배가 된다)
       // 활동 기록의 user_id 같은 로컬 전용 값은 uploadWorkspace 가 정리한다.
       set((s) => ({ pending: s.pending + 1 }));
       try {
         const { uploadWorkspace } = await import("@/lib/db/handoff");
+        await adapter.clearWedding?.(weddingId);
         await uploadWorkspace(adapter, weddingId, get().userId, next);
         await get().reload();
       } finally {

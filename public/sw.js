@@ -4,7 +4,7 @@
  * - 폰트 CDN 은 stale-while-revalidate.
  * - 그 외 외부 요청(Supabase 등)은 건드리지 않는다.
  */
-const VERSION = "owp-v1";
+const VERSION = "owp-v2";
 const STATIC = `${VERSION}-static`;
 const PAGES = `${VERSION}-pages`;
 const FONTS = `${VERSION}-fonts`;
@@ -70,7 +70,13 @@ async function networkFirstPage(request) {
     if (res && res.ok) cache.put(key, res.clone());
     return res;
   } catch {
-    return (await cache.match(key)) || (await cache.match("/")) || Response.error();
+    const hit = (await cache.match(key)) || (await cache.match("/"));
+    if (hit) return hit;
+    // 그 화면도, 홈도 없으면 **마지막으로 본 아무 화면**이라도 보여준다.
+    // 끊긴 채로 홈 화면 아이콘을 눌렀을 때 브라우저 오류 화면만 뜨는 것이 제일 나쁘다.
+    const keys = await cache.keys();
+    if (keys.length) return (await cache.match(keys[keys.length - 1])) || Response.error();
+    return Response.error();
   }
 }
 

@@ -1,41 +1,71 @@
 "use client";
 import { CalendarDays, CheckSquare, Clock, MapPin } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { todayISO } from "@/lib/date";
 import { useWeddingStore } from "@/lib/store/wedding-store";
 import { Button } from "@/components/ui/Button";
 import { DateField, FieldRow, TextField, TimeField, inputCls } from "@/components/ui/Field";
+import { Segmented } from "@/components/ui/Segmented";
 import { Sheet } from "@/components/ui/Sheet";
 
 /**
  * 할 일과 일정을 한 곳에서 추가한다.
  *
- * 둘은 사용자에게 사실상 같은 것이다("12월 3일 예복 피팅"이 할 일인지 일정인지 고민할 이유가 없다).
- * 그래서 묻지 않고, 시간이나 장소를 적었으면 일정으로 · 아니면 할 일로 넣는다.
- * 어느 쪽이든 일정 화면에는 같이 보이므로 잘못 골라서 잃어버릴 일이 없다.
+ * 전에는 묻지 않고 **시간이나 장소를 적었는지로** 몰래 정했다.
+ * 그런데 일정 화면에서 제목만 적고 추가하면 '할 일' 로 들어가고,
+ * 날짜가 없으면 일정 목록에 아예 안 보인다 — 저장은 됐는데 사라진 것처럼 보인다.
+ *
+ * 그래서 위에 [할 일 | 일정] 을 두고, 어느 화면에서 열었는지에 맞춰 미리 골라 둔다.
+ * 시간이나 장소를 적으면 여전히 '일정' 쪽으로 옮겨 주되, 사용자가 직접 고른 뒤에는 건드리지 않는다.
  */
 export function AddSheet({
   open,
   onClose,
   initialDate,
+  defaultKind = "task",
 }: {
   open: boolean;
   onClose: () => void;
   initialDate?: string | null;
+  /** 어느 화면에서 열었는가 — 일정 화면에서 열면 '일정' 으로 먼저 맞춰 둔다 */
+  defaultKind?: "task" | "event";
 }) {
   const add = useWeddingStore((s) => s.add);
   const [title, setTitle] = useState("");
   const [date, setDate] = useState<string | null>(initialDate ?? null);
   const [time, setTime] = useState<string | null>(null);
   const [place, setPlace] = useState("");
+  // 할 일인지 일정인지는 **사용자가 고른다.**
+  // 전에는 시간·장소를 적었는지로 몰래 정해서, 일정 화면에서 제목만 적고 추가하면
+  // 할 일로 들어갔다. 저장은 됐는데 일정 목록에 없으니 "사라졌다" 고 느낀다.
+  const [kind, setKind] = useState<"task" | "event">(defaultKind);
+  const [picked, setPicked] = useState(false);
+  const asEvent = kind === "event";
 
-  const asEvent = !!time || !!place.trim();
+  useEffect(() => {
+    if (open) {
+      setKind(defaultKind);
+      setPicked(false);
+    }
+  }, [open, defaultKind]);
+
+  // 시간이나 장소를 적으면 '일정' 쪽으로 옮겨 준다 (직접 고른 뒤에는 건드리지 않는다)
+  useEffect(() => {
+    if (!picked && (time || place.trim())) setKind("event");
+  }, [time, place, picked]);
+
+  const choose = (k: "task" | "event") => {
+    setPicked(true);
+    setKind(k);
+  };
 
   const reset = () => {
     setTitle("");
     setDate(null);
     setTime(null);
     setPlace("");
+    setKind(defaultKind);
+    setPicked(false);
   };
 
   const submit = () => {
@@ -57,8 +87,8 @@ export function AddSheet({
         reset();
         onClose();
       }}
-      title="할 일 · 일정 추가"
-      description="시간이나 장소를 적으면 일정으로, 없으면 할 일로 저장돼요"
+      title={asEvent ? "일정 추가" : "할 일 추가"}
+      description={asEvent ? "날짜 · 시간이 있는 일은 일정으로" : "언제 할지 정하지 않은 일은 할 일로"}
       footer={
         <Button full size="lg" onClick={submit} disabled={!title.trim()}>
           {asEvent ? "일정으로 추가" : "할 일로 추가"}
@@ -66,6 +96,15 @@ export function AddSheet({
       }
     >
       <div className="space-y-4">
+        <Segmented
+          options={[
+            { value: "task", label: "할 일" },
+            { value: "event", label: "일정" },
+          ]}
+          value={kind}
+          onChange={choose}
+          className="max-w-xs"
+        />
         <FieldRow label="무엇을 하나요?" required>
           <input
             className={inputCls}
@@ -76,7 +115,7 @@ export function AddSheet({
             autoFocus
           />
         </FieldRow>
-        <FieldRow label="날짜" hint={asEvent ? undefined : "비워두면 '날짜 미정' 할 일로 들어가요"}>
+        <FieldRow label="날짜" required={asEvent} hint={asEvent ? "비워두면 오늘로 넣어요" : "비워두면 '날짜 미정' 할 일로 들어가요"}>
           <DateField value={date} onChange={setDate} />
         </FieldRow>
         <div className="grid grid-cols-2 gap-3">
