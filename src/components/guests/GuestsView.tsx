@@ -58,9 +58,9 @@ function GuestRow({ g, onOpen, selected }: { g: Guest; onOpen: (id: string) => v
         }}
       >
         <div className={cn("flex items-center gap-2 px-3 py-2.5 transition-colors hover:bg-surface-2 sm:px-4", selected && "bg-accent-softer ring-1 ring-inset ring-accent/30")}>
-      <button type="button" onClick={() => onOpen(g.id)} className="min-w-0 flex-1 text-left">
+      <button type="button" onClick={() => onOpen(g.id)} className="flex min-h-9 min-w-0 flex-1 flex-col justify-center text-left">
         <span className="flex items-center gap-2">
-          <span className={cn("inline-flex size-8 shrink-0 items-center justify-center rounded-full text-[0.8125rem] font-bold", tint(SIDE_TINT[g.side]).soft, tint(SIDE_TINT[g.side]).fg)}>
+          <span className={cn("inline-flex size-8 shrink-0 items-center justify-center rounded-full text-[0.8125rem] font-bold", tint(SIDE_TINT[g.side]).soft, tint(SIDE_TINT[g.side]).text)}>
             {SIDE_SHORT[g.side]}
           </span>
           <span className="truncate text-[1rem] font-medium text-fg">{g.name}</span>

@@ -16,7 +16,7 @@ export interface SegmentedProps<T extends string> {
 export function Segmented<T extends string>({ options, value, onChange, className, size = "md", full = true, ariaLabel }: SegmentedProps<T>) {
   const id = useId();
   const reduce = useReducedMotion();
-  const h = size === "lg" ? "h-12" : size === "md" ? "h-11" : "h-9";
+  const h = size === "lg" ? "h-12" : size === "md" ? "h-11" : "h-10";
   const text = size === "lg" ? "text-[1rem]" : size === "md" ? "text-[0.9375rem]" : "text-[0.875rem]";
   return (
     <div
@@ -34,7 +34,8 @@ export function Segmented<T extends string>({ options, value, onChange, classNam
             aria-checked={active}
             onClick={() => onChange(o.value)}
             className={cn(
-              "relative flex-1 min-w-0 rounded-[9px] px-2 font-medium transition-colors duration-150 inline-flex items-center justify-center gap-1.5 whitespace-nowrap",
+              // 칸 안쪽 버튼은 테두리 여백만큼 작아진다. 누르는 영역은 ::after 로 44px 을 채운다.
+              "tap-44 relative flex-1 min-w-0 rounded-[9px] px-2 font-medium transition-colors duration-150 inline-flex items-center justify-center gap-1.5 whitespace-nowrap",
               text,
               active ? "text-fg" : "text-fg-2 hover:text-fg",
             )}

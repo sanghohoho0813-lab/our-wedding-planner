@@ -45,7 +45,7 @@ export function TodayCard() {
           <span className="text-[0.875rem] font-normal text-fg-3">{dateLabel}</span>
         </h2>
         {!nothing && (
-          <Link href="/plan" className="text-[0.875rem] text-fg-3 hover:text-accent">
+          <Link href="/plan" className="relative tap-44 -mr-2 px-2 text-[0.875rem] text-fg-3 hover:text-accent">
             할 일 보기
           </Link>
         )}
@@ -63,7 +63,7 @@ export function TodayCard() {
               {overdue.length > 0 && (
                 <Link
                   href="/plan?filter=today"
-                  className="inline-flex items-center gap-1.5 rounded-full bg-danger-soft px-3 py-1.5 text-[0.875rem] font-medium text-danger"
+                  className="relative tap-44 inline-flex items-center gap-1.5 rounded-full bg-danger-soft px-3 py-1.5 text-[0.875rem] font-medium text-danger"
                 >
                   <AlertCircle className="size-4" />
                   지난 마감 {overdue.length}개

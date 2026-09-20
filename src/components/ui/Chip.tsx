@@ -30,9 +30,11 @@ export function Chip({ active, onClick, children, className, size = "md", tone =
       disabled={disabled}
       aria-pressed={onClick ? !!active : undefined}
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border font-medium whitespace-nowrap transition-colors duration-150 select-none",
-        size === "md" ? "h-10 px-4 text-[0.9375rem]" : "h-8 px-3 text-[0.875rem]",
-        onClick && "active:scale-[0.97] cursor-pointer",
+        "relative inline-flex items-center gap-1.5 rounded-full border font-medium whitespace-nowrap transition-colors duration-150 select-none",
+        size === "md" ? "h-10 px-4 text-[0.9375rem]" : "h-9 px-3 text-[0.875rem]",
+        // 칩을 촘촘히 놓으려면 작아야 하는데, 작으면 손가락으로 누르기 어렵다.
+        // 보이는 크기는 그대로 두고 누르는 영역만 위아래로 넓힌다(44px).
+        onClick && "tap-44 active:scale-[0.97] cursor-pointer",
         active ? activeCls[tone] : "bg-surface border-line text-fg-2 hover:bg-surface-2 hover:text-fg",
         disabled && "opacity-50 pointer-events-none",
         className,

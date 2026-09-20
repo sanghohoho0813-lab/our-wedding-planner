@@ -57,7 +57,7 @@ export function SwipeHint({
         type="button"
         onClick={dismiss}
         aria-label="안내 닫기"
-        className="-mr-1 inline-flex size-7 shrink-0 items-center justify-center rounded-full text-fg-3 hover:bg-surface-3 hover:text-fg"
+        className="relative tap-44 -mr-1 inline-flex size-9 shrink-0 items-center justify-center rounded-full text-fg-3 hover:bg-surface-3 hover:text-fg"
       >
         <X className="size-3.5" />
       </button>

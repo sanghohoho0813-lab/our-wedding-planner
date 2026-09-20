@@ -37,7 +37,7 @@ function ItemCard({ s, onOpen, selected }: { s: ItemSummary; onOpen: (id: string
     <li className={cn("card card-hover", selected && "border-accent/60 ring-1 ring-accent/30")}>
       <div className="flex items-start gap-2 p-4">
         <div className="min-w-0 flex-1">
-        <button type="button" onClick={() => onOpen(item.id)} className="w-full min-w-0 text-left">
+        <button type="button" onClick={() => onOpen(item.id)} className="flex w-full min-w-0 min-h-9 flex-col justify-center text-left">
           <div className="flex flex-wrap items-center gap-2">
             <span className="truncate text-[1.0625rem] font-semibold text-fg">{item.name}</span>
             <Badge tone={PAY_TONE[s.paymentStatus]}>{PAY_LABEL[s.paymentStatus]}</Badge>
@@ -231,7 +231,7 @@ export function BudgetItemsView({ embedded }: { embedded?: boolean } = {}) {
               {!showEmpty && emptyCount > 0 && !q.trim() && (
                 <p className="text-[0.875rem] text-fg-3">
                   금액이 아직 없는 항목 {emptyCount}개는 숨겨져 있어요.{" "}
-                  <button type="button" className="font-medium text-accent-text hover:underline" onClick={() => setShowEmpty(true)}>
+                  <button type="button" className="relative tap-44 px-1 font-medium text-accent-text hover:underline" onClick={() => setShowEmpty(true)}>
                     모두 보기
                   </button>
                 </p>

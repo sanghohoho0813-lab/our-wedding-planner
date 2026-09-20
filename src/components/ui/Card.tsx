@@ -60,7 +60,7 @@ export function CardHeader({
         (href && (
           <Link
             href={href}
-            className="inline-flex items-center gap-0.5 text-[0.875rem] text-fg-3 hover:text-accent transition-colors shrink-0 h-9 px-1 -mr-1"
+            className="inline-flex items-center gap-0.5 text-[0.875rem] text-fg-3 hover:text-accent transition-colors shrink-0 min-h-11 px-2 -mr-2"
           >
             {actionLabel}
             <ChevronRight className="size-3.5" />

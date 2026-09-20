@@ -1,7 +1,7 @@
 "use client";
 import { Link2, Phone, X } from "lucide-react";
 import { cloneElement, isValidElement, useEffect, useId, useRef, type InputHTMLAttributes, type ReactElement, type ReactNode, type TextareaHTMLAttributes } from "react";
-import { addDays, formatKoreanDate, todayISO } from "@/lib/date";
+import { addDays, formatKoreanDate, nextWeekend, todayISO } from "@/lib/date";
 import { useDebouncedValue } from "@/lib/hooks";
 import { cn } from "@/lib/utils";
 import { Chip } from "./Chip";
@@ -171,6 +171,7 @@ export function DateField({
         <div className="flex flex-wrap gap-1.5">
           <Chip size="sm" active={value === today} onClick={() => onChange(today)}>오늘</Chip>
           <Chip size="sm" active={value === addDays(today, 1)} onClick={() => onChange(addDays(today, 1))}>내일</Chip>
+          <Chip size="sm" active={value === nextWeekend(today)} onClick={() => onChange(nextWeekend(today))}>이번 주말</Chip>
           <Chip size="sm" active={value === addDays(today, 7)} onClick={() => onChange(addDays(today, 7))}>1주 뒤</Chip>
           <Chip size="sm" active={value === addDays(today, 30)} onClick={() => onChange(addDays(today, 30))}>한 달 뒤</Chip>
         </div>

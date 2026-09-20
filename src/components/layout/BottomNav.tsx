@@ -42,7 +42,7 @@ export function BottomNav() {
               key={item.label}
               href={item.href}
               prefetch
-              className={itemCls(active, c.fg)}
+              className={itemCls(active, c.text)}
               aria-current={active ? "page" : undefined}
               onClick={(e) => {
                 // 지금 보고 있는 탭을 다시 누르면 맨 위로 (앱에서 익숙한 동작)

@@ -8,8 +8,10 @@
 export type Tint = "plan" | "schedule" | "budget" | "guests" | "prep" | "travel" | "neutral";
 
 interface TintClasses {
-  /** 아이콘 · 강조 글자 */
+  /** 아이콘 (그림이라 3:1 이면 된다) */
   fg: string;
+  /** soft 배경 위의 '작은 글자' (4.5:1 을 맞춘 별도 색) */
+  text: string;
   /** 아이콘 칩 배경 */
   soft: string;
   /** 카드 위쪽 띠 */
@@ -17,13 +19,13 @@ interface TintClasses {
 }
 
 const MAP: Record<Tint, TintClasses> = {
-  plan: { fg: "text-tint-plan", soft: "bg-tint-plan-soft", bar: "bg-tint-plan" },
-  schedule: { fg: "text-tint-schedule", soft: "bg-tint-schedule-soft", bar: "bg-tint-schedule" },
-  budget: { fg: "text-tint-budget", soft: "bg-tint-budget-soft", bar: "bg-tint-budget" },
-  guests: { fg: "text-tint-guests", soft: "bg-tint-guests-soft", bar: "bg-tint-guests" },
-  prep: { fg: "text-tint-prep", soft: "bg-tint-prep-soft", bar: "bg-tint-prep" },
-  travel: { fg: "text-tint-travel", soft: "bg-tint-travel-soft", bar: "bg-tint-travel" },
-  neutral: { fg: "text-fg-3", soft: "bg-surface-2", bar: "bg-line-strong" },
+  plan: { fg: "text-tint-plan", text: "text-tint-plan-text", soft: "bg-tint-plan-soft", bar: "bg-tint-plan" },
+  schedule: { fg: "text-tint-schedule", text: "text-tint-schedule-text", soft: "bg-tint-schedule-soft", bar: "bg-tint-schedule" },
+  budget: { fg: "text-tint-budget", text: "text-tint-budget-text", soft: "bg-tint-budget-soft", bar: "bg-tint-budget" },
+  guests: { fg: "text-tint-guests", text: "text-tint-guests-text", soft: "bg-tint-guests-soft", bar: "bg-tint-guests" },
+  prep: { fg: "text-tint-prep", text: "text-tint-prep-text", soft: "bg-tint-prep-soft", bar: "bg-tint-prep" },
+  travel: { fg: "text-tint-travel", text: "text-tint-travel-text", soft: "bg-tint-travel-soft", bar: "bg-tint-travel" },
+  neutral: { fg: "text-fg-3", text: "text-fg-2", soft: "bg-surface-2", bar: "bg-line-strong" },
 };
 
 export function tint(t: Tint | undefined): TintClasses {

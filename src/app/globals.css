@@ -63,6 +63,16 @@
   --tint-prep-soft: #fbeedc;
   --tint-travel: #00918c;
   --tint-travel-soft: #e0f2f0;
+  /* 영역 색을 '작은 글자' 로 쓸 때 (배지 · 메뉴 라벨).
+     위의 색들은 흰 바탕에서 표식(3px 띠 · 아이콘)으로 쓰려고 고른 값이라
+     자기 soft 배경 위의 글자로는 대비가 모자란다(4.5:1 미달). 같은 색상 그대로
+     밝기만 옮겨 글자용을 따로 둔다. 숫자는 scripts 없이 계산해 확인했다. */
+  --tint-plan-text: #a54d66;
+  --tint-schedule-text: #376bad;
+  --tint-budget-text: #4e762b;
+  --tint-guests-text: #8058a4;
+  --tint-prep-text: #975e21;
+  --tint-travel-text: #007773;
 
   --radius: 16px;
   --radius-sm: 10px;
@@ -147,6 +157,13 @@
   --tint-prep-soft: #372a1c;
   --tint-travel: #159f95;
   --tint-travel-soft: #1a302e;
+  /* 어두운 테마에서는 흰색 쪽으로 옮긴다 */
+  --tint-plan-text: #d47a93;
+  --tint-schedule-text: #6898d4;
+  --tint-budget-text: #75a34c;
+  --tint-guests-text: #a683ca;
+  --tint-prep-text: #c88741;
+  --tint-travel-text: #25a69c;
 
   --accent: #d9a39d;
   --accent-strong: #e5b8b3;
@@ -227,6 +244,12 @@
   --color-tint-prep-soft: var(--tint-prep-soft);
   --color-tint-travel: var(--tint-travel);
   --color-tint-travel-soft: var(--tint-travel-soft);
+  --color-tint-plan-text: var(--tint-plan-text);
+  --color-tint-schedule-text: var(--tint-schedule-text);
+  --color-tint-budget-text: var(--tint-budget-text);
+  --color-tint-guests-text: var(--tint-guests-text);
+  --color-tint-prep-text: var(--tint-prep-text);
+  --color-tint-travel-text: var(--tint-travel-text);
   --font-sans: var(--font-sans);
   --font-script: var(--font-script);
   --font-hand: var(--font-hand);
@@ -340,6 +363,19 @@
     display: none;
   }
 }
+/*
+ * 그리드 칸은 줄어들 수 있어야 한다.
+ *
+ * CSS 기본값(min-width:auto)이면 칸이 '내용의 최소 너비' 아래로 안 줄어든다.
+ * 그래서 글자 크기를 125% 로 키우면 안쪽 내용이 칸을 밀어내고, 칸이 화면 밖으로
+ * 삐져나가 페이지 전체에 가로 스크롤이 생긴다(예산 · 웨딩 준비 · 설정에서 실제로 났다).
+ * 0 으로 두면 안쪽에서 truncate 나 가로 스크롤이 제대로 동작한다.
+ * :where() 로 감싸 우선순위를 0 으로 두어, 필요하면 유틸리티로 덮을 수 있게 한다.
+ */
+:where(.grid) > * {
+  min-width: 0;
+}
+
 @utility card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -368,6 +404,19 @@
   width: 100%;
   max-width: var(--content-max);
   margin-inline: auto;
+}
+/* 보이는 크기는 그대로, 누르는 영역만 44px 로 넓힌다 (촘촘한 칩·작은 링크용) */
+@utility tap-44 {
+  &::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    min-height: 44px;
+    height: 100%;
+  }
 }
 @utility touch-target {
   min-height: 44px;

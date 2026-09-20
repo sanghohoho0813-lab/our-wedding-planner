@@ -117,10 +117,10 @@ export function Notices() {
               신랑 · 신부 이름을 적어두면 <span className="text-fg-2">홈과 청첩장 문구에 두 사람의 이름이 함께 보여요.</span>
             </p>
             <div className="ml-auto flex shrink-0 items-center gap-1.5">
-              <Link href="/settings" className="inline-flex h-9 items-center gap-1.5 rounded-[10px] bg-accent px-3 text-[0.875rem] font-medium text-accent-fg hover:bg-accent-strong">
+              <Link href="/settings" className="relative tap-44 inline-flex h-9 items-center gap-1.5 rounded-[10px] bg-accent px-3 text-[0.875rem] font-medium text-accent-fg hover:bg-accent-strong">
                 이름 적기
               </Link>
-              <button type="button" onClick={dismissNames} aria-label="이 안내 닫기" className="inline-flex size-9 items-center justify-center rounded-full text-fg-3 hover:bg-surface-2 hover:text-fg">
+              <button type="button" onClick={dismissNames} aria-label="이 안내 닫기" className="relative tap-44 inline-flex size-9 items-center justify-center rounded-full text-fg-3 hover:bg-surface-2 hover:text-fg">
                 <X className="size-4" />
               </button>
             </div>

@@ -195,6 +195,15 @@ export function addDays(iso: string, n: number) {
   return toISO(dfAddDays(fromISO(iso), n));
 }
 
+/**
+ * 다가오는 토요일 (오늘이 토요일이면 오늘).
+ * 결혼 준비 일정은 식장 방문 · 피팅처럼 주말에 몰려서 '이번 주말' 이 자주 쓰인다.
+ */
+export function nextWeekend(today: string = todayISO()): string {
+  const day = fromISO(today).getUTCDay(); // 0=일 … 6=토
+  return addDays(today, day === 6 ? 0 : 6 - day);
+}
+
 export function thisWeekRange(today: string = todayISO()) {
   const d = fromISO(today);
   return {

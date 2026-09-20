@@ -84,7 +84,7 @@ export function Hero() {
           <br />
           행복한 준비 되세요 ♡
         </p>
-        <p className="relative mt-4 text-[0.875rem] text-fg-3">{days > 0 ? `${days}일 남았어요. 하나씩 차근차근.` : days === 0 ? "드디어 오늘! 축하해요." : "결혼을 축하해요."}</p>
+        <p className="relative mt-4 text-[0.875rem] text-fg-2">{days > 0 ? `${days}일 남았어요. 하나씩 차근차근.` : days === 0 ? "드디어 오늘! 축하해요." : "결혼을 축하해요."}</p>
       </div>
     </section>
     </>

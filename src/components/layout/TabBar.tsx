@@ -50,7 +50,7 @@ export function TabBar<T extends string>({
               <span className="relative z-10 inline-flex items-center gap-1.5">
                 {t.label}
                 {t.badge !== undefined && t.badge !== 0 && (
-                  <span className={cn("rounded-full px-1.5 py-0.5 text-[0.75rem] tabular", active ? "bg-accent-soft text-accent-text" : "bg-surface-3 text-fg-3")}>{t.badge}</span>
+                  <span className={cn("rounded-full px-1.5 py-0.5 text-[0.75rem] tabular", active ? "bg-accent-soft text-accent-text" : "bg-surface-3 text-fg-2")}>{t.badge}</span>
                 )}
               </span>
             </button>

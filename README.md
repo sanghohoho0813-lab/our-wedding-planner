@@ -229,6 +229,7 @@ BASE=http://localhost:3001 node qa/flow.mjs   # 141개 검사: 데이터 대조 
 BASE=http://localhost:3001 node qa/perf.mjs   # 메뉴/탭 전환 시간
 node qa/parse.mjs                             # 말한(또는 친) 한 마디 → 하객 한 명 파서 20가지 (브라우저 없이)
 BASE=http://localhost:3001 node qa/audit.mjs  # 마찰 16가지(손대는 횟수) + 데이터 정확성 13가지 → docs/FRICTION.md
+BASE=http://localhost:3001 node qa/a11y.mjs   # 접근성 10가지: 125% 글자 · 다크 대비 · 키보드 · 누르는 크기
 BASE=http://localhost:3001 node qa/shot.mjs / home 1440 900
 
 # Supabase SQL: 실제 PostgreSQL 에 설치해 두 사람 시나리오까지 (PostgreSQL 16 필요)
