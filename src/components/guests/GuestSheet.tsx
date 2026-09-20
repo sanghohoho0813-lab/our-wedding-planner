@@ -97,7 +97,8 @@ export function GuestSheet({
   const submit = (again = false) => {
     if (!values.name.trim()) return toast("이름을 입력해 주세요.");
     commit({ name: values.name.trim() });
-    toast(`${values.name.trim()}님이 추가되었어요.`, { tone: "success" });
+    // 연달아 담을 때가 많다. 되돌리기 버튼도 없는 안내이니 짧게 스친다.
+    toast(`${values.name.trim()}님이 추가되었어요.`, { tone: "success", duration: 1800 });
     if (!again) onClose();
     else set("name", "");
   };

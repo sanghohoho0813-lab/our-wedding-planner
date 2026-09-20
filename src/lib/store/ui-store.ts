@@ -39,7 +39,11 @@ export const useUIStore = create<UIState>((set, get) => ({
   toast: (message, opts) => {
     const id = uid();
     const toast: Toast = { id, message, duration: 3200, ...opts };
-    set({ toasts: [...get().toasts.slice(-2), toast] });
+    // 같은 말이 연달아 오면 쌓지 않고 바꿔 단다 (연속 추가 때 화면이 안내문으로 덮이지 않게)
+    const prev = get().toasts;
+    const last = prev[prev.length - 1];
+    const kept = last && last.message === message ? prev.slice(0, -1) : prev;
+    set({ toasts: [...kept.slice(-2), toast] });
     if (toast.duration && toast.duration > 0) {
       setTimeout(() => get().dismissToast(id), toast.duration);
     }

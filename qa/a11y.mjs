@@ -204,6 +204,30 @@ async function open({ w = 390, h = 844, theme = "light", fs = 1, reduce = false 
   await c.close();
 }
 
+// ================================================================
+// 안내문(토스트)이 오른쪽 아래 [+] 버튼을 가리지 않는다
+// — 하객을 연달아 담을 때 안내문이 사라지기를 기다리게 만들면 안 된다
+// ================================================================
+{
+  const covered = [];
+  for (const [w, h, fs] of [[360, 780, 1], [390, 844, 1], [430, 932, 1], [768, 1024, 1], [1440, 900, 1], [390, 844, 1.25]]) {
+    const { c, p } = await open({ w, h, fs });
+    await p.goto(base + "/guests", { waitUntil: "domcontentloaded" });
+    await p.waitForTimeout(1200);
+    const r = await p.evaluate(() => {
+      const cont = document.querySelector('[aria-live="polite"].fixed');
+      const fab = document.querySelector('[aria-label="빠른 추가"]');
+      if (!cont || !fab) return null;
+      const a = cont.getBoundingClientRect();
+      const b = fab.getBoundingClientRect();
+      const apart = a.bottom <= b.top || a.right <= b.left || a.left >= b.right;
+      return { apart, gap: Math.round(b.top - a.bottom) };
+    });
+    if (!r || !r.apart) covered.push(`${w}px·글자${fs}`);
+  }
+  check("안내문이 [+] 버튼을 가리지 않는다", covered.length === 0, covered.length ? covered.join(", ") : "6개 크기 모두 확인");
+}
+
 const passed = results.filter((r) => r.ok).length;
 console.log(`\n${passed}/${results.length} passed`);
 await browser.close();

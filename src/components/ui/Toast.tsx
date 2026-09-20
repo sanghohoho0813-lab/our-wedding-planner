@@ -13,7 +13,14 @@ export function Toaster() {
   return createPortal(
     <div
       aria-live="polite"
-      className="pointer-events-none fixed left-1/2 z-[90] flex w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 flex-col gap-2 bottom-[calc(var(--nav-h)+16px+env(safe-area-inset-bottom,0px))] lg:left-auto lg:right-6 lg:translate-x-0 lg:bottom-6"
+      /*
+       * 오른쪽 아래 [+] 버튼 **위** 에 뜬다.
+       * 전에는 같은 높이라 안내문이 [+] 를 가렸고, 하객을 연달아 추가할 때
+       * 안내가 사라질 때까지(3초) 기다려야 다음 [+] 를 누를 수 있었다.
+       * 높이는 [+] 와 같은 식(--nav-h + 1rem)에 버튼 높이 3.5rem 과 여백을 더한 값이라,
+       * 글자 크기를 키워도 같이 올라간다. 안내문보다 다음 동작이 먼저다.
+       */
+      className="pointer-events-none fixed left-1/2 z-[90] flex w-[calc(100%-2rem)] max-w-sm -translate-x-1/2 flex-col gap-2 bottom-[calc(var(--nav-h)+5.25rem+env(safe-area-inset-bottom,0px))] lg:left-auto lg:right-6 lg:translate-x-0"
     >
       <AnimatePresence initial={false}>
         {toasts.map((t) => (
