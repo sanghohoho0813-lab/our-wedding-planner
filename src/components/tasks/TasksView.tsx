@@ -65,6 +65,8 @@ export function TasksView({ embedded }: { embedded?: boolean } = {}) {
   const [dateId, setDateId] = useState<string | null>(null);
   // 완료한 일은 기본으로 접어 둔다. 남은 일이 먼저 보여야 한다.
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set(["done"]));
+  // 단, '완료' 만 보겠다고 고른 사람에게까지 접어 보여주면 빈 화면처럼 보인다.
+  const isCollapsed = (key: string) => (filter === "done" && key === "done" ? false : collapsed.has(key));
   const toggleGroup = (key: string) =>
     setCollapsed((prev) => {
       const next = new Set(prev);
@@ -211,18 +213,18 @@ export function TasksView({ embedded }: { embedded?: boolean } = {}) {
                       <button
                         type="button"
                         onClick={() => toggleGroup(g.key)}
-                        aria-expanded={!collapsed.has(g.key)}
+                        aria-expanded={!isCollapsed(g.key)}
                         className="flex w-full items-center justify-between gap-2 border-b border-line px-4 py-2.5 text-left text-[0.8125rem] font-semibold tracking-wide text-fg-3 hover:bg-surface-2"
                       >
                         <span className="flex items-center gap-1.5">
-                          <ChevronDown className={cn("size-4 shrink-0 transition-transform", collapsed.has(g.key) && "-rotate-90")} />
+                          <ChevronDown className={cn("size-4 shrink-0 transition-transform", isCollapsed(g.key) && "-rotate-90")} />
                           {g.label}
                         </span>
                         <span className="tabular">{g.items.length}</span>
                       </button>
                     </h2>
                   )}
-                  {(!g.label || !collapsed.has(g.key)) && (
+                  {(!g.label || !isCollapsed(g.key)) && (
                     <ul className="divide-y divide-line">
                       <AnimatePresence initial={false}>
                         {g.items.map((t) => (

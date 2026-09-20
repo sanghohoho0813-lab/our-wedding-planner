@@ -221,6 +221,20 @@ supabase/migrations/
 qa/                shot.mjs(뷰포트 캡처) · flow.mjs(기능·데이터 회귀) · perf.mjs(전환 성능) · dump-data.mjs(앱 데이터 추출)
 ```
 
+## 품질 기준
+
+이 앱은 "편해졌나?" 를 느낌으로 관리하지 않습니다. 매번 다시 재는 숫자가 있습니다.
+
+| 무엇을 | 어떻게 | 지금 |
+|---|---|---|
+| 손이 몇 번 가는가 | `qa/audit.mjs` 가 16개 시나리오를 실제로 조작하며 센다 | 16/16 목표 이내 |
+| 숫자가 화면마다 같은가 | 원장부에서 직접 센 값과 대조 | 13/13 |
+| 화면끼리 이어져 있는가 | 한 곳을 고치면 관련된 곳도 바뀌는지 | 19/19 |
+| 글자를 키워도 괜찮은가 | 125% · 다크 · 키보드 · 44px | 10/10 |
+| 기존 기능이 안 깨졌는가 | `qa/flow.mjs` | 141/141 |
+
+자세한 내용은 [docs/FRICTION.md](docs/FRICTION.md), 점수표는 [docs/SCORECARD.md](docs/SCORECARD.md).
+
 ## QA
 
 ```bash
@@ -230,6 +244,7 @@ BASE=http://localhost:3001 node qa/perf.mjs   # 메뉴/탭 전환 시간
 node qa/parse.mjs                             # 말한(또는 친) 한 마디 → 하객 한 명 파서 20가지 (브라우저 없이)
 BASE=http://localhost:3001 node qa/audit.mjs  # 마찰 16가지(손대는 횟수) + 데이터 정확성 13가지 → docs/FRICTION.md
 BASE=http://localhost:3001 node qa/a11y.mjs   # 접근성 10가지: 125% 글자 · 다크 대비 · 키보드 · 누르는 크기
+BASE=http://localhost:3001 node qa/crossdata.mjs # 화면끼리 연결 19가지 (한 곳을 고치면 관련된 곳도 바뀌는가)
 BASE=http://localhost:3001 node qa/shot.mjs / home 1440 900
 
 # Supabase SQL: 실제 PostgreSQL 에 설치해 두 사람 시나리오까지 (PostgreSQL 16 필요)

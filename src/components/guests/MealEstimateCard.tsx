@@ -49,7 +49,7 @@ export function MealEstimateCard({ className, compact }: { className?: string; c
         actionLabel="식장"
       />
       <div className="px-5 pb-5">
-        <p className="tabular text-[1.75rem] font-bold leading-tight text-fg">{formatKRW(m.cost)}</p>
+        <p data-testid="meal-cost" className="tabular text-[1.75rem] font-bold leading-tight text-fg">{formatKRW(m.cost)}</p>
         <p className="mt-0.5 text-[0.875rem] text-fg-2">
           청구 인원 <b className="tabular text-fg">{m.billable}명</b>
           {m.guaranteed > 0 && <span className="text-fg-3"> (보증 {m.guaranteed} · 예상 {m.expected})</span>}

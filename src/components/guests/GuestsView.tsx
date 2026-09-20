@@ -176,7 +176,7 @@ export function GuestsView({ embedded }: { embedded?: boolean } = {}) {
         compact={embedded}
         title="하객 목록"
         // 탭 바깥 제목 줄에서 이미 같은 숫자를 보여준다.
-        description={embedded ? undefined : `총 ${stats.total}명 · 참석 확정 ${stats.confirmed}명 · 예상 총 ${stats.expectedPeople}명`}
+        description={embedded ? undefined : `명단 ${stats.total}팀 · 참석 확정 ${stats.confirmedPeople}명 · 예상 총 ${stats.expectedPeople}명`}
       >
         <InlineAdd
           voice
@@ -210,20 +210,25 @@ export function GuestsView({ embedded }: { embedded?: boolean } = {}) {
         )}
         {/* 총 하객 · 신랑측 · 신부측 · 청첩장 전달은 위 제목 줄에 이미 있다.
             폰에서는 거기 없는 셋만 한 줄로 두고, 넓어지면 전부 편다. */}
+        {/* 숫자는 전부 '사람 수' 로 통일한다.
+            명단 줄 수와 사람 수는 다르다 — 부부 한 줄은 두 명이고, 식대도 두 명치다.
+            줄 수를 '참석 확정 1명' 으로 보여주면 식대를 절반으로 잡게 된다.
+            그래서 큰 숫자는 늘 사람 수, 아래 작은 글씨에 명단 줄 수를 적는다. */}
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 xl:grid-cols-7">
-          {[
-            ["참석 확정", `${stats.confirmed}명`, true],
-            ["미정", `${stats.maybe}명`, true],
-            ["예상 총 인원", `${stats.expectedPeople}명`, true],
-            ["총 하객", `${stats.total}명`, false],
-            ["신랑측", `${stats.groom}명`, false],
-            ["신부측", `${stats.bride}명`, false],
-            ["공통 지인", `${stats.both}명`, false],
-            ["청첩장 전달", `${stats.invited} / ${stats.total}`, false],
-          ].map(([k, v, onPhone]) => (
-            <div key={k as string} className={cn("card px-3 py-2.5", !onPhone && "hidden sm:block")}>
+          {([
+            ["참석 확정", `${stats.confirmedPeople}명`, stats.confirmedPeople !== stats.confirmed ? `${stats.confirmed}팀 · 동반 ${stats.confirmedPeople - stats.confirmed}` : null, true],
+            ["미정", `${stats.maybe}명`, null, true],
+            ["예상 총 인원", `${stats.expectedPeople}명`, `명단 ${stats.total - stats.declined}팀`, true],
+            ["총 하객", `${stats.total}팀`, null, false],
+            ["신랑측", `${stats.groom}팀`, null, false],
+            ["신부측", `${stats.bride}팀`, null, false],
+            ["공통 지인", `${stats.both}팀`, null, false],
+            ["청첩장 전달", `${stats.invited} / ${stats.total}`, null, false],
+          ] as [string, string, string | null, boolean][]).map(([k, v, sub, onPhone]) => (
+            <div key={k} className={cn("card px-3 py-2.5", !onPhone && "hidden sm:block")}>
               <p className="text-[0.75rem] text-fg-3">{k}</p>
               <p className="tabular text-[1.125rem] font-bold text-fg">{v}</p>
+              {sub && <p className="truncate text-[0.6875rem] text-fg-3">{sub}</p>}
             </div>
           ))}
         </div>
