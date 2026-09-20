@@ -16,6 +16,7 @@ import { SIDE_LABEL, SIDE_SHORT, SIDE_TINT } from "@/lib/guest-side";
 import { parsePhrase } from "@/lib/voice-guest";
 import { tint } from "@/lib/tint";
 import { VoiceGuestSheet } from "./VoiceGuestSheet";
+import { MealEstimateCard } from "./MealEstimateCard";
 import { speechSupported } from "@/lib/speech";
 import { InlineAdd } from "@/components/ui/InlineAdd";
 import { SwipeHint } from "@/components/ui/SwipeHint";
@@ -238,6 +239,8 @@ export function GuestsView({ embedded }: { embedded?: boolean } = {}) {
             onChange={setSide}
             className="max-w-sm"
           />
+          {/* 식대는 하객 수에 바로 붙는 돈이라 명단 옆에 있어야 한다 */}
+          <MealEstimateCard compact />
           <FilterBar
             label="이름 검색"
             activeCount={q.trim() ? 1 : 0}

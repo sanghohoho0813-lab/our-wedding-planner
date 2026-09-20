@@ -7,6 +7,7 @@ import { ENTITY_LABEL, VENDOR_CATEGORY_LABEL } from "@/lib/labels";
 import { formatKRW } from "@/lib/money";
 import { josa, nowISO, uid } from "@/lib/utils";
 import { explainDbError } from "@/lib/db/errors";
+import { markJustAdded } from "@/lib/fresh";
 import { toast } from "./ui-store";
 
 type Status = "idle" | "loading" | "ready" | "error";
@@ -261,6 +262,8 @@ export const useWeddingStore = create<WeddingState>((set, get) => {
         updated_at: ts,
       } as TableMap[typeof table];
       set({ data: { ...data, [table]: [...(data[table] as unknown[]), row] } });
+      // 방금 만든 것은 접힘·필터에 숨지 않게 표시해 둔다 (사라지면 저장이 안 된 줄 안다)
+      markJustAdded(row.id);
       run(() => adapter.insert(table, row));
       if (opts?.log !== false) {
         const desc = opts?.log ?? describe(table, "create", row as unknown as Record<string, unknown>, undefined, data);

@@ -1,5 +1,6 @@
 import type { BudgetCategory, BudgetItem, Payment, Wedding } from "@/lib/db/types";
 import { todayISO } from "@/lib/date";
+import { formatCompactKRW } from "@/lib/money";
 
 export type BudgetHealth = "safe" | "caution" | "over";
 
@@ -41,6 +42,10 @@ export interface BudgetSummary {
   diff: number; // 실제 - 견적 (실제 입력 항목 기준)
   diffPct: number;
   health: BudgetHealth;
+  /** 지금 상태가 된 이유 (사용자에게 그대로 보여준다) */
+  healthReasons: string[];
+  /** 견적도 실제 금액도 없는 항목 수 — 이만큼은 예상 지출에 안 잡혀 있다 */
+  unpriced: number;
   items: ItemSummary[];
   categories: CategorySummary[];
   unallocated: number;
@@ -141,7 +146,21 @@ export function computeBudget(
 
   const projectedPct = totalBudget > 0 ? (totalEffective / totalBudget) * 100 : 0;
   const usedPct = totalBudget > 0 ? (totalActual / totalBudget) * 100 : 0;
+  /**
+   * 예산 상태와 '왜 그런지'.
+   *
+   * 퍼센트만 보여주면 "그래서 어쩌라고" 가 된다. 지금 상태가 된 이유를
+   * 한 줄로 같이 말해 줘야 다음 행동을 정할 수 있다.
+   * 아직 금액을 안 적은 항목이 많으면 퍼센트 자체가 덜 믿을 만하므로 그 사실도 말한다.
+   */
+  const unpriced = items.filter((i) => i.estimated_amount === 0 && i.actual_amount === 0).length;
   const health: BudgetHealth = projectedPct > 100 ? "over" : projectedPct > 90 ? "caution" : "safe";
+  const healthReasons: string[] = [];
+  if (totalBudget === 0) healthReasons.push("총 예산을 아직 안 정했어요");
+  else if (projectedPct > 100) healthReasons.push(`예상 지출이 총 예산보다 ${formatCompactKRW(totalEffective - totalBudget)} 많아요`);
+  else if (projectedPct > 90) healthReasons.push(`예상 지출이 총 예산의 ${Math.round(projectedPct)}%예요`);
+  else healthReasons.push(`총 예산의 ${Math.round(projectedPct)}%를 쓸 예정이에요`);
+  if (unpriced > 0) healthReasons.push(`금액을 안 적은 항목이 ${unpriced}개 있어 더 늘어날 수 있어요`);
 
   const itemById = new Map(items.map((i) => [i.id, i]));
   const monthPrefix = today.slice(0, 7);
@@ -166,6 +185,8 @@ export function computeBudget(
     diff,
     diffPct,
     health,
+    healthReasons,
+    unpriced,
     items: itemSummaries,
     categories: catList,
     unallocated,

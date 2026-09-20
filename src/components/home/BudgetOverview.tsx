@@ -40,7 +40,10 @@ export function BudgetOverview() {
               </div>
             </div>
           ))}
-          <Badge tone={healthTone}>예산 {HEALTH_LABEL[b.health]}</Badge>
+          <div>
+            <Badge tone={healthTone}>예산 {HEALTH_LABEL[b.health]}</Badge>
+            <p className="mt-1 text-[0.8125rem] leading-snug text-fg-3">{b.healthReasons[0]}</p>
+          </div>
         </dl>
       </div>
     </Card>

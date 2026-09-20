@@ -2,7 +2,7 @@
 import { CreditCard } from "lucide-react";
 import { useState } from "react";
 import { computeBudget } from "@/lib/compute";
-import { formatShortDate, todayISO } from "@/lib/date";
+import { daysUntil, formatDDay, formatShortDate, todayISO } from "@/lib/date";
 import { formatKRW } from "@/lib/money";
 import { useWeddingStore } from "@/lib/store/wedding-store";
 import { Card, CardHeader } from "@/components/ui/Card";
@@ -30,13 +30,16 @@ export function UpcomingPayments({ limit = 5 }: { limit?: number }) {
               <li key={payment.id} className="flex items-center gap-3 rounded-[12px] px-3 py-2 hover:bg-surface-2">
                 <CheckCircle checked={false} onChange={() => patch("payments", payment.id, { paid: true, paid_at: todayISO() })} label="결제 완료로 표시" />
                 <button type="button" onClick={() => setItemId(item.id)} className="min-w-0 flex-1 text-left">
+                  {/* 날짜보다 'D-2' 가 먼저 읽힌다 — 며칠 남았는지가 지금 필요한 정보다 */}
                   <span className="flex items-center gap-2">
                     <span className={overdue ? "shrink-0 text-[0.875rem] font-semibold tabular text-danger" : "shrink-0 text-[0.875rem] font-semibold tabular text-accent-text"}>
-                      {payment.due_date ? formatShortDate(payment.due_date) : "미정"}
+                      {payment.due_date ? formatDDay(daysUntil(payment.due_date, todayISO())) : "미정"}
                     </span>
                     <span className="truncate text-[1rem] font-medium text-fg">{item.name}</span>
                   </span>
-                  <span className="block text-[0.8125rem] text-fg-3">{payment.title}{overdue ? " · 지났어요" : ""}</span>
+                  <span className="block truncate text-[0.8125rem] text-fg-3">
+                    {[payment.due_date ? formatShortDate(payment.due_date) : null, payment.title, overdue ? "지났어요" : null].filter(Boolean).join(" · ")}
+                  </span>
                 </button>
                 <span className="shrink-0 tabular text-[1rem] font-semibold text-fg">{formatKRW(payment.amount)}</span>
               </li>

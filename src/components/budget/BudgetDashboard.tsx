@@ -15,7 +15,9 @@ import { MoneyField } from "@/components/ui/MoneyField";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { categoryColor, CATEGORY_MAX } from "@/lib/tint";
+import { wasJustAdded } from "@/lib/fresh";
 import { UpcomingPayments } from "@/components/home/UpcomingPayments";
+import { MealEstimateCard } from "@/components/guests/MealEstimateCard";
 import { BudgetItemSheet } from "./BudgetItemSheet";
 import { CategoryManagerSheet } from "./CategoryManagerSheet";
 
@@ -30,7 +32,7 @@ export function BudgetDashboard({ embedded }: { embedded?: boolean } = {}) {
   const allCats = [...b.categories].sort((x, y) => y.effective - x.effective);
   // 금액이 0원인 카테고리는 기본으로 접는다 — 상세 탭의 "금액 없는 항목" 규칙과 같다.
   // 안 그러면 0원 줄이 목록을 덮어서, 정작 돈이 어디로 갔는지가 안 보인다.
-  const emptyCats = allCats.filter((c) => c.effective === 0 && c.planned === 0);
+  const emptyCats = allCats.filter((c) => c.effective === 0 && c.planned === 0 && !wasJustAdded(c.id));
   const cats = showEmpty ? allCats : allCats.filter((c) => !emptyCats.includes(c));
   // 도넛은 조각이 많아지면 색으로 구분이 안 된다. 큰 3개만 색을 주고 나머지는 '그 외' 하나로 접는다.
   // (색약에서 구분되는 한계가 3종이다 — src/lib/tint.ts 의 CATEGORY_COLORS 주석 참고)
@@ -83,6 +85,12 @@ export function BudgetDashboard({ embedded }: { embedded?: boolean } = {}) {
               예산 {HEALTH_LABEL[b.health]}
             </Badge>
             <p className="mt-2 text-[0.8125rem] text-fg-3">예상 총 지출 {formatKRW(b.totalEffective)} · {b.projectedPct.toFixed(0)}%</p>
+            {/* 퍼센트만 보여주면 "그래서 어쩌라고" 가 된다. 왜 그런지를 같이 말한다. */}
+            <ul className="mt-1 space-y-0.5 text-[0.8125rem] leading-relaxed text-fg-2 sm:max-w-[22rem]">
+              {b.healthReasons.map((r) => (
+                <li key={r}>· {r}</li>
+              ))}
+            </ul>
           </div>
         </div>
         <ProgressBar value={b.usedPct} className="mt-4" color={b.health === "over" ? "var(--danger)" : b.health === "caution" ? "var(--warning)" : "var(--sage)"} height="h-2.5" />
@@ -135,6 +143,7 @@ export function BudgetDashboard({ embedded }: { embedded?: boolean } = {}) {
             </ul>
           </div>
         </Card>
+          <MealEstimateCard />
           <UpcomingPayments limit={8} />
         </div>
 

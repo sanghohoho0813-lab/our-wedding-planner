@@ -2,6 +2,7 @@
 import { Building2, ExternalLink, Phone, Plus } from "lucide-react";
 import { useState } from "react";
 import { daysUntil, formatDDay, formatKoreanDate, formatTime, todayISO } from "@/lib/date";
+import { computeGuestStats, computeMealEstimate } from "@/lib/compute";
 import { formatKRW } from "@/lib/money";
 import { useWeddingStore } from "@/lib/store/wedding-store";
 import { Badge } from "@/components/ui/Badge";
@@ -37,6 +38,7 @@ const FIELDS: FieldDef[] = [
 export function VenueView({ embedded }: { embedded?: boolean } = {}) {
   const venues = useWeddingStore((s) => s.data!.venues);
   const wedding = useWeddingStore((s) => s.data!.wedding);
+  const guests = useWeddingStore((s) => s.data!.guests);
   const patch = useWeddingStore((s) => s.patch);
   const [editId, setEditId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -44,7 +46,11 @@ export function VenueView({ embedded }: { embedded?: boolean } = {}) {
   const contracted = venues.find((v) => v.is_contracted);
   const sorted = [...venues].sort((a, b) => Number(b.is_contracted) - Number(a.is_contracted) || a.created_at.localeCompare(b.created_at));
 
-  const estTotal = (v: (typeof venues)[number]) => v.hall_fee + v.meal_cost * Math.max(v.guaranteed_guests, v.expected_guests);
+  // 계약한 식장의 인원은 하객 명단에서 센다 — 같은 숫자를 두 군데서 관리하면 반드시 어긋난다.
+  // (후보 식장은 아직 명단과 엮을 일이 없어 각자 적어 둔 예상 인원을 그대로 쓴다)
+  const meal = computeMealEstimate(venues, computeGuestStats(guests));
+  const estTotal = (v: (typeof venues)[number]) =>
+    v.is_contracted ? meal.total : v.hall_fee + v.meal_cost * Math.max(v.guaranteed_guests, v.expected_guests);
 
   return (
     <div>
@@ -62,7 +68,8 @@ export function VenueView({ embedded }: { embedded?: boolean } = {}) {
         <Card className="mb-4 overflow-hidden">
           <div className="hero-gradient p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0">
+              {/* 이름을 눌러도 상세가 열려야 한다 — 고치려는 사람은 제목을 먼저 누른다 */}
+              <button type="button" onClick={() => setEditId(contracted.id)} className="min-w-0 rounded-[12px] text-left transition-colors hover:bg-surface/50">
                 <Badge tone="success">계약 완료</Badge>
                 <h2 className="mt-2 text-[1.375rem] font-bold text-fg">{contracted.name}</h2>
                 <p className="text-[0.9375rem] text-fg-2">
@@ -70,7 +77,7 @@ export function VenueView({ embedded }: { embedded?: boolean } = {}) {
                   {contracted.event_time ? ` · ${formatTime(contracted.event_time)}` : ""}
                 </p>
                 {contracted.address && <p className="mt-1 text-[0.875rem] text-fg-3">{contracted.address}</p>}
-              </div>
+              </button>
               <div className="text-right">
                 <p className="text-[0.8125rem] text-fg-3">예식까지</p>
                 <p className="font-script text-[2.25rem] leading-none text-accent-text">{formatDDay(daysUntil(contracted.event_date ?? wedding.wedding_date, today))}</p>
@@ -78,9 +85,9 @@ export function VenueView({ embedded }: { embedded?: boolean } = {}) {
             </div>
             <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
               {[
-                ["예상 총 비용", formatKRW(estTotal(contracted))],
-                ["식대 총액", `${formatKRW(contracted.meal_cost * Math.max(contracted.guaranteed_guests, contracted.expected_guests))}`],
-                ["보증 / 예상 인원", `${contracted.guaranteed_guests} / ${contracted.expected_guests}명`],
+                ["예상 총 비용", formatKRW(meal.total)],
+                ["식대 총액", meal.hasCost ? formatKRW(meal.cost) : "1인 식대 미입력"],
+                ["보증 / 예상 인원", `${meal.guaranteed || "-"} / ${meal.expected}명`],
                 ["잔금", formatKRW(contracted.balance)],
               ].map(([k, v]) => (
                 <div key={k} className="rounded-[12px] bg-surface/70 px-3 py-2">

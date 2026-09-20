@@ -18,6 +18,8 @@ import { MasterDetail } from "@/components/layout/MasterDetail";
 import { InlineAdd } from "@/components/ui/InlineAdd";
 import { BudgetItemDetail } from "./BudgetItemDetail";
 import { BudgetItemSheet } from "./BudgetItemSheet";
+import { wasJustAdded } from "@/lib/fresh";
+import { MoneySheet } from "@/components/ui/MoneySheet";
 
 type Sort = "category" | "amount" | "updated";
 
@@ -28,25 +30,47 @@ function ItemCard({ s, onOpen, selected }: { s: ItemSummary; onOpen: (id: string
   const patch = useWeddingStore((st) => st.patch);
   const { item } = s;
   const hasActual = item.actual_amount > 0;
+  // 금액은 목록에서 바로 고친다. 상세 시트를 열고 그 안에서 또 시트를 여는 건
+  // 결혼 준비 중 가장 자주 하는 일(금액 고치기)에 비해 너무 멀다.
+  const [editing, setEditing] = useState<null | "estimated" | "actual">(null);
   return (
     <li className={cn("card card-hover", selected && "border-accent/60 ring-1 ring-accent/30")}>
       <div className="flex items-start gap-2 p-4">
-        <button type="button" onClick={() => onOpen(item.id)} className="min-w-0 flex-1 text-left">
+        <div className="min-w-0 flex-1">
+        <button type="button" onClick={() => onOpen(item.id)} className="w-full min-w-0 text-left">
           <div className="flex flex-wrap items-center gap-2">
             <span className="truncate text-[1.0625rem] font-semibold text-fg">{item.name}</span>
             <Badge tone={PAY_TONE[s.paymentStatus]}>{PAY_LABEL[s.paymentStatus]}</Badge>
           </div>
           {item.vendor_name && <p className="mt-0.5 truncate text-[0.875rem] text-fg-3">{item.vendor_name}</p>}
+        </button>
           <div className="mt-3 grid grid-cols-2 gap-3">
-            <div>
-              <p className="text-[0.75rem] text-fg-3">예상</p>
-              <p className="tabular text-[1rem] font-medium text-fg-2">{item.estimated_amount ? formatKRW(item.estimated_amount) : "—"}</p>
-            </div>
-            <div>
-              <p className="text-[0.75rem] text-fg-3">실제</p>
-              <p className="tabular text-[1rem] font-semibold text-fg">{hasActual ? formatKRW(item.actual_amount) : "—"}</p>
-            </div>
+            {([
+              ["estimated", "예상", item.estimated_amount, "text-fg-2 font-medium"],
+              ["actual", "실제", item.actual_amount, "text-fg font-semibold"],
+            ] as const).map(([key, label, amount, cls]) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setEditing(key)}
+                aria-label={`${item.name} ${label} 금액 고치기`}
+                className="rounded-[10px] px-2 py-1 -mx-2 text-left transition-colors hover:bg-surface-2 active:scale-[0.98]"
+              >
+                <span className="block text-[0.75rem] text-fg-3">{label}</span>
+                <span className={cn("block tabular text-[1rem]", cls, !amount && "font-normal text-fg-3")}>
+                  {amount ? formatKRW(amount) : "탭해서 입력"}
+                </span>
+              </button>
+            ))}
           </div>
+          <MoneySheet
+            open={editing !== null}
+            onClose={() => setEditing(null)}
+            value={editing === "actual" ? item.actual_amount : item.estimated_amount}
+            title={`${item.name} · ${editing === "actual" ? "실제" : "예상"} 금액`}
+            onApply={(v) => patch("budget_items", item.id, editing === "actual" ? { actual_amount: v } : { estimated_amount: v })}
+          />
+        <button type="button" onClick={() => onOpen(item.id)} className="w-full text-left">
           <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[0.8125rem]">
             {hasActual && item.estimated_amount > 0 ? (
               <span className={cn("tabular font-medium", s.diff > 0 ? "text-warning" : s.diff < 0 ? "text-success" : "text-fg-3")}>
@@ -61,6 +85,7 @@ function ItemCard({ s, onOpen, selected }: { s: ItemSummary; onOpen: (id: string
             </span>
           </div>
         </button>
+        </div>
         <FavoriteButton active={item.is_favorite} onChange={(v) => patch("budget_items", item.id, { is_favorite: v }, { log: false })} className="-mr-2 -mt-1" />
       </div>
     </li>
@@ -95,10 +120,15 @@ export function BudgetItemsView({ embedded }: { embedded?: boolean } = {}) {
   const b = computeBudget(data.wedding, data.budget_categories, data.budget_items, data.payments);
   const cats = [...data.budget_categories].sort((x, y) => x.sort_order - y.sort_order);
 
-  const emptyCount = useMemo(() => b.items.filter((s) => s.item.estimated_amount === 0 && s.item.actual_amount === 0).length, [b.items]);
+  const emptyCount = useMemo(
+    () => b.items.filter((s) => s.item.estimated_amount === 0 && s.item.actual_amount === 0 && !wasJustAdded(s.item.id)).length,
+    [b.items],
+  );
   const list = useMemo(() => {
     let l = b.items;
-    if (!showEmpty && !q.trim()) l = l.filter((s) => s.item.estimated_amount > 0 || s.item.actual_amount > 0);
+    // 금액 없는 항목은 접어 두되, 방금 만든 것은 접지 않는다 (사라지면 저장이 안 된 줄 안다)
+    if (!showEmpty && !q.trim())
+      l = l.filter((s) => s.item.estimated_amount > 0 || s.item.actual_amount > 0 || wasJustAdded(s.item.id));
     if (category === "__none__") l = l.filter((s) => !s.item.category_id);
     else if (category) l = l.filter((s) => s.item.category_id === category);
     if (onlyUnpaid) l = l.filter((s) => s.unpaid > 0);
