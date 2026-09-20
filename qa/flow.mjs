@@ -675,6 +675,60 @@ check("담은 이름이 없으면 추가 버튼이 눌리지 않음",
   await yv.getByRole("button", { name: "추가하기" }).first().isDisabled());
 await yesVoice.close();
 
+// ---------------- 공통 지인 · 동반 인원 ----------------
+const shg = await browser.newContext({ ignoreHTTPSErrors: true, viewport: { width: 390, height: 844 }, locale: "ko-KR", timezoneId: "Asia/Seoul", hasTouch: true });
+const shp = await shg.newPage();
+const shStore = () => shp.evaluate(() => JSON.parse(localStorage.getItem("owp:data:v2:00000000-0000-4000-8000-000000000001")));
+const addGuest = async (text) => {
+  const box = shp.getByPlaceholder(/하객 이름 추가|이름만 적어 하객 추가/).first();
+  await box.fill(text);
+  await box.press("Enter");
+  await shp.waitForTimeout(700);
+};
+await shp.goto(base + "/guests", { waitUntil: "domcontentloaded", timeout: 60000 });
+await shp.getByPlaceholder(/하객 이름 추가|이름만 적어 하객 추가/).first().waitFor({ timeout: 30000 });
+
+await addGuest("양가 친구 박준영");
+const g1 = (await shStore()).guests.find((g) => g.name === "박준영");
+check("한 줄 추가에서 '양가' → 공통 지인으로 저장", !!g1 && g1.side === "both" && g1.relation === "친구", JSON.stringify(g1 && { side: g1.side, rel: g1.relation }));
+
+await addGuest("김철수 & 이영희 부부");
+const g2 = (await shStore()).guests.find((g) => g.name === "김철수 & 이영희");
+check("'부부' → 동반 1명(= 총 2명)으로 저장", !!g2 && g2.companions === 1, JSON.stringify(g2 && { name: g2.name, c: g2.companions }));
+
+await addGuest("신부측 직장 이가족 4명");
+const g3 = (await shStore()).guests.find((g) => g.name === "이가족");
+check("이름 속 낱말을 먹지 않고 '4명' 만 인원으로", !!g3 && g3.companions === 3 && g3.side === "bride", JSON.stringify(g3 && { name: g3.name, c: g3.companions, side: g3.side }));
+
+check("목록에 총 인원이 보임 (동반이 있을 때)", (await shp.getByText("2명", { exact: true }).count()) > 0);
+
+// 공통 지인은 신랑/신부 어느 쪽에도 겹쳐 세지 않는다
+const shSt = await shp.evaluate(() => {
+  const d = JSON.parse(localStorage.getItem("owp:data:v2:00000000-0000-4000-8000-000000000001"));
+  const g = d.guests;
+  return { total: g.length, groom: g.filter((x) => x.side === "groom").length, bride: g.filter((x) => x.side === "bride").length, both: g.filter((x) => x.side === "both").length };
+});
+check("신랑 + 신부 + 공통 = 전체 (겹쳐 세지 않음)", shSt.groom + shSt.bride + shSt.both === shSt.total, JSON.stringify(shSt));
+
+// 측 필터에 '공통'
+await shp.getByRole("radio", { name: "공통" }).click().catch(async () => {
+  await shp.getByText("공통", { exact: true }).first().click();
+});
+await shp.waitForTimeout(700);
+const onlyBoth = await shp.locator("main").innerText();
+check("'공통' 필터가 공통 지인만 보여줌", onlyBoth.includes("박준영"), shSt.both + "명");
+
+// 편집 창에서 총 인원이 보이는지
+await shp.getByRole("radio", { name: "전체" }).first().click().catch(() => {});
+await shp.waitForTimeout(500);
+await shp.getByText("김철수 & 이영희").first().click();
+await shp.waitForTimeout(700);
+const sheet = await shp.getByRole("dialog").last().innerText();
+check("편집 창에 '총 2명' 이 보임", sheet.includes("총 2명"), (sheet.match(/총 \d+명/) ?? [])[0] ?? "없음");
+check("편집 창 측 선택에 '공통' 이 있음", sheet.includes("공통"));
+
+await shg.close();
+
 console.log("\nERRORS:", errors.length ? errors.slice(0, 6) : "none");
 const passed = results.filter((r) => r.ok).length;
 console.log(`\n${passed}/${results.length} passed`);

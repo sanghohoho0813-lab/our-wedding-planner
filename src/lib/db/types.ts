@@ -179,7 +179,7 @@ export interface OutfitItem extends BaseRow {
   is_favorite: boolean;
 }
 
-export type GuestSide = "groom" | "bride";
+export type GuestSide = "groom" | "bride" | "both";
 export type Rsvp = "yes" | "maybe" | "no";
 export type MealChoice = "yes" | "no" | "unknown";
 export type InvitationMethod = "mobile" | "paper" | "both";

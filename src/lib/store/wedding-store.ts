@@ -6,6 +6,7 @@ import type { ActivityLog, TableMap, Wedding, WeddingData } from "@/lib/db/types
 import { ENTITY_LABEL, VENDOR_CATEGORY_LABEL } from "@/lib/labels";
 import { formatKRW } from "@/lib/money";
 import { josa, nowISO, uid } from "@/lib/utils";
+import { explainDbError } from "@/lib/db/errors";
 import { toast } from "./ui-store";
 
 type Status = "idle" | "loading" | "ready" | "error";
@@ -160,7 +161,13 @@ export const useWeddingStore = create<WeddingState>((set, get) => {
       .catch((err: unknown) => {
         console.error(err);
         set((s) => ({ pending: Math.max(0, s.pending - 1) }));
-        toast("저장에 실패했어요. 다시 시도해 주세요.", { tone: "error" });
+        // 왜 실패했는지 알 수 있는 오류면 그대로 알려준다.
+        // "저장에 실패했어요" 만 뜨면 무엇을 해야 하는지 알 길이 없다.
+        const help = explainDbError(err instanceof Error ? err.message : String(err ?? ""));
+        toast(help.known ? `${help.title} — ${help.steps[0] ?? ""}` : "저장에 실패했어요. 다시 시도해 주세요.", {
+          tone: "error",
+          duration: help.known ? 10000 : 5000,
+        });
         void get().reload();
       });
   };

@@ -19,10 +19,15 @@ export interface ParsedGuest {
   companions: number | null;
 }
 
+// '공통' 을 먼저 본다. "양가 친구" 를 신랑/신부로 잘못 잡으면 안 되므로 순서가 중요하다.
 const SIDE_WORDS: [RegExp, GuestSide][] = [
+  [/양가|양쪽|공통|둘\s*다\s*아는|같이\s*아는|둘다/g, "both"],
   [/신랑\s*측|신랑\s*쪽|신랑편|남편\s*측/g, "groom"],
   [/신부\s*측|신부\s*쪽|신부편|아내\s*측/g, "bride"],
 ];
+
+/** 두 사람이 한 줄에 들어오는 표현. "김철수 & 이영희 부부" → 동반 1명(= 2명) */
+const PAIR_WORDS = /부부|커플|내외/;
 
 // 말할 때 흔히 쓰는 말 → 관계 항목
 const RELATION_WORDS: [RegExp, string][] = [
@@ -43,23 +48,44 @@ const NUM_WORD: Record<string, number> = {
 const LEADING_NOISE = /^(그리고|그다음|다음|또|음+|어+|저기|이제)\s+/;
 const TRAILING_NOISE = /\s*(추가|넣어\s*줘|넣어줘|입력|해\s*줘)$/;
 
+/**
+ * 낱말 하나를 통째로 걷어낸다.
+ *
+ * 그냥 찾아 지우면 이름 속에 들어 있는 글자까지 먹는다 — "이가족" 에서 '가족' 을 떼면
+ * "이" 만 남는다. 그래서 앞은 띄어쓰기(또는 문장 처음), 뒤는 띄어쓰기(또는 끝)일 때만 지운다.
+ * 뒤쪽은 소비하지 않아야(lookahead) 낱말이 연달아 있어도 둘 다 걸린다.
+ * (뒤돌아보기 lookbehind 는 구형 아이폰 사파리에서 안 되므로 쓰지 않는다)
+ */
+function wordRe(src: string): RegExp {
+  return new RegExp(`(^|\\s)(?:${src})(?=\\s|$)`, "g");
+}
+
+function hasWord(s: string, src: string): boolean {
+  return wordRe(src).test(s);
+}
+
+function stripWord(s: string, src: string): string {
+  return s.replace(wordRe(src), "$1");
+}
+
 export function parsePhrase(raw: string): ParsedGuest | null {
   let s = ` ${raw.trim()} `;
   if (!s.trim()) return null;
 
   let side: GuestSide | null = null;
   for (const [re, v] of SIDE_WORDS) {
-    if (new RegExp(re.source).test(s)) {
+    if (hasWord(s, re.source)) {
       side = v;
-      s = s.replace(new RegExp(re.source, "g"), " ");
+      s = stripWord(s, re.source);
+      break;
     }
   }
 
   let relation: string | null = null;
   for (const [re, v] of RELATION_WORDS) {
-    if (new RegExp(re.source).test(s)) {
+    if (hasWord(s, re.source)) {
       relation = v;
-      s = s.replace(new RegExp(re.source, "g"), " ");
+      s = stripWord(s, re.source);
       break;
     }
   }
@@ -77,6 +103,11 @@ export function parsePhrase(raw: string): ParsedGuest | null {
       s = s.replace(worded[0], " ");
     }
   }
+
+  // "부부" · "커플" 은 말 자체가 두 사람이라 동반 1명으로 둔다. 숫자를 따로 말했으면 그게 우선이다.
+  // '&' 는 이름의 일부(김철수 & 이영희)라 지우지 않고, 두 사람이라는 신호로만 쓴다.
+  if (companions === null && (hasWord(s, PAIR_WORDS.source) || s.includes("&"))) companions = 1;
+  s = stripWord(s, PAIR_WORDS.source);
 
   let name = s.replace(/[.,·]/g, " ").replace(/\s+/g, " ").trim();
   // "음 저기 이철수" 처럼 군더더기가 겹칠 수 있어 더 안 깎일 때까지 반복한다.

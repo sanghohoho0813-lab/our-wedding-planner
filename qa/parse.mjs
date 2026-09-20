@@ -8,7 +8,7 @@ import { execFileSync } from "node:child_process";
 const dir = mkdtempSync(join(tmpdir(), "owp-parse-"));
 const src = readFileSync("src/lib/voice-guest.ts", "utf8")
   .replace('import { GUEST_RELATIONS } from "@/lib/labels";', 'const GUEST_RELATIONS = ["가족","친척","친구","직장","학교","지인","부모님 지인","기타"];')
-  .replace('import type { GuestSide } from "@/lib/db/types";', 'type GuestSide = "groom" | "bride";');
+  .replace('import type { GuestSide } from "@/lib/db/types";', 'type GuestSide = "groom" | "bride" | "both";');
 writeFileSync(join(dir, "vg.ts"), src);
 execFileSync("npx", ["tsc", join(dir, "vg.ts"), "--target", "es2022", "--module", "esnext", "--moduleResolution", "bundler", "--outDir", dir], { stdio: "pipe" });
 const { parsePhrase } = await import(join(dir, "vg.js"));
@@ -28,6 +28,16 @@ const CASES = [
   // 이름을 통째로 깎아 먹으면 안 된다
   ["다음", { name: "다음" }],
   ["   ", null],
+  // 공통 지인 (신랑 · 신부 둘 다 아는 사람)
+  ["양가 친구 박준영", { name: "박준영", side: "both", relation: "친구" }],
+  ["둘 다 아는 김하늘", { name: "김하늘", side: "both" }],
+  ["공통 지인 최유진", { name: "최유진", side: "both", relation: "지인" }],
+  // 부부 · 커플 → 동반 1명 (= 2명)
+  ["김철수 & 이영희 부부", { name: "김철수 & 이영희", companions: 1 }],
+  ["박민수 내외", { name: "박민수", companions: 1 }],
+  ["정다은&한지우", { name: "정다은&한지우", companions: 1 }],
+  // 숫자를 따로 말하면 그게 이긴다
+  ["신랑측 이가족 부부 4명", { name: "이가족", side: "groom", companions: 3 }],
 ];
 
 let pass = 0;

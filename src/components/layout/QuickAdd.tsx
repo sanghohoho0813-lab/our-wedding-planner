@@ -17,7 +17,7 @@ type Kind = "plan" | "budget" | "guest" | "memo";
 const ACTIONS: { kind: Kind; label: string; desc: string; icon: React.ReactNode; tint: Tint }[] = [
   { kind: "plan", label: "할 일 · 일정", desc: "시간을 적으면 일정으로", icon: <CheckSquare />, tint: "plan" },
   { kind: "budget", label: "비용", desc: "견적 · 실제 금액", icon: <Wallet />, tint: "budget" },
-  { kind: "guest", label: "하객", desc: "신랑측 · 신부측", icon: <Users />, tint: "guests" },
+  { kind: "guest", label: "하객", desc: "신랑측 · 신부측 · 공통", icon: <Users />, tint: "guests" },
   { kind: "memo", label: "메모", desc: "떠오른 생각 바로 기록", icon: <StickyNote />, tint: "neutral" },
 ];
 

@@ -20,7 +20,8 @@ export function GuestsHub() {
       <div className="mb-4">
         <h1 className="hidden text-[1.75rem] font-bold tracking-tight text-fg lg:block">하객 · 초대</h1>
         <p className="text-[0.9375rem] text-fg-3">
-          총 {stats.total}명 · 신랑측 {stats.groom} · 신부측 {stats.bride} · 청첩장 전달 {stats.invited}
+          총 {stats.total}명 · 신랑측 {stats.groom} · 신부측 {stats.bride}
+          {stats.both > 0 && <> · 공통 {stats.both}</>} · 예상 {stats.expectedPeople}명
         </p>
       </div>
       <TabBar

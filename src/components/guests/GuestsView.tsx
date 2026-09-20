@@ -12,6 +12,9 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import { FilterBar } from "@/components/ui/FilterBar";
+import { SIDE_LABEL, SIDE_SHORT, SIDE_TINT } from "@/lib/guest-side";
+import { parsePhrase } from "@/lib/voice-guest";
+import { tint } from "@/lib/tint";
 import { VoiceGuestSheet } from "./VoiceGuestSheet";
 import { speechSupported } from "@/lib/speech";
 import { InlineAdd } from "@/components/ui/InlineAdd";
@@ -56,11 +59,12 @@ function GuestRow({ g, onOpen, selected }: { g: Guest; onOpen: (id: string) => v
         <div className={cn("flex items-center gap-2 px-3 py-2.5 transition-colors hover:bg-surface-2 sm:px-4", selected && "bg-accent-softer ring-1 ring-inset ring-accent/30")}>
       <button type="button" onClick={() => onOpen(g.id)} className="min-w-0 flex-1 text-left">
         <span className="flex items-center gap-2">
-          <span className={cn("inline-flex size-8 shrink-0 items-center justify-center rounded-full text-[0.8125rem] font-bold", g.side === "groom" ? "bg-info-soft text-info" : "bg-accent-soft text-accent-text")}>
-            {g.side === "groom" ? "신랑" : "신부"}
+          <span className={cn("inline-flex size-8 shrink-0 items-center justify-center rounded-full text-[0.8125rem] font-bold", tint(SIDE_TINT[g.side]).soft, tint(SIDE_TINT[g.side]).fg)}>
+            {SIDE_SHORT[g.side]}
           </span>
           <span className="truncate text-[1rem] font-medium text-fg">{g.name}</span>
-          {people > 1 && <span className="shrink-0 text-[0.8125rem] text-fg-3">+{g.companions}</span>}
+          {/* 동반이 있으면 총 몇 명인지 바로 보여준다 ('+1' 보다 '2명' 이 셈이 쉽다) */}
+          {people > 1 && <span className="shrink-0 rounded-full bg-surface-2 px-1.5 py-0.5 text-[0.75rem] font-semibold tabular text-fg-2">{people}명</span>}
         </span>
         <span className="mt-0.5 flex items-center gap-1.5 pl-10 text-[0.8125rem] text-fg-3">
           {g.relation && <span>{g.relation}</span>}
@@ -175,8 +179,19 @@ export function GuestsView({ embedded }: { embedded?: boolean } = {}) {
       >
         <InlineAdd
           voice
-          placeholder={side === "all" ? "이름만 적어 하객 추가" : `${side === "groom" ? "신랑측" : "신부측"} 하객 이름 추가`}
-          onAdd={(name) => add("guests", { name, side: side === "all" ? "groom" : side })}
+          placeholder={side === "all" ? "이름만 적어 하객 추가" : `${SIDE_LABEL[side]} 하객 이름 추가`}
+          // 손으로 칠 때도 말할 때와 똑같이 읽는다 —
+          // "양가 친구 박준영", "김철수 & 이영희 부부", "이가족 4명" 이 그대로 칸에 들어간다.
+          onAdd={(text) => {
+            const p = parsePhrase(text);
+            if (!p) return;
+            add("guests", {
+              name: p.name,
+              side: p.side ?? (side === "all" ? "groom" : side),
+              relation: p.relation,
+              companions: p.companions ?? 0,
+            });
+          }}
           trailing={
             <Button variant="outline" className="hidden shrink-0 sm:inline-flex" onClick={() => setCreating(true)} aria-label="자세히 입력해서 하객 추가">
               <ListPlus className="size-4" /> 자세히
@@ -202,6 +217,7 @@ export function GuestsView({ embedded }: { embedded?: boolean } = {}) {
             ["총 하객", `${stats.total}명`, false],
             ["신랑측", `${stats.groom}명`, false],
             ["신부측", `${stats.bride}명`, false],
+            ["공통 지인", `${stats.both}명`, false],
             ["청첩장 전달", `${stats.invited} / ${stats.total}`, false],
           ].map(([k, v, onPhone]) => (
             <div key={k as string} className={cn("card px-3 py-2.5", !onPhone && "hidden sm:block")}>
@@ -216,6 +232,7 @@ export function GuestsView({ embedded }: { embedded?: boolean } = {}) {
               { value: "all", label: "전체" },
               { value: "groom", label: "신랑측" },
               { value: "bride", label: "신부측" },
+              { value: "both", label: "공통" },
             ]}
             value={side}
             onChange={setSide}
@@ -258,7 +275,7 @@ export function GuestsView({ embedded }: { embedded?: boolean } = {}) {
               <EmptyState
                 icon={<Users />}
                 title={guests.length === 0 ? "아직 등록된 하객이 없어요" : "조건에 맞는 하객이 없어요"}
-                description="이름만 입력하고 [신랑측/신부측], [참석/미정/불참]을 눌러 빠르게 기록해요."
+                description="이름만 입력하고 [신랑측/신부측/공통], [참석/미정/불참]을 눌러 빠르게 기록해요."
                 actionLabel="첫 하객 추가"
                 onAction={() => setCreating(true)}
               />
@@ -277,7 +294,7 @@ export function GuestsView({ embedded }: { embedded?: boolean } = {}) {
                       <span className="flex min-w-0 items-center gap-1.5">
                         <ChevronDown className={cn("size-4 shrink-0 transition-transform", collapsed.has(g.key) && "-rotate-90")} />
                         <span className="truncate">
-                          {g.side === "groom" ? "신랑측" : "신부측"} · {g.relation}
+                          {SIDE_LABEL[g.side]} · {g.relation}
                         </span>
                       </span>
                       <span className="shrink-0 tabular">

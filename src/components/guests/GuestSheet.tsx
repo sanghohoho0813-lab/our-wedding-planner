@@ -1,6 +1,7 @@
 "use client";
 import type { RowValues } from "@/lib/db/defaults";
 import { GUEST_RELATIONS, INVITATION_METHOD, MEAL, RSVP } from "@/lib/labels";
+import { GUEST_SIDES } from "@/lib/guest-side";
 import { useWeddingStore } from "@/lib/store/wedding-store";
 import { toast } from "@/lib/store/ui-store";
 import { Button } from "@/components/ui/Button";
@@ -41,21 +42,19 @@ export function GuestFields({
             }}
           />
         </FieldRow>
-        <FieldRow label="측">
-          <Segmented
-            size="lg"
-            options={[
-              { value: "groom", label: "신랑측" },
-              { value: "bride", label: "신부측" },
-            ]}
-            value={values.side}
-            onChange={(v) => set("side", v)}
-          />
+        <FieldRow label="측" hint="신랑 · 신부가 둘 다 아는 사람은 '공통'으로 두면 총원에 한 번만 세요">
+          <Segmented size="lg" options={GUEST_SIDES.map((o) => ({ value: o.value, label: o.label }))} value={values.side} onChange={(v) => set("side", v)} />
         </FieldRow>
         <FieldRow label="참석">
           <Segmented size="lg" options={RSVP} value={values.rsvp} onChange={(v) => set("rsvp", v)} />
         </FieldRow>
-        <FieldRow label="동반 인원" right={<span className="text-[0.8125rem] text-fg-3">본인 포함 {1 + values.companions}명</span>}>
+        {/* 부부를 한 줄에 적을 때("김철수 & 이영희") 동반 1명으로 두면 총원 2명이 된다.
+            숫자가 어디에 반영되는지 바로 옆에서 보여줘야 헷갈리지 않는다. */}
+        <FieldRow
+          label="동반 인원"
+          hint="부부·가족처럼 같이 오는 사람 수예요. 본인은 빼고 적어요."
+          right={<span className="text-[0.8125rem] font-semibold tabular text-accent-text">총 {1 + values.companions}명</span>}
+        >
           <Stepper value={values.companions} onChange={(v) => set("companions", v)} max={20} />
         </FieldRow>
         <FieldRow label="관계">

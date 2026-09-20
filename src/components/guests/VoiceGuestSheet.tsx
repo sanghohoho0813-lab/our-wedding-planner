@@ -3,6 +3,7 @@ import { Mic, Plus, X } from "lucide-react";
 import { useState } from "react";
 import { useSpeech } from "@/lib/speech";
 import { parsePhrase, RELATION_OPTIONS } from "@/lib/voice-guest";
+import { GUEST_SIDES } from "@/lib/guest-side";
 import type { GuestSide } from "@/lib/db/types";
 import { useWeddingStore } from "@/lib/store/wedding-store";
 import { toast } from "@/lib/store/ui-store";
@@ -106,8 +107,11 @@ export function VoiceGuestSheet({ open, onClose, defaultSide = "groom" }: { open
                   "마이크를 누르고 이름을 말하세요."
                 )}
               </p>
+              {speech.oneShot && (
+                <p className="text-center text-[0.8125rem] text-fg-3">아이폰은 한 명 말할 때마다 마이크를 다시 눌러주세요.</p>
+              )}
               <p className="text-center text-[0.75rem] leading-relaxed text-fg-3">
-                예: &ldquo;신부측 직장 김미영&rdquo; · &ldquo;이철수 두 명&rdquo;
+                예: &ldquo;신부측 직장 김미영&rdquo; · &ldquo;양가 친구 박준영&rdquo; · &ldquo;이철수 부부&rdquo;
                 <br />
                 소리는 브라우저가 글자로 바꾸는 데만 쓰이고, 앱에 저장되지 않아요.
               </p>
@@ -121,7 +125,7 @@ export function VoiceGuestSheet({ open, onClose, defaultSide = "groom" }: { open
                 ) : speech.listening ? (
                   speech.interim || "듣고 있어요…"
                 ) : (
-                  "이어서 말하려면 누르세요."
+                  speech.oneShot ? "다음 사람을 말하려면 다시 누르세요." : "이어서 말하려면 누르세요."
                 )}
               </p>
               <span className="shrink-0 text-[0.875rem] font-semibold tabular text-fg">{drafts.length}명</span>
@@ -132,10 +136,7 @@ export function VoiceGuestSheet({ open, onClose, defaultSide = "groom" }: { open
             {drafts.length === 0 && <p className="text-[0.875rem] font-medium text-fg-2">다음에 담을 기본값</p>}
             <Segmented
               size="sm"
-              options={[
-                { value: "groom", label: "신랑측" },
-                { value: "bride", label: "신부측" },
-              ]}
+              options={GUEST_SIDES.map((o) => ({ value: o.value, label: o.label }))}
               value={side}
               onChange={setSide}
               ariaLabel="기본 측"
@@ -173,17 +174,16 @@ export function VoiceGuestSheet({ open, onClose, defaultSide = "groom" }: { open
                     </button>
                   </div>
                   <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                    <Chip size="sm" active={d.side === "groom"} onClick={() => patch(d.key, { side: "groom" })}>
-                      신랑측
-                    </Chip>
-                    <Chip size="sm" active={d.side === "bride"} onClick={() => patch(d.key, { side: "bride" })}>
-                      신부측
-                    </Chip>
+                    {GUEST_SIDES.map((o) => (
+                      <Chip key={o.value} size="sm" active={d.side === o.value} onClick={() => patch(d.key, { side: o.value })}>
+                        {o.label}
+                      </Chip>
+                    ))}
                     <span className="mx-1 h-4 w-px bg-line" />
                     <span className="text-[0.8125rem] text-fg-3">{d.relation ?? "관계 없음"}</span>
                     <span className="ml-auto flex items-center gap-1.5 text-[0.8125rem] text-fg-3">
-                      동반
-                      <Stepper value={d.companions} onChange={(v) => patch(d.key, { companions: v })} min={0} max={9} />
+                      <span className="font-semibold tabular text-fg-2">{1 + d.companions}명</span>
+                      <Stepper value={d.companions} onChange={(v) => patch(d.key, { companions: v })} min={0} max={9} suffix="" size="sm" />
                     </span>
                   </div>
                 </li>

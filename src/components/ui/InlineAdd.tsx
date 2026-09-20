@@ -83,7 +83,10 @@ export function InlineAdd({
       </div>
       {speech.error && <p className="px-3 text-[0.8125rem] text-danger">{speech.error}</p>}
       {speech.listening && !speech.error && (
-        <p className="px-3 text-[0.8125rem] text-fg-3">듣고 있어요. 말한 내용을 확인하고 추가를 누르세요.</p>
+        <p className="px-3 text-[0.8125rem] text-fg-3">
+          듣고 있어요. 말한 내용을 확인하고 추가를 누르세요.
+          {speech.oneShot && " (아이폰은 한 마디마다 다시 눌러주세요)"}
+        </p>
       )}
     </div>
   );

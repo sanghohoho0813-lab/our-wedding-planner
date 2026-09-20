@@ -82,6 +82,33 @@ N="$("$PGBIN/psql" -At -d owp_partial -c "select count(*) from information_schem
 rm -f "$PART"
 
 # ---------------------------------------------------------------------
+say "3-1) 이미 설치한 사람이 0005(공통 지인)만 따로 실행하면"
+# ---------------------------------------------------------------------
+# 0001~0004 까지만 깔려 있는 상태(= 지금 사용자의 프로젝트)를 만들고,
+# 0005 짧은 파일 하나만 실행해서 '공통 지인' 이 들어가는지 본다.
+fresh_db owp_side
+for f in 0001_init 0002_revision 0003_realtime 0004_grants; do
+  psqlq -d owp_side -f "$ROOT/supabase/migrations/$f.sql" >/dev/null 2>&1 || fail "$f 설치 실패"
+done
+# INSERT ... RETURNING 은 값 뒤에 "INSERT 0 1" 태그도 같이 찍힌다 → 첫 줄만 쓴다
+WID="$("$PGBIN/psql" -At -d owp_side -c "insert into public.weddings(wedding_date) values ('2026-12-20') returning id" | head -1)"
+[ -n "$WID" ] || fail "검사용 결혼 공간을 만들지 못했습니다"
+OLD="$("$PGBIN/psql" -At -d owp_side -c "insert into public.guests(wedding_id,name,side) values ('$WID','공통지인테스트','both')" 2>&1 || true)"
+case "$OLD" in *violates*check*) pass "0005 전에는 '공통'이 거절됨(원래 상태 확인)";; *) fail "0005 전인데 both 가 들어갔습니다: $OLD";; esac
+psqlq -d owp_side -f "$ROOT/supabase/migrations/0005_guest_side_both.sql" >/dev/null 2>&1 || fail "0005 단독 실행 실패"
+psqlq -d owp_side -f "$ROOT/supabase/migrations/0005_guest_side_both.sql" >/dev/null 2>&1 || fail "0005 를 두 번 실행하면 실패"
+pass "0005 만 따로, 여러 번 실행해도 안전"
+NEWID="$WID"
+"$PGBIN/psql" -v ON_ERROR_STOP=1 -At -d owp_side -c "insert into public.guests(wedding_id,name,side,companions) values ('$NEWID','김철수 & 이영희','both',1)" >/dev/null 2>&1 || fail "공통 지인을 넣지 못했습니다"
+CNT="$("$PGBIN/psql" -At -d owp_side -c "select count(*) from public.guests where side='both'")"
+[ "$CNT" = "1" ] && pass "공통 지인(both)이 저장됨" || fail "공통 지인이 저장되지 않았습니다"
+PEOPLE="$("$PGBIN/psql" -At -d owp_side -c "select sum(1 + companions) from public.guests where side='both'")"
+[ "$PEOPLE" = "2" ] && pass "부부 한 줄 = 동반 1명 = 총 2명" || fail "인원 계산이 $PEOPLE 명입니다"
+BAD="$("$PGBIN/psql" -At -d owp_side -c "insert into public.guests(wedding_id,name,side) values ('$NEWID','엉뚱한값','neither')" 2>&1 || true)"
+case "$BAD" in *violates*check*) pass "엉뚱한 값은 여전히 거절됨";; *) fail "제약이 느슨해졌습니다: $BAD";; esac
+psqlq -d postgres -c "drop database if exists owp_side" >/dev/null
+
+# ---------------------------------------------------------------------
 say "4) 표 권한이 자동으로 붙지 않는 프로젝트에서도 되는가"
 # ---------------------------------------------------------------------
 # 일부 프로젝트는 "앞으로 만들 표에 자동으로 권한" 설정이 적용되지 않는다.

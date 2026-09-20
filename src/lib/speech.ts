@@ -50,6 +50,20 @@ export function speechSupported(): boolean {
   return ctor() !== null;
 }
 
+/**
+ * 아이폰 · 아이패드인지.
+ *
+ * 사파리는 한 마디가 끝나면 음성 인식을 스스로 닫고, 사용자가 손으로 누르지 않은
+ * 다시 켜기를 막는다. 그래서 '계속 듣기' 가 안 되고 한 명 말할 때마다 다시 눌러야 한다.
+ * 기기를 알아내서 미리 그렇게 안내하려고만 쓴다(기능을 막지는 않는다).
+ */
+export function isAppleMobile(): boolean {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent;
+  // 아이패드는 데스크톱 사파리인 척해서 UA 만으로는 모자라다 → 터치 되는 Mac 도 같이 본다
+  return /iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && typeof document !== "undefined" && "ontouchend" in document);
+}
+
 const MESSAGE: Record<string, string> = {
   "not-allowed": "마이크 사용을 허용해 주세요. 주소창 왼쪽 자물쇠에서 바꿀 수 있어요.",
   "service-not-allowed": "마이크 사용을 허용해 주세요. 주소창 왼쪽 자물쇠에서 바꿀 수 있어요.",
@@ -74,13 +88,18 @@ export function useSpeech({
   const [interim, setInterim] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [supported, setSupported] = useState(false);
+  /** 한 마디마다 다시 눌러야 하는 기기인지 (아이폰 사파리) */
+  const [oneShot, setOneShot] = useState(false);
   const recRef = useRef<SpeechRecognitionLike | null>(null);
   const wantRef = useRef(false);
   const phraseRef = useRef(onPhrase);
   phraseRef.current = onPhrase;
 
   // 지원 여부는 브라우저에서만 알 수 있다 (서버 렌더 결과와 어긋나지 않게 마운트 후에 켠다)
-  useEffect(() => setSupported(speechSupported()), []);
+  useEffect(() => {
+    setSupported(speechSupported());
+    setOneShot(isAppleMobile());
+  }, []);
 
   const stop = useCallback(() => {
     wantRef.current = false;
@@ -125,9 +144,11 @@ export function useSpeech({
           rec.start();
           return;
         } catch {
-          /* 이미 돌고 있으면 무시 */
+          // 사파리는 손으로 누르지 않은 다시 켜기를 막는다 → 한 마디 방식으로 돌린다
+          setOneShot(true);
         }
       }
+      wantRef.current = false;
       setListening(false);
     };
     recRef.current = rec;
@@ -149,5 +170,5 @@ export function useSpeech({
     [],
   );
 
-  return { supported, listening, interim, error, start, stop, toggle: () => (listening ? stop() : start()), clearError: () => setError(null) };
+  return { supported, oneShot, listening, interim, error, start, stop, toggle: () => (listening ? stop() : start()), clearError: () => setError(null) };
 }
