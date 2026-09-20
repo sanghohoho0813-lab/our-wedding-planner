@@ -15,12 +15,15 @@ export function FilterBar({
   activeCount = 0,
   label = "검색 · 정렬",
   children,
+  scrollable = true,
 }: {
   chips: ReactNode;
   /** 접힌 안쪽에 지금 걸려 있는 조건 수 (0이면 배지 없음) */
   activeCount?: number;
   label?: string;
   children?: ReactNode;
+  /** 칩 줄이 옆으로 스크롤되는가. 줄바꿈으로 다 보이는 경우에는 끝 흐림을 넣지 않는다. */
+  scrollable?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -28,8 +31,9 @@ export function FilterBar({
       <div className="flex items-center gap-2">
         <div className="relative min-w-0 flex-1">
           {chips}
-          {/* 칩이 버튼 밑에서 잘리면 '깨진 것' 처럼 보인다. 끝을 흐리게 해서 '옆으로 더 있다' 로 읽히게 한다. */}
-          <span aria-hidden className="pointer-events-none absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-bg to-transparent" />
+          {/* 칩이 버튼 밑에서 잘리면 '깨진 것' 처럼 보인다. 끝을 흐리게 해서 '옆으로 더 있다' 로 읽히게 한다.
+              (칩 줄 자체에 오른쪽 여백을 줘서, 끝까지 밀면 마지막 칩이 흐림 밖으로 나오게 한다) */}
+          {scrollable && <span aria-hidden className="pointer-events-none absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-bg to-transparent" />}
         </div>
         {children && (
           <button

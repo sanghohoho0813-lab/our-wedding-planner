@@ -215,64 +215,124 @@ export const useWeddingStore = create<WeddingState>((set, get) => {
       });
   };
 
+  /**
+   * 상대의 수정을 화면에 반영한다.
+   *
+   * 한 건씩 오면 바로 반영한다(그게 대부분이고, 빠를수록 좋다).
+   * 그런데 상대가 원본 데이터를 불러오거나 하객을 한 번에 300명 넣으면 이벤트가
+   * 수백 건 쏟아진다. 그때마다 화면 전체를 다시 그리면 상대 폰이 멈춘다
+   * (실제로 "Maximum update depth exceeded" 가 났다).
+   * 그래서 **첫 건은 즉시, 뒤이어 몰려오는 것은 한 묶음으로** 반영한다.
+   */
+  const BURST_MS = 80;
+  let burst: ChangeEvent[] = [];
+  let burstTimer: ReturnType<typeof setTimeout> | null = null;
+
   const applyChange = (e: ChangeEvent) => {
+    if (e.type === "reload" || e.type === "wedding") {
+      flushBurst();
+      applyNow([e]);
+      return;
+    }
+    if (burstTimer) {
+      burst.push(e);
+      return;
+    }
+    applyNow([e]);
+    burstTimer = setTimeout(flushBurst, BURST_MS);
+  };
+
+  const flushBurst = () => {
+    if (burstTimer) {
+      clearTimeout(burstTimer);
+      burstTimer = null;
+    }
+    if (burst.length === 0) return;
+    const queued = burst;
+    burst = [];
+    applyNow(queued);
+  };
+
+  /** 여러 건을 **한 번에** 화면에 반영한다 (몰려와도 다시 그리기는 한 번) */
+  const applyNow = (events: ChangeEvent[]) => {
     const { data } = get();
     if (!data) return;
-    if (e.type === "reload") {
-      void get().reload();
-      return;
-    }
-    if (e.type === "wedding") {
-      set({ data: { ...data, wedding: e.wedding } });
-      return;
-    }
-    const list = data[e.table] as { id: string }[];
-    if (e.type === "delete") {
-      if (!list.some((r) => r.id === e.id)) return;
-      // 내가 방금 고치던 걸 상대가 지웠다면 말없이 사라지게 두지 않는다.
-      // (내 수정은 이미 서버에 0건으로 처리돼 사라진 상태다)
-      const wasMine = didITouch(e.table, e.id);
-      forget(e.table, e.id);
-      set({ data: { ...data, [e.table]: list.filter((r) => r.id !== e.id) } });
-      if (wasMine) {
-        const who = otherLabel(get());
-        const what = ENTITY_LABEL[e.table] ?? "항목";
-        toast(`${josa(who, "이/가")} 방금 이 ${josa(what, "을/를")} 지웠어요. 고치던 내용은 저장되지 않았어요.`, {
-          tone: "error",
-          duration: 9000,
-        });
-      }
-      return;
-    }
-    const idx = list.findIndex((r) => r.id === e.row.id);
-    const next = [...list];
-    if (idx >= 0) next[idx] = { ...next[idx], ...e.row };
-    else next.push(e.row);
-    set({ data: { ...data, [e.table]: next } });
+    let next = data;
+    const notices: (() => void)[] = [];
+    let changed = false;
 
-    // 상대가 내가 방금 쓴 칸을 다른 값으로 덮었으면 알려준다.
-    // 나중 것이 이기는 규칙은 그대로 두되, 조용히 사라지지는 않게 한다.
-    if (idx >= 0) {
-      const clashes = findClashes(e.table, e.row.id, e.row as unknown as Record<string, unknown>);
-      if (clashes.length > 0) {
-        const c = clashes[0];
-        const more = clashes.length > 1 ? ` 외 ${clashes.length - 1}곳` : "";
-        const who = otherLabel(get());
-        const what = `${fieldLabel(c.field)}${more}`;
-        const val = valueLabel(e.table, c.field, c.theirValue);
-        toast(`${josa(who, "이/가")} ${josa(what, "을/를")} '${val}'${particle(val, "(으)로")} 바꿨어요.`, {
-          tone: "error",
-          duration: 10000,
-          action: {
-            label: "내 값으로",
-            onClick: () => {
-              const patch = Object.fromEntries(clashes.map((x) => [x.field, x.mineValue]));
-              get().patch(e.table as DataTable, e.row.id, patch as never, { log: `${josa(ENTITY_LABEL[e.table] ?? "항목", "을/를")} 내가 쓴 값으로 되돌렸어요.` });
-            },
-          },
-        });
+    for (const e of events) {
+      if (e.type === "reload") {
+        void get().reload();
+        continue;
+      }
+      if (e.type === "wedding") {
+        next = { ...next, wedding: e.wedding };
+        changed = true;
+        continue;
+      }
+      const list = next[e.table] as { id: string }[];
+      if (e.type === "delete") {
+        if (!list.some((r) => r.id === e.id)) continue;
+        // 내가 방금 고치던 걸 상대가 지웠다면 말없이 사라지게 두지 않는다.
+        // (내 수정은 이미 서버에 0건으로 처리돼 사라진 상태다)
+        const wasMine = didITouch(e.table, e.id);
+        forget(e.table, e.id);
+        next = { ...next, [e.table]: list.filter((r) => r.id !== e.id) };
+        changed = true;
+        if (wasMine) {
+          const table = e.table;
+          notices.push(() => {
+            const who = otherLabel(get());
+            const what = ENTITY_LABEL[table] ?? "항목";
+            toast(`${josa(who, "이/가")} 방금 이 ${josa(what, "을/를")} 지웠어요. 고치던 내용은 저장되지 않았어요.`, {
+              tone: "error",
+              duration: 9000,
+            });
+          });
+        }
+        continue;
+      }
+      const idx = list.findIndex((r) => r.id === e.row.id);
+      const rows = [...list];
+      if (idx >= 0) rows[idx] = { ...rows[idx], ...e.row };
+      else rows.push(e.row);
+      next = { ...next, [e.table]: rows };
+      changed = true;
+
+      // 상대가 내가 방금 쓴 칸을 다른 값으로 덮었으면 알려준다.
+      // 나중 것이 이기는 규칙은 그대로 두되, 조용히 사라지지는 않게 한다.
+      if (idx >= 0) {
+        const clashes = findClashes(e.table, e.row.id, e.row as unknown as Record<string, unknown>);
+        if (clashes.length > 0) {
+          const table = e.table;
+          const rowId = e.row.id;
+          notices.push(() => {
+            const c = clashes[0];
+            const more = clashes.length > 1 ? ` 외 ${clashes.length - 1}곳` : "";
+            const who = otherLabel(get());
+            const what = `${fieldLabel(c.field)}${more}`;
+            const val = valueLabel(table, c.field, c.theirValue);
+            toast(`${josa(who, "이/가")} ${josa(what, "을/를")} '${val}'${particle(val, "(으)로")} 바꿨어요.`, {
+              tone: "error",
+              duration: 10000,
+              action: {
+                label: "내 값으로",
+                onClick: () => {
+                  const patch = Object.fromEntries(clashes.map((x) => [x.field, x.mineValue]));
+                  get().patch(table as DataTable, rowId, patch as never, {
+                    log: `${josa(ENTITY_LABEL[table] ?? "항목", "을/를")} 내가 쓴 값으로 되돌렸어요.`,
+                  });
+                },
+              },
+            });
+          });
+        }
       }
     }
+
+    if (changed) set({ data: next });
+    for (const n of notices) n();
   };
 
   return {

@@ -104,7 +104,9 @@ export function BudgetDashboard({ embedded }: { embedded?: boolean } = {}) {
         {stats.map((s) => (
           <Card key={s.label} className="p-4">
             <p className="text-[0.8125rem] text-fg-3">{s.label}</p>
-            <p className={cn("mt-1 truncate text-[1.25rem] font-bold tabular text-fg", s.tone)}>
+            {/* 돈은 반올림해서 보여주지 않는다("1,041만" 은 편하지만 정확하지 않다).
+                좁은 화면에서 '₩15,000,…' 으로 잘리던 문제는 글자 크기로 푼다. */}
+            <p className={cn("mt-1 text-[1.0625rem] font-bold tabular text-fg sm:text-[1.25rem]", s.tone)} title={formatKRW(s.value)}>
               <AnimatedNumber value={s.value} format={formatKRW} />
             </p>
             {s.sub && <p className="text-[0.75rem] text-fg-3">{s.sub}</p>}

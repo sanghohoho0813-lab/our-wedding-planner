@@ -55,7 +55,7 @@ export function GuestFields({
           hint="부부·가족처럼 같이 오는 사람 수예요. 본인은 빼고 적어요."
           right={<span className="text-[0.8125rem] font-semibold tabular text-accent-text">총 {1 + values.companions}명</span>}
         >
-          <Stepper value={values.companions} onChange={(v) => set("companions", v)} max={20} />
+          <Stepper value={values.companions} onChange={(v) => set("companions", v)} max={20} label="동반 인원" />
         </FieldRow>
         <FieldRow label="관계">
           <ChipSelect size="sm" options={GUEST_RELATIONS.map((r) => ({ value: r, label: r }))} value={values.relation} onChange={(v) => set("relation", values.relation === v ? null : v)} />

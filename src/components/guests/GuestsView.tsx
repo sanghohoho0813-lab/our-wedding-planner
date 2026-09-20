@@ -270,14 +270,17 @@ export function GuestsView({ embedded }: { embedded?: boolean } = {}) {
           <FilterBar
             label="이름 검색"
             activeCount={q.trim() ? 1 : 0}
+            scrollable={false}
             chips={
-              <div className="flex gap-1.5 overflow-x-auto scrollbar-none">
+              // 다섯 개뿐이라 줄바꿈으로 다 보인다. 옆으로 스크롤시키면 마지막 칩이 잘려 보인다.
+              <div className="flex flex-wrap gap-1.5">
                 {([
                   ["all", "모두"],
                   ["yes", "참석"],
                   ["maybe", "미정"],
                   ["no", "불참"],
-                  ["uninvited", "청첩장 미전달"],
+                  // 칩 다섯 개가 한 줄에 들어가야 잘린 것처럼 보이지 않는다 (옆의 "청첩장 전달" 통계와 같은 말)
+                  ["uninvited", "미전달"],
                 ] as [RsvpFilter, string][]).map(([v, l]) => (
                   <Chip key={v} size="sm" tone="neutral" active={rsvp === v} onClick={() => setRsvp(v)}>
                     {l}

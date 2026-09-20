@@ -60,10 +60,17 @@ const expectedDDay = `D-${Math.round((Date.UTC(2026, 11, 20) - Date.UTC(ty, tm -
 const dday = await page.locator("text=/^D-\\d+$/").first().textContent();
 check(`D-Day 정상 계산 (2026-12-20 기준 ${expectedDDay})`, dday === expectedDDay, dday);
 check("1900년 표시 없음", !(await page.content()).includes("1900"));
-const t1 = await page.locator("text=/오[전후] \\d{2}:\\d{2}:\\d{2}/").first().textContent();
-await page.waitForTimeout(1400);
-const t2 = await page.locator("text=/오[전후] \\d{2}:\\d{2}:\\d{2}/").first().textContent();
-check("실시간 시계 초 단위 갱신", t1 !== t2, `${t1} → ${t2}`);
+// 시계는 분까지만 보여준다 (초마다 홈 전체를 다시 그리지 않게)
+const clockText = await page.locator("text=/오[전후] \\d{2}:\\d{2}/").first().textContent();
+check("시계가 지금 시각을 보여준다 (초는 표시하지 않음)", /^오[전후] \d{2}:\d{2}$/.test((clockText ?? "").trim()), clockText);
+{
+  // 화면은 "오후 03:50", Intl 은 로케일에 따라 "PM 03:50" 을 줄 수 있어 숫자만 비교한다
+  const p = new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Seoul", hour: "2-digit", minute: "2-digit", hour12: true }).formatToParts(new Date());
+  const get = (t) => p.find((x) => x.type === t)?.value ?? "";
+  const seoulNow = `${get("dayPeriod") === "AM" ? "오전" : "오후"} ${get("hour")}:${get("minute")}`;
+  const same = (clockText ?? "").replace(/\s/g, "") === seoulNow.replace(/\s/g, "");
+  check("시계가 서울 시각과 맞는다", same, `화면 ${clockText} · 서울 ${seoulNow}`);
+}
 
 // --- 6개 메뉴 전환 ---
 for (const [menu, expect] of [
@@ -727,7 +734,46 @@ const sheet = await shp.getByRole("dialog").last().innerText();
 check("편집 창에 '총 2명' 이 보임", sheet.includes("총 2명"), (sheet.match(/총 \d+명/) ?? [])[0] ?? "없음");
 check("편집 창 측 선택에 '공통' 이 있음", sheet.includes("공통"));
 
+// 숫자 키패드 — 인원은 [+] 를 200번 누르는 대신 직접 넣을 수 있어야 한다
+{
+  const pad = shp.getByRole("button", { name: /동반 인원 직접 입력/ }).first();
+  check("동반 인원 숫자를 눌러 직접 넣을 수 있다", (await pad.count()) > 0);
+  if (await pad.count()) {
+    await pad.click();
+    await shp.waitForTimeout(600);
+    const sheet = shp.getByRole("dialog").last();
+    await sheet.getByRole("button", { name: "8", exact: true }).click();
+    await sheet.getByRole("button", { name: "적용", exact: true }).click();
+    await shp.waitForTimeout(800);
+    const after = await shp.getByRole("dialog").last().innerText();
+    check("키패드로 넣은 숫자가 반영된다", /총 9명|8명/.test(after), (after.match(/총 \d+명/) ?? [])[0] ?? after.slice(0, 40));
+  }
+}
 await shg.close();
+
+// 식장 '보증 인원' 처럼 큰 수도 키패드로 한 번에
+{
+  const vg = await browser.newContext({ viewport: { width: 1280, height: 900 }, locale: "ko-KR", timezoneId: "Asia/Seoul" });
+  const vp = await vg.newPage();
+  await vp.goto(base + "/wedding?tab=venue", { waitUntil: "domcontentloaded", timeout: 60000 });
+  await vp.waitForTimeout(1500);
+  await vp.getByRole("button", { name: /식장 추가|첫 식장 추가/ }).first().click();
+  await vp.waitForTimeout(800);
+  const d = vp.getByRole("dialog").last();
+  const padBtn = d.getByRole("button", { name: /보증 인원 직접 입력/ }).first();
+  check("보증 인원도 숫자를 눌러 직접 넣을 수 있다", (await padBtn.count()) > 0);
+  if (await padBtn.count()) {
+    await padBtn.click();
+    await vp.waitForTimeout(600);
+    const pad = vp.getByRole("dialog").last();
+    for (const k of ["2", "0", "0"]) await pad.getByRole("button", { name: k, exact: true }).first().click();
+    await pad.getByRole("button", { name: "적용", exact: true }).click();
+    await vp.waitForTimeout(700);
+    const shown = await vp.getByRole("dialog").last().innerText();
+    check("200명을 세 번 눌러 넣는다 (예전에는 200번)", /200명/.test(shown), (shown.match(/\d+명/g) ?? []).slice(0, 3).join(", "));
+  }
+  await vg.close();
+}
 
 console.log("\nERRORS:", errors.length ? errors.slice(0, 6) : "none");
 const passed = results.filter((r) => r.ok).length;

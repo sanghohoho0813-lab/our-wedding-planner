@@ -90,7 +90,7 @@ export function SchemaForm({
               case "toggle":
                 return <Toggle key={f.key} checked={Boolean(v)} onChange={(b) => set(f.key, b)} label={f.label} description={f.hint} className="rounded-[14px] border border-line px-3" />;
               case "stepper":
-                control = <Stepper value={Number(v ?? 0)} onChange={(n) => set(f.key, n)} suffix={f.suffix ?? "명"} max={f.max ?? 999} />;
+                control = <Stepper value={Number(v ?? 0)} onChange={(n) => set(f.key, n)} suffix={f.suffix ?? "명"} max={f.max ?? 999} label={f.label} />;
                 break;
               case "chips":
                 control = (

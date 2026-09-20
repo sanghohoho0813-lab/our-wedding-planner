@@ -165,7 +165,7 @@ export function TasksView({ embedded }: { embedded?: boolean } = {}) {
                 <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-fg-3" />
                 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="할 일 검색" className={`${inputCls} h-10 pl-10 rounded-full`} />
               </label>
-              <div className="flex gap-1.5 overflow-x-auto scrollbar-none">
+              <div className="flex gap-1.5 overflow-x-auto scrollbar-none pr-7">
                 {SORTS.map((s) => (
                   <Chip key={s.value} size="sm" tone="neutral" active={sort === s.value} onClick={() => setSort(s.value)}>
                     {s.label}
