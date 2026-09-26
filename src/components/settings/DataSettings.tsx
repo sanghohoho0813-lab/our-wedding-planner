@@ -19,6 +19,7 @@ import { ChipSelect } from "@/components/ui/Chip";
 import { ConfirmSheet } from "@/components/ui/Confirm";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { SettingsNav } from "./SettingsNav";
+import { StorageCard } from "./StorageCard";
 
 const CSV_TABLES = Object.keys(CSV_TABLE_LABEL) as TableName[];
 const IMPORT_TABLES: DataTable[] = ["tasks", "budget_items", "guests", "gifts", "events", "invitation_meetings", "vendors", "venues", "music_items", "outfit_items", "honeymoon_items", "memos"];
@@ -125,8 +126,12 @@ export function DataSettings() {
 
   return (
     <div>
-      <PageHeader title="데이터 관리" description="원본 결혼계획표 이관 결과, 백업, 내보내기" />
+      <PageHeader title="데이터 관리" description="저장 위치, 백업, 내보내기, 원본 이관 결과" />
       <SettingsNav />
+
+      <div className="mb-4 space-y-4">
+        <StorageCard />
+      </div>
 
       <Card className="mb-4">
         <CardHeader
