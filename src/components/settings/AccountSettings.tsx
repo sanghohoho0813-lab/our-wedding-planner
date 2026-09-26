@@ -5,10 +5,13 @@ import { useEffect, useState } from "react";
 import { isSupabaseConfigured, supabaseEnvIssue } from "@/lib/config";
 import { toast } from "@/lib/store/ui-store";
 import { useWeddingStore } from "@/lib/store/wedding-store";
-import { useWorkspace } from "@/lib/store/workspace";
+import { pickWedding, useWorkspace } from "@/lib/store/workspace";
+import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader } from "@/components/ui/Card";
+import { ConfirmSheet } from "@/components/ui/Confirm";
+import { inputCls } from "@/components/ui/Field";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ConnectionCheck } from "./ConnectionCheck";
 import { WhoAmI } from "./WhoAmI";
@@ -23,6 +26,9 @@ export function AccountSettings() {
   const router = useRouter();
   const [members, setMembers] = useState<number | null>(null);
   const [copied, setCopied] = useState<"code" | "link" | null>(null);
+  const [joinCode, setJoinCode] = useState("");
+  const [joining, setJoining] = useState(false);
+  const [leaving, setLeaving] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isSupabaseConfigured) return;
@@ -31,6 +37,47 @@ export function AccountSettings() {
       setMembers(count ?? null);
     });
   }, [wedding.id]);
+
+  const join = async () => {
+    const code = joinCode.trim().toUpperCase();
+    if (!code) return;
+    setJoining(true);
+    try {
+      const { getSupabaseBrowser } = await import("@/lib/supabase/client");
+      const { data, error } = await getSupabaseBrowser().rpc("join_wedding_by_code", { p_code: code });
+      if (error) throw error;
+      toast("그 공간으로 들어갈게요.", { tone: "success" });
+      pickWedding(String(data));
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "";
+      toast(
+        /invalid invite code/i.test(msg)
+          ? "그런 초대 코드가 없어요. 상대 화면의 코드를 다시 확인해 주세요."
+          : /two members/i.test(msg)
+            ? "그 공간에는 이미 두 사람이 있어요."
+            : msg || "참여하지 못했어요.",
+        { tone: "error", duration: 8000 },
+      );
+      setJoining(false);
+    }
+  };
+
+  const leave = async () => {
+    const target = leaving;
+    setLeaving(null);
+    if (!target || !ws.userId) return;
+    try {
+      const { getSupabaseBrowser } = await import("@/lib/supabase/client");
+      const { error } = await getSupabaseBrowser().from("wedding_members").delete().eq("wedding_id", target).eq("user_id", ws.userId);
+      if (error) throw error;
+      const rest = (ws.memberships ?? []).filter((m) => m.id !== target);
+      toast("그 공간에서 나왔어요.", { tone: "success" });
+      if (rest.length > 0) pickWedding(rest[0].id);
+      else if (typeof window !== "undefined") window.location.href = "/";
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "나가지 못했어요.", { tone: "error", duration: 8000 });
+    }
+  };
 
   const copy = async (text: string, kind: "code" | "link") => {
     try {
@@ -88,6 +135,67 @@ export function AccountSettings() {
                   <li>상대가 회원가입을 합니다.</li>
                   <li>코드가 미리 채워진 화면에서 참여하기를 누르면 끝입니다.</li>
                 </ol>
+
+                {members === 1 && (
+                  <p className="rounded-[12px] border border-warning/50 bg-warning-soft px-4 py-3 text-fg">
+                    <b>이 공간에는 아직 나 혼자예요.</b>
+                    <span className="mt-1 block text-fg-2">
+                      상대가 이미 다른 곳에 적고 있다면, 상대의 초대 코드를 아래에 넣어 그 공간으로 가야 같은 기록을 봅니다.
+                    </span>
+                  </p>
+                )}
+
+                {/* 다른 공간에도 속해 있으면 골라서 열 수 있게 한다.
+                    (자기 공간을 먼저 만든 뒤 상대 코드로 참여하면, 예전에는 먼저 만든 빈 공간만 열렸다) */}
+                {(ws.memberships?.length ?? 0) > 1 && (
+                  <div className="rounded-[14px] border border-line bg-surface-2/60 p-4">
+                    <p className="text-[0.8125rem] font-medium text-fg-2">내가 속한 공간 {ws.memberships!.length}곳</p>
+                    <ul className="mt-2 space-y-1.5">
+                      {ws.memberships!.map((m) => (
+                        <li key={m.id}>
+                          <button
+                            type="button"
+                            onClick={() => (m.id === wedding.id ? undefined : pickWedding(m.id))}
+                            aria-current={m.id === wedding.id}
+                            className={cn(
+                              "flex w-full items-center justify-between gap-2 rounded-[12px] border px-3 py-2.5 text-left",
+                              m.id === wedding.id ? "border-accent bg-accent-softer" : "border-line bg-surface hover:bg-surface-2",
+                            )}
+                          >
+                            <span className="min-w-0">
+                              <span className="block truncate font-medium text-fg">{m.name}</span>
+                              <span className="block text-[0.8125rem] text-fg-3">코드 {m.inviteCode || "—"}</span>
+                            </span>
+                            <span className="shrink-0 text-[0.8125rem] font-semibold text-accent-text">{m.id === wedding.id ? "지금 보는 곳" : "열기"}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                    <Button variant="ghost" full className="mt-2 text-danger" onClick={() => setLeaving(wedding.id)}>
+                      지금 보는 공간에서 나가기
+                    </Button>
+                    <p className="mt-1 text-[0.8125rem] text-fg-3">한 공간에는 두 명까지예요. 잘못 만든 공간에서 나가면 상대가 들어올 자리가 생겨요. 기록은 지워지지 않아요.</p>
+                  </div>
+                )}
+
+                {/* 이미 공간이 있어도 상대 공간에 합류할 수 있어야 한다 */}
+                <div className="rounded-[14px] border border-line bg-surface-2/60 p-4">
+                  <p className="text-[0.8125rem] font-medium text-fg-2">상대의 공간으로 가기</p>
+                  <p className="mt-1 text-[0.875rem] text-fg-3">상대가 먼저 적고 있었다면, 상대 화면의 초대 코드를 넣으세요.</p>
+                  <div className="mt-2 flex gap-2">
+                    <input
+                      value={joinCode}
+                      onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                      placeholder="ABCD1234"
+                      maxLength={8}
+                      aria-label="상대의 초대 코드"
+                      className={`${inputCls} uppercase tracking-widest`}
+                    />
+                    <Button variant="secondary" className="flex-none px-4" disabled={joining || joinCode.trim().length < 4} onClick={join}>
+                      참여
+                    </Button>
+                  </div>
+                </div>
                 {realtime !== "live" && (
                   <Button variant="outline" full onClick={() => reload()}>
                     <RefreshCw className="size-4" /> 지금 새로 불러오기
@@ -140,6 +248,15 @@ export function AccountSettings() {
           </div>
         </Card>
       </div>
+      <ConfirmSheet
+        open={!!leaving}
+        onClose={() => setLeaving(null)}
+        onConfirm={leave}
+        title="이 공간에서 나갈까요?"
+        message="기록은 그대로 남아요. 다시 들어오려면 초대 코드가 필요해요."
+        confirmLabel="나가기"
+        danger
+      />
     </div>
   );
 }

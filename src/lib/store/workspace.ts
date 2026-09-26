@@ -11,6 +11,8 @@ export interface Workspace {
   mode: "local" | "supabase";
   state: "loading" | "ready" | "no-workspace" | "signed-out" | "error";
   error?: string;
+  /** 내가 속한 결혼 공간들 (보통 하나). 여러 개면 설정에서 골라 열 수 있다. */
+  memberships?: Membership[];
 }
 
 const LOCAL: Workspace = { weddingId: LOCAL_WEDDING_ID, userId: LOCAL_USER_ID, email: null, name: null, mode: "local", state: "ready" };
@@ -32,6 +34,33 @@ function injectedWorkspace(): Workspace | null {
   return w?.weddingId ? { ...LOCAL, mode: "supabase", state: "ready", ...w } as Workspace : null;
 }
 
+/** 이 기기에서 열어 둔 결혼 공간 (여러 곳에 속해 있을 때 어디를 볼지) */
+const PICK_KEY = "owp:weddingId";
+
+export interface Membership {
+  id: string;
+  name: string;
+  inviteCode: string;
+}
+
+export function readPickedWedding(): string | null {
+  try {
+    return localStorage.getItem(PICK_KEY);
+  } catch {
+    return null;
+  }
+}
+
+/** 다른 공간으로 옮겨 본다. 화면 전체를 다시 불러와야 깔끔하다. */
+export function pickWedding(id: string): void {
+  try {
+    localStorage.setItem(PICK_KEY, id);
+  } catch {
+    /* 저장이 막혀 있으면 이번 한 번만 바뀐다 */
+  }
+  if (typeof window !== "undefined") window.location.href = "/";
+}
+
 export function useWorkspace(): Workspace {
   const [ws, setWs] = useState<Workspace>(
     () => injectedWorkspace() ?? (isSupabaseConfigured ? { ...LOCAL, weddingId: null, userId: null, mode: "supabase", state: "loading" } : LOCAL),
@@ -48,18 +77,27 @@ export function useWorkspace(): Workspace {
         const { data: auth } = await sb.auth.getUser();
         if (cancelled) return;
         if (!auth.user) return setWs((p) => ({ ...p, state: "signed-out" }));
-        const { data: member, error } = await sb
+        // 한 사람이 여러 공간에 속할 수 있다(자기 공간을 만든 뒤 상대 초대 코드로도 참여한 경우).
+        // 예전에는 제일 먼저 만든 곳만 열어서, 참여해 놓고도 빈 공간만 보였다.
+        const { data: rows, error } = await sb
           .from("wedding_members")
-          .select("wedding_id")
+          .select("wedding_id, created_at, weddings(name, invite_code)")
           .eq("user_id", auth.user.id)
-          .order("created_at", { ascending: true })
-          .limit(1)
-          .maybeSingle();
+          .order("created_at", { ascending: true });
         if (cancelled) return;
         if (error) return setWs((p) => ({ ...p, state: "error", error: error.message }));
+        const list = (rows ?? []) as unknown as { wedding_id: string; weddings?: { name?: string; invite_code?: string } | null }[];
+        const memberships: Membership[] = list.map((r) => ({
+          id: r.wedding_id,
+          name: r.weddings?.name ?? "결혼 준비 공간",
+          inviteCode: r.weddings?.invite_code ?? "",
+        }));
         const name = (auth.user.user_metadata?.display_name as string | undefined)?.trim() || null;
-        if (!member) return setWs({ weddingId: null, userId: auth.user.id, email: auth.user.email ?? null, name, mode: "supabase", state: "no-workspace" });
-        setWs({ weddingId: member.wedding_id as string, userId: auth.user.id, email: auth.user.email ?? null, name, mode: "supabase", state: "ready" });
+        if (memberships.length === 0)
+          return setWs({ weddingId: null, userId: auth.user.id, email: auth.user.email ?? null, name, mode: "supabase", state: "no-workspace", memberships: [] });
+        const picked = readPickedWedding();
+        const chosen = (picked && memberships.find((m) => m.id === picked)?.id) || memberships[0].id;
+        setWs({ weddingId: chosen, userId: auth.user.id, email: auth.user.email ?? null, name, mode: "supabase", state: "ready", memberships });
       } catch (e) {
         if (!cancelled) setWs((p) => ({ ...p, state: "error", error: e instanceof Error ? e.message : "연결에 실패했어요." }));
       }

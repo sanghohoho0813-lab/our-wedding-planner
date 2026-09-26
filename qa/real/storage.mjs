@@ -31,16 +31,17 @@ await go(A, "/settings/data");
   const stranded = await A.page.evaluate(() => {
     const now = new Date().toISOString();
     const wid = "00000000-0000-4000-8000-000000000001";
-    const uid = (n) => `11111111-2222-4333-8444-${String(n).padStart(12, "0")}`;
+    // 실제 기기가 만드는 id 처럼 매번 새로 만든다 (다른 공간에 같은 id 가 있으면 RLS 가 막는 게 정상이다)
+    const uid = () => crypto.randomUUID();
     const base = (id, extra) => ({ id, wedding_id: wid, created_at: now, updated_at: now, ...extra });
     const data = {
       wedding: base(wid, { name: "옛 기록", wedding_date: "2026-12-20", wedding_time: "13:00", groom_name: "상호", bride_name: "지윤", total_budget: 15000000, details: {}, invite_code: "LOCAL", created_by: null }),
       tasks: [
-        base(uid(1), { title: "브라우저에만 있던 할 일 A", category: "기타", status: "todo", priority: "normal", assignee: "both", due_date: null, memo: null, is_favorite: false, sort_order: 0, completed_at: null }),
-        base(uid(2), { title: "브라우저에만 있던 할 일 B", category: "기타", status: "done", priority: "normal", assignee: "both", due_date: null, memo: null, is_favorite: false, sort_order: 1, completed_at: now }),
+        base(uid(), { title: "브라우저에만 있던 할 일 A", category: "기타", status: "todo", priority: "normal", assignee: "both", due_date: null, memo: null, is_favorite: false, sort_order: 0, completed_at: null }),
+        base(uid(), { title: "브라우저에만 있던 할 일 B", category: "기타", status: "done", priority: "normal", assignee: "both", due_date: null, memo: null, is_favorite: false, sort_order: 1, completed_at: now }),
       ],
       guests: [
-        base(uid(3), { name: "브라우저 하객", side: "groom", relation: "친구", rsvp: "yes", companions: 1, meal: "yes", contacted: false, invitation_sent: false, invitation_method: null, memo: null }),
+        base(uid(), { name: "브라우저 하객", side: "groom", relation: "친구", rsvp: "yes", companions: 1, meal: "yes", contacted: false, invitation_sent: false, invitation_method: null, memo: null }),
       ],
     };
     for (const t of ["events", "budget_categories", "budget_items", "payments", "vendors", "venues", "honeymoon", "honeymoon_items", "music_items", "outfit_items", "invitation_meetings", "gifts", "memos", "activity_logs", "attachments"]) data[t] = [];
