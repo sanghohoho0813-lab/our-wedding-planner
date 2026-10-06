@@ -69,10 +69,10 @@ const t = (id, title, extra = {}) => ({ id, title, category: null, due_date: nul
   const d = P.suggestTaskDates([t("a", "뭔지 모를 일")], WED, TODAY);
   check("아무것도 모르면 D-30", d[0]?.before === 30);
 }
-check("설명: 60일 → 2달 전", P.typicalLabel(60) === "보통 결혼식 2달 전");
-check("설명: 21일 → 3주 전", P.typicalLabel(21) === "보통 결혼식 3주 전");
+check("설명: 60일 → 2달 전", P.typicalLabel(60) === "보통 결혼식 2달\u00a0전");
+check("설명: 21일 → 3주 전", P.typicalLabel(21) === "보통 결혼식 3주\u00a0전");
 check("설명: 45일 → D-45", P.typicalLabel(45) === "보통 결혼식 D-45");
-check("설명: -14 → 14일 뒤", P.typicalLabel(-14) === "보통 결혼식 14일 뒤");
+check("설명: -14 → 14일 뒤", P.typicalLabel(-14) === "보통 결혼식 14일\u00a0뒤");
 check("할 일이 없으면 빈 목록", P.suggestTaskDates([], WED, TODAY).length === 0);
 
 // ── 결제 일정

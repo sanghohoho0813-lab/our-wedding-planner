@@ -112,7 +112,7 @@ export function PlanDatesSheet({ open, onClose }: { open: boolean; onClose: () =
                   </div>
                   {/* 2줄: 왜 그 날짜인지 + 언제 — 이유가 잘리면 안 되므로 줄임표 대신 줄을 바꾼다 */}
                   <div className="mt-1 flex items-center gap-2">
-                    <p className="min-w-0 flex-1 text-[0.8125rem] leading-snug text-fg-3">
+                    <p className="min-w-0 flex-1 break-keep text-[0.8125rem] leading-snug text-fg-3">
                       {s.overdue && s.task.due_date ? `마감 ${formatDDay(daysUntil(s.task.due_date, today))} · ` : s.late ? "늦어짐 · " : ""}
                       {typicalLabel(s.before)}
                     </p>

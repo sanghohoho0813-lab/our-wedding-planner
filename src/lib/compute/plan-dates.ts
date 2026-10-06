@@ -88,11 +88,15 @@ export function typicalBefore(task: Pick<Task, "title" | "category">): number {
   return DEFAULT_BEFORE;
 }
 
-/** "보통 D-60 즈음" 같은 설명 */
+/**
+ * "보통 결혼식 2달 전" 같은 설명.
+ * 좁은 화면에서 "2달 / 전" 으로 갈라지지 않게 숫자와 '전 · 뒤' 사이는 줄바꿈 없는 띄어쓰기로 잇는다.
+ */
 export function typicalLabel(before: number): string {
-  if (before < 0) return `보통 결혼식 ${-before}일 뒤`;
-  if (before >= 30 && before % 30 === 0) return `보통 결혼식 ${before / 30}달 전`;
-  if (before % 7 === 0 && before <= 28) return `보통 결혼식 ${before / 7}주 전`;
+  const nb = "\u00a0";
+  if (before < 0) return `보통 결혼식 ${-before}일${nb}뒤`;
+  if (before >= 30 && before % 30 === 0) return `보통 결혼식 ${before / 30}달${nb}전`;
+  if (before % 7 === 0 && before <= 28) return `보통 결혼식 ${before / 7}주${nb}전`;
   return `보통 결혼식 D-${before}`;
 }
 

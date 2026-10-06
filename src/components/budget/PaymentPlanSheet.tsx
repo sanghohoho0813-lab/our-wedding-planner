@@ -193,12 +193,12 @@ export function PaymentPlanSheet({ open, onClose }: { open: boolean; onClose: ()
                       <p className={cn("text-[1rem] font-medium leading-snug", r.include ? "text-fg" : "text-fg-3")}>{u.item.name}</p>
                       {/* 2줄: 언제까지 · 얼마 — 날짜가 잘리면 안 되므로 줄임표 대신 줄을 바꾼다 */}
                       <div className="mt-0.5 flex items-baseline gap-2">
-                        <p className="min-w-0 flex-1 text-[0.8125rem] leading-snug text-fg-3">
+                        <p className="min-w-0 flex-1 break-keep text-[0.8125rem] leading-snug text-fg-3">
                           {[
                             u.payment ? `'${u.payment.title}' 날짜 없음` : u.categoryName,
                             u.firm ? null : "견적 기준",
                             u.paid > 0 ? `${formatKRW(u.paid)} 냄` : null,
-                            r.when === "paid" ? "오늘 낸 것으로" : `${formatShortDate(due)}까지`,
+                            r.when === "paid" ? "오늘 낸 것으로" : `${formatShortDate(due).replace(" ", "\u00a0")}까지`,
                           ]
                             .filter(Boolean)
                             .join(" · ")}
