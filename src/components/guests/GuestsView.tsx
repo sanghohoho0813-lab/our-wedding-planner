@@ -317,15 +317,7 @@ export function GuestsView({ embedded }: { embedded?: boolean } = {}) {
           ) : (
             <div className="space-y-4">
               {groups.map((g) => (
-                <section
-                  key={g.key}
-                  className={cn(
-                    "card overflow-hidden",
-                    // 명단이 길면 화면 밖 묶음은 브라우저가 배치 계산을 건너뛴다
-                    // (300명에서 '모두' 로 돌아갈 때 0.33초 → 0.15초)
-                    list.length > HEAVY_LIST && "[content-visibility:auto] [contain-intrinsic-size:auto_640px]",
-                  )}
-                >
+                <section key={g.key} className="card overflow-hidden">
                   <h2 className="flex items-center border-b border-line">
                     <button
                       type="button"
