@@ -1,6 +1,6 @@
 "use client";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, ChevronDown, Mail, MessageCircle, ListPlus, Mic, Search, Users } from "lucide-react";
+import { Check, ChevronDown, Mail, MessageCircle, ListPlus, Mic, MoreHorizontal, Search, Users } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useMediaQuery } from "@/lib/hooks";
@@ -28,6 +28,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { MasterDetail } from "@/components/layout/MasterDetail";
 import { GuestDetail } from "./GuestDetail";
 import { GuestSheet } from "./GuestSheet";
+import { GroupActionsSheet } from "./GroupActionsSheet";
 
 type SideFilter = "all" | GuestSide;
 type RsvpFilter = "all" | Rsvp | "uninvited";
@@ -160,6 +161,7 @@ export function GuestsView({ embedded }: { embedded?: boolean } = {}) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // 43명이 한 화면에 쭉 이어지면 찾기 어렵다. 그룹을 접었다 펼 수 있게 한다.
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
+  const [groupAction, setGroupAction] = useState<string | null>(null);
   const toggleGroup = (key: string) =>
     setCollapsed((prev) => {
       const next = new Set(prev);
@@ -316,12 +318,12 @@ export function GuestsView({ embedded }: { embedded?: boolean } = {}) {
             <div className="space-y-4">
               {groups.map((g) => (
                 <section key={g.key} className="card overflow-hidden">
-                  <h2>
+                  <h2 className="flex items-center border-b border-line">
                     <button
                       type="button"
                       onClick={() => toggleGroup(g.key)}
                       aria-expanded={!collapsed.has(g.key)}
-                      className="flex w-full items-center justify-between gap-2 border-b border-line px-4 py-2.5 text-left text-[0.8125rem] font-semibold text-fg-3 hover:bg-surface-2"
+                      className="flex min-w-0 flex-1 items-center justify-between gap-2 py-2.5 pl-4 pr-2 text-left text-[0.8125rem] font-semibold text-fg-3 hover:bg-surface-2"
                     >
                       <span className="flex min-w-0 items-center gap-1.5">
                         <ChevronDown className={cn("size-4 shrink-0 transition-transform", collapsed.has(g.key) && "-rotate-90")} />
@@ -335,6 +337,15 @@ export function GuestsView({ embedded }: { embedded?: boolean } = {}) {
                         )}
                         {g.items.length}명
                       </span>
+                    </button>
+                    {/* 묶음 전체를 한 번에 (청첩장은 대개 모임 단위로 건넨다) */}
+                    <button
+                      type="button"
+                      onClick={() => setGroupAction(g.key)}
+                      aria-label={`${SIDE_LABEL[g.side]} · ${g.relation} ${g.items.length}명 한 번에 바꾸기`}
+                      className="relative tap-44 mr-2 inline-flex size-8 shrink-0 items-center justify-center rounded-full text-fg-3 hover:bg-surface-3 hover:text-fg"
+                    >
+                      <MoreHorizontal className="size-4" />
                     </button>
                   </h2>
                   {!collapsed.has(g.key) && (
@@ -354,6 +365,17 @@ export function GuestsView({ embedded }: { embedded?: boolean } = {}) {
       />
 
       <GuestSheet open={!!editId || creating} onClose={() => { setEditId(null); setCreating(false); }} guestId={editId} initial={side !== "all" ? { side } : undefined} />
+      {(() => {
+        const g = groups.find((x) => x.key === groupAction);
+        return (
+          <GroupActionsSheet
+            open={!!g}
+            onClose={() => setGroupAction(null)}
+            title={g ? `${SIDE_LABEL[g.side]} · ${g.relation}` : ""}
+            guests={g?.items ?? []}
+          />
+        );
+      })()}
       <VoiceGuestSheet open={voiceOpen} onClose={() => setVoiceOpen(false)} defaultSide={side === "bride" ? "bride" : "groom"} />
     </div>
   );

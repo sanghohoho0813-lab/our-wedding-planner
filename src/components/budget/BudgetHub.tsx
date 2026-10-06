@@ -22,7 +22,7 @@ export function BudgetHub() {
       <div className="mb-4">
         <h1 className="hidden text-[1.75rem] font-bold tracking-tight text-fg lg:block">예산</h1>
         <p className="text-[0.9375rem] text-fg-3">
-          총 {formatKRW(b.totalBudget)} · 실제 지출 {formatKRW(b.totalActual)} · 남은 예산 {formatKRW(b.remaining)}
+          총 {formatKRW(b.totalBudget)} · 확정 {formatKRW(b.totalActual)} · 낸 돈 {formatKRW(b.totalPaid)}
         </p>
       </div>
       <TabBar

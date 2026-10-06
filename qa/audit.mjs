@@ -270,19 +270,19 @@ async function scenario(page, name, goal, fn) {
   const rawPct = Math.round((doneTasks / d.tasks.length) * 100);
 
   const homeTxt = await p.locator("main").innerText();
-  const homeUsed = nums(homeTxt.split("사용 금액")[1] ?? "")[0];
+  const homeUsed = nums(homeTxt.split("확정 비용")[1] ?? "")[0];
   const homePct = nums(homeTxt.split("준비 진행률")[1] ?? "")[0];
-  check("홈 '사용 금액' = 실제금액 합계", homeUsed === rawActual, `${homeUsed} vs ${rawActual}`);
+  check("홈 '확정 비용' = 실제금액 합계", homeUsed === rawActual, `${homeUsed} vs ${rawActual}`);
   check("홈 '준비 진행률' = 완료/전체", homePct === rawPct, `${homePct}% vs ${rawPct}%`);
 
   await p.goto(base + "/budget", { waitUntil: "domcontentloaded" });
   await p.waitForTimeout(1300);
   const budTxt = await p.locator("main").innerText();
-  const budActual = nums(budTxt.split("총 실제 비용")[1] ?? "")[0];
-  const budPaid = nums(budTxt.split("총 결제 금액")[1] ?? "")[0];
-  check("예산 '총 실제 비용' = 실제금액 합계", budActual === rawActual, `${budActual} vs ${rawActual}`);
-  check("예산 '총 결제 금액' = 결제완료 합계", budPaid === rawPaid, `${budPaid} vs ${rawPaid}`);
-  check("홈과 예산이 같은 '사용 금액'", homeUsed === budActual, `홈 ${homeUsed} vs 예산 ${budActual}`);
+  const budActual = nums(budTxt.split("확정 비용")[1] ?? "")[0];
+  const budPaid = nums(budTxt.split("낸 돈")[1] ?? "")[0];
+  check("예산 '확정 비용' = 실제금액 합계", budActual === rawActual, `${budActual} vs ${rawActual}`);
+  check("예산 '낸 돈' = 결제완료 합계", budPaid === rawPaid, `${budPaid} vs ${rawPaid}`);
+  check("홈과 예산이 같은 '확정 비용'", homeUsed === budActual, `홈 ${homeUsed} vs 예산 ${budActual}`);
 
   await p.goto(base + "/guests", { waitUntil: "domcontentloaded" });
   await p.waitForTimeout(1300);

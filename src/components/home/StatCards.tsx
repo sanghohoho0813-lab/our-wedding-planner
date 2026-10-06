@@ -93,7 +93,7 @@ export function StatCards() {
           tone="bg-tint-budget-soft text-tint-budget"
           href="/budget"
           value={<AnimatedNumber value={budget.totalBudget} format={(n) => (n >= 10000000 ? formatCompactKRW(n) : formatKRW(n))} />}
-          sub={budget.totalBudget > 0 ? `사용 ${formatKRW(budget.totalActual)} · ${Math.round(budget.usedPct)}%` : "총 예산을 정해보세요"}
+          sub={budget.totalBudget > 0 ? `확정 ${formatKRW(budget.totalActual)} · ${Math.round(budget.usedPct)}%` : "총 예산을 정해보세요"}
         />
         <Stat
           index={3}
@@ -124,12 +124,12 @@ export function StatCards() {
           <dl className="grid grid-cols-2 gap-x-4 gap-y-3 border-t border-line px-5 py-4 text-[0.875rem] sm:grid-cols-3 lg:grid-cols-6">
             {[
               ["총 견적", formatKRW(budget.totalEstimated)],
-              ["실제 지출", formatKRW(budget.totalActual)],
+              ["확정 비용", formatKRW(budget.totalActual)],
               ["남은 예산", formatKRW(budget.remaining)],
-              ["결제 완료", formatKRW(budget.totalPaid)],
-              ["남은 결제액", formatKRW(budget.totalUnpaid)],
+              ["낸 돈", formatKRW(budget.totalPaid)],
+              ["앞으로 낼 돈", formatKRW(budget.totalUnpaid)],
               ["이번 달 예상 지출", formatKRW(budget.thisMonthExpected)],
-              ["예산 사용률", `${budget.usedPct.toFixed(1)}%`],
+              ["예산 중 확정", `${budget.usedPct.toFixed(1)}%`],
               ["예상 총 지출", formatKRW(budget.totalEffective)],
               ["대기 중인 일", `${progress.waiting}개`],
             ].map(([k, v]) => (

@@ -37,19 +37,19 @@ export function CategoryRatio({ limit = 6, showAmount = false , className }: { l
       <CardHeader tint="budget"
         title="카테고리별 예산 비율"
         icon={<BarChart3 />}
-        subtitle={basis === "actual" ? "실제 지출 기준" : "예상 포함 기준 (실제 없으면 견적)"}
+        subtitle={basis === "actual" ? "확정 비용 기준" : "예상 포함 기준 (확정 안 됐으면 견적)"}
         action={
           <button
             type="button"
             onClick={() => setBasis(basis === "actual" ? "planned" : "actual")}
             className="rounded-full border border-line px-3 py-1.5 text-[0.8125rem] font-medium text-fg-2 transition-colors hover:border-line-strong hover:text-fg"
           >
-            {basis === "actual" ? "예상 포함" : "실제 지출"}
+            {basis === "actual" ? "예상 포함" : "확정 비용"}
           </button>
         }
       />
       {cats.length === 0 ? (
-        <EmptyState compact title={basis === "actual" ? "아직 실제 지출이 없어요" : "아직 예산 항목이 없어요"} description={basis === "actual" ? "'예상 포함'으로 바꾸면 견적 기준 비중을 볼 수 있어요." : "비용을 추가하면 카테고리별 비중이 자동으로 계산돼요."} />
+        <EmptyState compact title={basis === "actual" ? "아직 확정된 비용이 없어요" : "아직 예산 항목이 없어요"} description={basis === "actual" ? "'예상 포함'으로 바꾸면 견적 기준 비중을 볼 수 있어요." : "비용을 추가하면 카테고리별 비중이 자동으로 계산돼요."} />
       ) : (
         <ul className="space-y-3 px-5 pb-5">
           {shown.map((c) => (

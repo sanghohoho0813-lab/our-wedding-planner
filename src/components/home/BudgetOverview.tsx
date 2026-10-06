@@ -22,15 +22,16 @@ export function BudgetOverview() {
       <div className="flex items-center gap-5 px-5 pb-5">
         <Donut size={140} thickness={18} segments={[{ value: used, color: usedColor }, { value: rest, color: "var(--surface-3)" }]}>
           <span className="text-[1.625rem] font-bold tabular leading-none text-fg">{Math.round(b.usedPct)}%</span>
-          <span className="mt-1 text-[0.75rem] text-fg-3">사용률</span>
+          <span className="mt-1 text-[0.75rem] text-fg-3">확정</span>
         </Donut>
         <dl className="min-w-0 flex-1 space-y-3">
           {/* 점은 도넛 조각에만 붙인다. '전체 예산'은 조각이 아니라 합계라 점이 없다 —
               점이 셋이면 색 셋이 각각 뭔가를 뜻하는 것처럼 보여서 오히려 읽기 어려워진다. */}
           {[
             ["전체 예산", b.totalBudget, null],
-            ["사용 금액", b.totalActual, usedColor],
-            ["남은 금액", b.remaining, "var(--surface-3)"],
+            // "사용 금액" 이라고 하면 이미 낸 돈처럼 읽힌다. 실제로는 금액이 확정된 비용이다.
+            ["확정 비용", b.totalActual, usedColor],
+            ["남은 예산", b.remaining, "var(--surface-3)"],
           ].map(([label, v, c]) => (
             <div key={label as string} className="flex items-start gap-2">
               <span className="mt-1.5 size-2 shrink-0 rounded-full" style={{ background: (c as string | null) ?? "transparent" }} />

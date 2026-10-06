@@ -48,7 +48,7 @@ check("원본 예산 카테고리 16건 이관", d.budget_categories.length === 
 check("업체 7곳 · 식장 7곳 이관", d.vendors.length === 7 && d.venues.length === 7, `업체 ${d.vendors.length} / 식장 ${d.venues.length}`);
 check("신혼여행 정보 이관", d.honeymoon.length === 1 && d.honeymoon[0].country === "태국" && d.honeymoon[0].depart_date === "2026-12-22", JSON.stringify(d.honeymoon[0]?.city));
 check("총 예산 15,000,000원", d.wedding.total_budget === 15000000, String(d.wedding.total_budget));
-check("실제 지출 합계 10,411,800원", d.budget_items.reduce((s, i) => s + i.actual_amount, 0) === 10411800);
+check("확정 비용 합계 10,411,800원", d.budget_items.reduce((s, i) => s + i.actual_amount, 0) === 10411800);
 check("계약 식장 = 연대 동문회관 예식장", d.venues.some((v) => v.is_contracted && v.name === "연대 동문회관 예식장"));
 check("하객 '이기욱' 불참 이관", d.guests.some((g) => g.name === "이기욱" && g.rsvp === "no"));
 check("샘플 데이터 없음 (가짜 업체 미포함)", !d.vendors.some((v) => /매장|website\.com|플로리스트 1|사진 촬영 기사 1/.test(v.name)));

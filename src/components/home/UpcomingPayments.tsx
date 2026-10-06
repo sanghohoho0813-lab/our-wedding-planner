@@ -1,7 +1,7 @@
 "use client";
 import { CreditCard } from "lucide-react";
 import { useState } from "react";
-import { computeBudget } from "@/lib/compute";
+import { computeBudget, monthlyOutflow } from "@/lib/compute";
 import { daysUntil, formatDDay, formatShortDate, todayISO } from "@/lib/date";
 import { formatKRW } from "@/lib/money";
 import { useWeddingStore } from "@/lib/store/wedding-store";
@@ -9,6 +9,7 @@ import { Card, CardHeader } from "@/components/ui/Card";
 import { CheckCircle } from "@/components/ui/CheckCircle";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { BudgetItemSheet } from "@/components/budget/BudgetItemSheet";
+import { PaymentPlanButton } from "@/components/budget/PaymentPlanSheet";
 
 export function UpcomingPayments({ limit = 5 }: { limit?: number }) {
   const data = useWeddingStore((s) => s.data!);
@@ -17,11 +18,13 @@ export function UpcomingPayments({ limit = 5 }: { limit?: number }) {
   const b = computeBudget(data.wedding, data.budget_categories, data.budget_items, data.payments);
   const list = [...b.overduePayments, ...b.upcomingPayments].slice(0, limit);
   const dueTotal = [...b.overduePayments, ...b.upcomingPayments].reduce((n, p) => n + p.payment.amount, 0);
+  // 몇 월에 얼마가 나가는지 — 날짜가 잡힌 결제가 있을 때만
+  const flow = monthlyOutflow(data.payments, todayISO());
   return (
     <Card tint="budget">
       <CardHeader tint="budget" title="다가오는 결제" icon={<CreditCard />} href="/budget?tab=items" subtitle={list.length > 0 ? `결제 예정 ${list.length}건 · ${formatKRW(dueTotal)}` : `아직 결제 일정이 ${b.totalUnpaid > 0 ? "없어요" : "없어요"}`} />
       {list.length === 0 ? (
-        <EmptyState compact title="예정된 결제가 없어요" description="예산 항목에서 결제 예정일을 등록하면 여기에 보여요." />
+        <EmptyState compact title="예정된 결제가 없어요" description="아래에서 남은 돈에 결제일을 붙이면 여기에 보여요." />
       ) : (
         <ul className="px-2 pb-2">
           {list.map(({ payment, item }) => {
@@ -47,6 +50,22 @@ export function UpcomingPayments({ limit = 5 }: { limit?: number }) {
           })}
         </ul>
       )}
+      {flow.months.length > 0 && (
+        <div className="mx-2 mb-2 rounded-[12px] bg-surface-2 px-3 py-2.5">
+          <p className="text-[0.8125rem] font-medium text-fg-2">앞으로 나갈 돈</p>
+          <ul className="mt-1 flex flex-wrap gap-x-4 gap-y-1">
+            {flow.months.map((m) => (
+              <li key={m.key} className="text-[0.9375rem] text-fg-2">
+                {m.label} <b className={m.overdue ? "tabular text-danger" : "tabular text-fg"}>{formatKRW(m.amount)}</b>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {/* 남은 돈 중 결제일이 없는 것 — 한 번에 날짜를 붙인다 */}
+      <div className="mx-2 mb-2">
+        <PaymentPlanButton />
+      </div>
       <BudgetItemSheet open={!!itemId} onClose={() => setItemId(null)} itemId={itemId} />
     </Card>
   );

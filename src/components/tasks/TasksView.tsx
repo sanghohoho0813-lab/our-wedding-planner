@@ -17,6 +17,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { InlineAdd } from "@/components/ui/InlineAdd";
 import { SwipeHint } from "@/components/ui/SwipeHint";
+import { PlanDatesButton } from "./PlanDatesSheet";
 import { inputCls } from "@/components/ui/Field";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -189,6 +190,7 @@ export function TasksView({ embedded }: { embedded?: boolean } = {}) {
         </div>
       </PageHeader>
 
+      <PlanDatesButton className="mb-3" />
       <SwipeHint storageKey="owp:hint:taskSwipe" left="마감일" right="완료" className="mb-3" />
 
       <MasterDetail

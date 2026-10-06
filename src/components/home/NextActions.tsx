@@ -1,7 +1,6 @@
 "use client";
 import { AnimatePresence, motion } from "framer-motion";
-import { CalendarClock, CalendarX2, CheckSquare } from "lucide-react";
-import Link from "next/link";
+import { CalendarClock, CheckSquare } from "lucide-react";
 import { useState } from "react";
 import { computeNextActions } from "@/lib/compute";
 import { mySide } from "@/lib/members";
@@ -16,6 +15,7 @@ import { CheckCircle } from "@/components/ui/CheckCircle";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { TaskSheet } from "@/components/tasks/TaskSheet";
 import { QuickDateSheet } from "@/components/tasks/QuickDateSheet";
+import { PlanDatesButton } from "@/components/tasks/PlanDatesSheet";
 
 export function NextActions({ limit = 5 }: { limit?: number }) {
   const allTasks = useWeddingStore((s) => s.data!.tasks);
@@ -29,7 +29,7 @@ export function NextActions({ limit = 5 }: { limit?: number }) {
   const [dateId, setDateId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const items = computeNextActions(tasks, limit);
-  const undated = tasks.filter((t) => t.status !== "done" && !t.due_date).length;
+
 
   return (
     <Card tint="plan" className="flex flex-col">
@@ -97,17 +97,10 @@ export function NextActions({ limit = 5 }: { limit?: number }) {
           </AnimatePresence>
         </ul>
       )}
-      {undated > 0 && (
-        <Link
-          href="/plan?filter=undated"
-          className="mx-2 mb-2 mt-auto flex items-center gap-2 rounded-[12px] border border-dashed border-line-strong px-3 py-2 text-[0.875rem] text-fg-2 hover:bg-surface-2 hover:text-accent-text"
-        >
-          <CalendarX2 className="size-4 shrink-0 text-fg-3" />
-          <span className="min-w-0 flex-1 truncate">
-            날짜 없는 할 일 <b className="tabular text-fg">{undated}개</b> · 마감일 정하기
-          </span>
-        </Link>
-      )}
+      {/* 날짜 없는 일 · 지난 마감을 한 번에 정리한다 (하나씩 열어서 고치지 않게) */}
+      <div className="mx-2 mb-2 mt-auto">
+        <PlanDatesButton />
+      </div>
       <TaskSheet open={!!editId || creating} onClose={() => { setEditId(null); setCreating(false); }} taskId={editId} />
       <QuickDateSheet taskId={dateId} onClose={() => setDateId(null)} />
     </Card>

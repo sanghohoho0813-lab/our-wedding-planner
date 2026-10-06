@@ -45,9 +45,9 @@ export function BudgetDashboard({ embedded }: { embedded?: boolean } = {}) {
   const stats: { label: string; value: number; sub?: string; tone?: string }[] = [
     { label: "총 예정 예산", value: b.totalBudget },
     { label: "총 견적", value: b.totalEstimated },
-    { label: "총 실제 비용", value: b.totalActual, sub: `사용률 ${b.usedPct.toFixed(1)}%` },
-    { label: "총 결제 금액", value: b.totalPaid },
-    { label: "남은 결제액", value: b.totalUnpaid },
+    { label: "확정 비용", value: b.totalActual, sub: `예산의 ${b.usedPct.toFixed(1)}%` },
+    { label: "낸 돈", value: b.totalPaid },
+    { label: "앞으로 낼 돈", value: b.totalUnpaid },
     { label: "남은 예산", value: b.remaining, tone: b.remaining < 0 ? "text-danger" : undefined },
   ];
 
@@ -132,7 +132,7 @@ export function BudgetDashboard({ embedded }: { embedded?: boolean } = {}) {
           <div className="flex flex-col items-center gap-5 px-5 pb-5 sm:flex-row">
             <Donut size={170} thickness={22} segments={donutSegments.length ? donutSegments : [{ value: 1, color: "var(--surface-3)" }]}>
               <span className="text-[1.5rem] font-bold tabular text-fg">{Math.round(b.usedPct)}%</span>
-              <span className="text-[0.75rem] text-fg-3">사용률</span>
+              <span className="text-[0.75rem] text-fg-3">확정</span>
             </Donut>
             <ul data-testid="donut-legend" className="w-full space-y-2 text-[0.875rem]">
               {donutSegments.slice(0, 7).map((s) => (

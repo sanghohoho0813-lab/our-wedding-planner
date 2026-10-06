@@ -127,14 +127,14 @@ await p.getByText("우리 결혼식까지").first().waitFor({ timeout: 30000 });
     created_at: new Date().toISOString(), updated_at: new Date().toISOString() });`);
   await go("/budget");
   const beforeTxt = await mainText();
-  const paidBefore = won(beforeTxt, "총 결제 금액");
+  const paidBefore = won(beforeTxt, "낸 돈");
   check("잔금을 넣으면 '다가오는 결제' 에 D-2 로 뜬다", beforeTxt.includes("스냅 잔금") && /D-2/.test(beforeTxt));
 
   await seed(`const x = d.payments.find(y => y.id === "x-pay"); x.paid = true; x.paid_at = "${today}";`);
   await go("/budget");
   const afterTxt = await mainText();
   check("결제 처리하면 '다가오는 결제' 에서 빠진다", !afterTxt.includes("스냅 잔금"));
-  check("결제 처리하면 '총 결제 금액' 이 그만큼 늘어난다", won(afterTxt, "총 결제 금액") === paidBefore + 500000, `${paidBefore} → ${won(afterTxt, "총 결제 금액")}`);
+  check("결제 처리하면 '낸 돈' 이 그만큼 늘어난다", won(afterTxt, "낸 돈") === paidBefore + 500000, `${paidBefore} → ${won(afterTxt, "낸 돈")}`);
   await go("/");
   check("홈 '다가오는 결제' 에서도 사라진다", !(await mainText()).includes("스냅 잔금"));
 }
