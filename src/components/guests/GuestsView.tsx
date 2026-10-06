@@ -44,7 +44,7 @@ const RSVP_STYLE: Record<Rsvp, string> = {
  *
  * 300명이 되면 이 컴포넌트가 300개다. 그래서 두 가지를 지킨다.
  * - memo: 한 명의 참석 여부를 바꿨다고 나머지 299줄을 다시 그리지 않는다.
- * - layout 애니메이션은 명단이 길면 끈다 (framer-motion 의 layout 은 매번 모든 줄의
+ * - 애니메이션은 명단이 길면 끈다 (framer-motion 의 layout 은 매번 모든 줄의
  *   위치를 재는데, 줄이 많아지면 필터 한 번에 0.5초씩 밀린다. 부드러움보다 반응이 먼저다).
  */
 const GuestRow = memo(function GuestRow({
@@ -60,8 +60,7 @@ const GuestRow = memo(function GuestRow({
 }) {
   const patch = useWeddingStore((s) => s.patch);
   const people = 1 + g.companions;
-  return (
-    <motion.li layout={animate} initial={animate ? { opacity: 0 } : false} animate={{ opacity: 1 }} exit={animate ? { opacity: 0 } : undefined}>
+  const row = (
       <SwipeRow
         right={{
           icon: <Check />,
@@ -136,7 +135,14 @@ const GuestRow = memo(function GuestRow({
       </div>
         </div>
       </SwipeRow>
+  );
+  // 명단이 길면 애니메이션용 껍데기 없이 그린다 (300줄이면 그것만으로도 다시 그리는 시간이 눈에 띈다)
+  return animate ? (
+    <motion.li layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+      {row}
     </motion.li>
+  ) : (
+    <li>{row}</li>
   );
 });
 

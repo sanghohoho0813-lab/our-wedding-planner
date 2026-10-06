@@ -96,10 +96,23 @@ check("실제 계정으로 큰 데이터를 넣는다 (하객 300 · 할 일 150
   await box.fill("");
   await A.page.waitForTimeout(500);
 
-  const f0 = Date.now();
-  await A.page.getByRole("button", { name: "참석", exact: true }).first().click();
-  const filtered = await waitIn(A, () => document.querySelectorAll("main li").length === 100, null, 8000);
-  check("'참석' 필터가 0.3초 안에 바뀐다", filtered !== null && Date.now() - f0 < 300, `${Date.now() - f0}ms · ${await A.page.locator("main li").count()}행`);
+  // 시간은 '누른 순간 → 100줄이 그려진 다음 화면' 만 잰다.
+  // (예전에는 Playwright 가 300줄 화면에서 '참석' 버튼을 찾는 시간까지 같이 재서 앱보다 느리게 나왔다)
+  const attBtn = await A.page.getByRole("button", { name: "참석", exact: true }).first().elementHandle();
+  const filterMs = await attBtn.evaluate(
+    (btn) =>
+      new Promise((res) => {
+        const t0 = performance.now();
+        btn.click();
+        const tick = () => {
+          if (document.querySelectorAll("main li").length === 100) requestAnimationFrame(() => res(Math.round(performance.now() - t0)));
+          else if (performance.now() - t0 > 8000) res(null);
+          else requestAnimationFrame(tick);
+        };
+        tick();
+      }),
+  );
+  check("'참석' 필터가 0.3초 안에 바뀐다", filterMs !== null && filterMs < 300, `${filterMs}ms · ${await A.page.locator("main li").count()}행`);
   await A.page.getByRole("button", { name: "모두", exact: true }).first().click();
   await A.page.waitForTimeout(400);
 

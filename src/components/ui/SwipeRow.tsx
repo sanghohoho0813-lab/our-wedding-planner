@@ -53,6 +53,8 @@ export function SwipeRow({
   const reduce = useReducedMotion();
   const x = useMotionValue(0);
   const [dir, setDir] = useState<"left" | "right" | null>(null);
+  // 밀 때만 뒤의 안내(참석 · 청첩장)를 그린다. 300줄이면 안 쓰는 안내가 600개였다.
+  const [hint, setHint] = useState(false);
   const gesture = useRef<Gesture | null>(null);
   // 밀고 손을 떼면 그 자리의 버튼이 눌리는 일이 있다. 방금 민 직후의 클릭은 막는다.
   const justDragged = useRef(false);
@@ -78,6 +80,7 @@ export function SwipeRow({
       if (g.axis === "y") return;
       e.currentTarget.setPointerCapture(e.pointerId);
       setDir(dx >= 0 ? "right" : "left");
+      setHint(true);
     }
     if (g.axis !== "x") return;
     g.dx = dx;
@@ -90,7 +93,10 @@ export function SwipeRow({
     gesture.current = null;
     if (g.axis !== "x") return;
     setDir(null);
-    animate(x, 0, { type: "spring", stiffness: 600, damping: 40 });
+    // 제자리로 돌아온 뒤에 안내를 치운다 (돌아오는 동안은 서서히 사라지는 게 보여야 한다)
+    animate(x, 0, { type: "spring", stiffness: 600, damping: 40 }).then(() => {
+      if (!gesture.current) setHint(false);
+    });
     if (Math.abs(g.dx) > LOCK) {
       justDragged.current = true;
       setTimeout(() => {
@@ -104,7 +110,7 @@ export function SwipeRow({
 
   return (
     <div className={cn("relative overflow-hidden", className)}>
-      {right && (
+      {hint && right && (
         <motion.div
           aria-hidden
           style={{ opacity: rightOpacity }}
@@ -114,7 +120,7 @@ export function SwipeRow({
           {right.label}
         </motion.div>
       )}
-      {left && (
+      {hint && left && (
         <motion.div
           aria-hidden
           style={{ opacity: leftOpacity }}
