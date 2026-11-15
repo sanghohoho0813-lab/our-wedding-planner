@@ -19,6 +19,7 @@ import { ChipSelect } from "@/components/ui/Chip";
 import { ConfirmSheet } from "@/components/ui/Confirm";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { SettingsNav } from "./SettingsNav";
+import { MergeGuestsCard } from "./MergeGuestsCard";
 import { StorageCard } from "./StorageCard";
 
 const CSV_TABLES = Object.keys(CSV_TABLE_LABEL) as TableName[];
@@ -157,6 +158,7 @@ export function DataSettings() {
 
       <div className="mb-4 space-y-4">
         <StorageCard />
+        <MergeGuestsCard />
       </div>
 
       <Card className="mb-4">

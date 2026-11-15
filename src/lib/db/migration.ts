@@ -146,3 +146,18 @@ export function applyDataFixups(data: WeddingData): { data: WeddingData; changed
   data.wedding = { ...data.wedding, details: { ...details, data_version: DATA_VERSION } };
   return { data, changed: true };
 }
+
+/**
+ * 원본 명단(43명)의 사람을 id 로 찾는 표.
+ *
+ * 원본 행은 공간마다 id 가 다르다(원래 id · 로컬 공간에서 섞은 id · 서버 공간에서 섞은 id).
+ * 그래서 폰 백업의 '진주리' 와 서버의 '진주리' 는 이름이 바뀌어도 같은 사람인지 id 로 알 수 있다.
+ */
+export function originalGuestLineage(weddingIds: string[]): Map<string, TableMap["guests"]> {
+  const map = new Map<string, TableMap["guests"]>();
+  for (const o of (ORIGINAL_ROWS.guests ?? []) as unknown as TableMap["guests"][]) {
+    map.set(o.id, o);
+    for (const w of weddingIds) map.set(mix(`${w}:${o.id}`), o);
+  }
+  return map;
+}

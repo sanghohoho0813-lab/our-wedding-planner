@@ -64,7 +64,8 @@ check("전체 비우기가 실제로 동작한다", /아직 등록된 할 일이
 
 // ── 3. 백업 파일로 복원
 await go(A, "/settings/data");
-await A.page.setInputFiles('input[type="file"][accept*="json"]', path);
+// 'JSON 백업' 카드의 복원 칸 (같은 화면의 '하객 합치기' 카드도 JSON 을 받는다)
+await A.page.locator("section, div.card, [class*=card]").filter({ hasText: "JSON 백업 복원" }).filter({ hasNotText: "하객 합치기" }).last().locator('input[type="file"]').setInputFiles(path);
 await A.page.waitForTimeout(3000);
 const confirmBtn = A.page.getByRole("button", { name: /복원|덮어쓰기|확인/ }).last();
 if (await confirmBtn.count()) await confirmBtn.click().catch(() => {});
