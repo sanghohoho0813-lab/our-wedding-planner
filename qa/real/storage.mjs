@@ -55,7 +55,7 @@ await go(A, "/settings/data");
   check("브라우저에만 남은 기록을 찾아서 알려준다", /이 브라우저에만 남아 있는 기록/.test(t) && /3건/.test(t), (t.match(/이 브라우저에만 남아 있는 기록[\s\S]{0,60}/) ?? [""])[0].replace(/\n+/g, " · "));
   check("상대는 볼 수 없다는 것을 알려준다", /상대는 볼 수 없/.test(t));
 
-  await A.page.getByRole("button", { name: /서버로 올리기/ }).click();
+  await A.page.getByRole("button", { name: /기록 전체 올리기/ }).click();
   await A.page.waitForTimeout(6000);
   const after = await mainText(A);
   check("올리고 나면 올렸다고 알려준다", /서버로 올렸어요/.test(after), (after.match(/[^\n]*올렸어요[^\n]*/) ?? [""])[0]);

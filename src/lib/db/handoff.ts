@@ -1,7 +1,7 @@
 "use client";
 import { LOCAL_WEDDING_ID } from "@/lib/config";
 import type { DataAdapter } from "./adapter";
-import { TABLE_NAMES, type TableName, type Wedding, type WeddingData } from "./types";
+import { TABLE_NAMES, type Guest, type TableName, type Wedding, type WeddingData } from "./types";
 import { applyDataFixups } from "./migration";
 
 /**
@@ -119,4 +119,26 @@ export async function uploadWorkspace(
     opts.onProgress?.({ table, done, total });
   }
   return total;
+}
+
+/** 하객을 같은 사람으로 볼 열쇠: 띄어쓰기를 뺀 이름 + 측 */
+export function guestKey(g: Pick<Guest, "name" | "side">): string {
+  return `${(g.name ?? "").replace(/\s+/g, "")}|${g.side}`;
+}
+
+/**
+ * 이 브라우저에만 남아 있는 하객 중 서버에 아직 없는 사람.
+ *
+ * '전체 올리기' 는 할 일 · 예산 · 원래 명단까지 한 번 더 넣어서 모든 게 두 개씩 된다.
+ * 실제로 필요한 건 대개 "폰에서 따로 적어 둔 하객 몇 명" 이라, 이름 · 측이 같은 사람은 빼고 남은 사람만 고른다.
+ */
+export function guestsMissingOnServer(local: Guest[], server: Guest[]): Guest[] {
+  const have = new Set(server.map(guestKey));
+  const seen = new Set<string>();
+  return local.filter((g) => {
+    const k = guestKey(g);
+    if (!g.name?.trim() || have.has(k) || seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
 }

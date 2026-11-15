@@ -1,13 +1,16 @@
 "use client";
-import { Cloud, HardDrive, Loader2, Upload } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Check, Cloud, HardDrive, Loader2, Upload, Users } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { isSupabaseConfigured, SUPABASE_HOST } from "@/lib/config";
-import { readLocalWorkspace, uploadWorkspace, type LocalSnapshot } from "@/lib/db/handoff";
-import { TABLE_NAMES } from "@/lib/db/types";
+import { guestsMissingOnServer, readLocalWorkspace, uploadWorkspace, type LocalSnapshot } from "@/lib/db/handoff";
+import { TABLE_NAMES, type Guest } from "@/lib/db/types";
+import { SIDE_LABEL } from "@/lib/guest-side";
 import { relativeTime } from "@/lib/date";
+import { CSV_TABLE_LABEL } from "@/lib/export";
 import { toast } from "@/lib/store/ui-store";
 import { useWeddingStore } from "@/lib/store/wedding-store";
 import { useWorkspace } from "@/lib/store/workspace";
+import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card, CardHeader } from "@/components/ui/Card";
@@ -47,6 +50,63 @@ export function StorageCard() {
   }, []);
 
   const rows = TABLE_NAMES.filter((t) => t !== "activity_logs").reduce((n, t) => n + (data[t] as unknown[]).length, 0);
+
+  // 이 브라우저에만 있는 하객 중 서버에 없는 사람 — 묶음(측 · 관계)별로 골라 올린다
+  const add = useWeddingStore((s) => s.add);
+  const remove = useWeddingStore((s) => s.remove);
+  const log = useWeddingStore((s) => s.log);
+  const missing = useMemo(() => (local ? guestsMissingOnServer(local.data.guests, data.guests) : []), [local, data.guests]);
+  const groups = useMemo(() => {
+    const m = new Map<string, { key: string; label: string; side: Guest["side"]; items: Guest[] }>();
+    for (const g of missing) {
+      const key = `${g.side}|${g.relation?.trim() || ""}`;
+      const label = `${SIDE_LABEL[g.side] ?? g.side} · ${g.relation?.trim() || "관계 없음"}`;
+      const grp = m.get(key) ?? { key, label, side: g.side, items: [] };
+      grp.items.push(g);
+      m.set(key, grp);
+    }
+    const order = { groom: 0, bride: 1, both: 2 } as Record<string, number>;
+    return [...m.values()].sort((a, b) => (order[a.side] ?? 3) - (order[b.side] ?? 3) || b.items.length - a.items.length);
+  }, [missing]);
+  // 꺼 둔 묶음만 기억한다 (새로 보이는 묶음은 기본으로 켜져 있다)
+  const [off, setOff] = useState<Set<string>>(new Set());
+  const picked = groups.filter((g) => !off.has(g.key)).flatMap((g) => g.items);
+
+  const moveGuests = () => {
+    if (picked.length === 0) return;
+    const created: string[] = [];
+    for (const g of picked) {
+      const row = add(
+        "guests",
+        {
+          name: g.name,
+          side: g.side,
+          relation: g.relation,
+          rsvp: g.rsvp,
+          companions: g.companions,
+          meal: g.meal,
+          contacted: g.contacted,
+          invitation_sent: g.invitation_sent,
+          invitation_method: g.invitation_method,
+          memo: g.memo,
+        },
+        { log: false },
+      );
+      created.push(row.id);
+    }
+    const n = created.length;
+    log(`이 기기에만 있던 하객 ${n}명을 서버로 올렸어요.`, "guests", null, "create");
+    toast(`하객 ${n}명을 올렸어요. 이제 상대도 볼 수 있어요.`, {
+      tone: "success",
+      duration: 8000,
+      action: {
+        label: "되돌리기",
+        onClick: () => {
+          for (const id of created) remove("guests", id, { log: false, silent: true });
+        },
+      },
+    });
+  };
 
   const move = async () => {
     if (!local || !adapter || !ws.weddingId) return;
@@ -139,20 +199,77 @@ export function StorageCard() {
             <ul className="flex flex-wrap gap-1.5 text-[0.875rem] text-fg-3">
               {local.counts.slice(0, 8).map((c) => (
                 <li key={c.table} className="rounded-full bg-surface-2 px-2.5 py-1">
-                  {c.table} {c.n}
+                  {CSV_TABLE_LABEL[c.table] ?? c.table} {c.n}
                 </li>
               ))}
             </ul>
+
+            {/* 대개 필요한 건 '폰에서 따로 적어 둔 하객' 뿐이다 — 그것만 골라 올린다 */}
+            {groups.length > 0 && (
+              <div className="space-y-2.5 rounded-[14px] border border-line p-3">
+                <p className="flex items-center gap-1.5 text-[1rem] font-semibold text-fg">
+                  <Users className="size-4 text-fg-3" /> 서버에 없는 하객 {missing.length}명
+                </p>
+                <p className="text-[0.875rem] text-fg-3">이름과 측이 같은 사람은 이미 있으니 뺐어요. 올릴 묶음만 고르세요.</p>
+                <ul className="space-y-1.5">
+                  {groups.map((g) => {
+                    const on = !off.has(g.key);
+                    return (
+                      <li key={g.key}>
+                        <button
+                          type="button"
+                          role="checkbox"
+                          aria-checked={on}
+                          onClick={() =>
+                            setOff((prev) => {
+                              const next = new Set(prev);
+                              if (on) next.add(g.key);
+                              else next.delete(g.key);
+                              return next;
+                            })
+                          }
+                          className={cn(
+                            "flex w-full gap-3 rounded-[12px] border px-3 py-2.5 text-left transition-colors",
+                            on ? "border-accent/50 bg-accent-softer" : "border-line bg-surface",
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "mt-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-[6px] border-2",
+                              on ? "border-accent bg-accent text-accent-fg" : "border-line-strong",
+                            )}
+                          >
+                            {on && <Check className="size-3.5" strokeWidth={3} />}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className={cn("block text-[0.9375rem] font-semibold", on ? "text-fg" : "text-fg-3")}>
+                              {g.label} <span className="tabular">{g.items.length}명</span>
+                            </span>
+                            <span className="mt-0.5 block break-keep text-[0.8125rem] text-fg-3">{g.items.map((x) => x.name).join(" · ")}</span>
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+                <Button full onClick={moveGuests} disabled={picked.length === 0}>
+                  <Upload className="size-4" /> {picked.length > 0 ? `고른 하객 ${picked.length}명만 서버로 올리기` : "고른 묶음이 없어요"}
+                </Button>
+              </div>
+            )}
+
             {movedAt ? (
               <p className="rounded-[12px] bg-success-soft px-4 py-3 text-[0.9375rem] text-success">
                 {relativeTime(movedAt)}에 서버로 올렸어요. (브라우저 기록은 백업으로 그대로 둡니다)
               </p>
             ) : (
               <>
-                <Button full onClick={move} disabled={busy}>
-                  {busy ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />} 서버로 올리기 ({local.rows}건)
+                <Button full variant={groups.length > 0 ? "outline" : "primary"} onClick={move} disabled={busy}>
+                  {busy ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />} 기록 전체 올리기 ({local.rows}건)
                 </Button>
-                <p className="text-[0.875rem] text-fg-3">지금 서버에 있는 기록은 지우지 않고 더합니다. 겹치는 항목이 생기면 지운 뒤 다시 정리할 수 있어요.</p>
+                <p className="text-[0.875rem] text-fg-3">
+                  전체 올리기는 할 일 · 예산까지 모두 더해요. 서버에 이미 있는 것도 한 번 더 들어가니, 하객만 옮기려면 위의 버튼을 쓰세요.
+                </p>
               </>
             )}
           </div>
