@@ -24,9 +24,18 @@ import { StorageCard } from "./StorageCard";
 const CSV_TABLES = Object.keys(CSV_TABLE_LABEL) as TableName[];
 const IMPORT_TABLES: DataTable[] = ["tasks", "budget_items", "guests", "gifts", "events", "invitation_meetings", "vendors", "venues", "music_items", "outfit_items", "honeymoon_items", "memos"];
 
+/** CSV 가져오기에서 '같은 것' 으로 볼 열쇠 (하객: 띄어쓰기 뺀 이름 + 측, 할 일: 띄어쓰기 뺀 제목) */
+function csvDuplicateKey(table: DataTable): ((r: Record<string, unknown>) => string | null) | null {
+  const norm = (v: unknown) => (typeof v === "string" ? v.replace(/\s+/g, "") : "");
+  if (table === "guests") return (r) => (norm(r.name) ? `${norm(r.name)}|${r.side ?? ""}` : null);
+  if (table === "tasks") return (r) => (norm(r.title) ? norm(r.title) : null);
+  return null;
+}
+
 export function DataSettings() {
   const data = useWeddingStore((s) => s.data!);
   const add = useWeddingStore((s) => s.add);
+  const log = useWeddingStore((s) => s.log);
   const replaceAll = useWeddingStore((s) => s.replaceAll);
   const [csvTable, setCsvTable] = useState<TableName>("tasks");
   const [importTable, setImportTable] = useState<DataTable>("tasks");
@@ -92,8 +101,25 @@ export function DataSettings() {
     try {
       const rows = csvToRows(importTable, await f.text(), data);
       if (rows.length === 0) return toast("가져올 행이 없어요. 첫 줄이 헤더인지 확인해 주세요.");
-      for (const r of rows) add(importTable, r as never, { log: false });
-      toast(`${CSV_TABLE_LABEL[importTable]} ${rows.length}건을 가져왔어요.`, { tone: "success" });
+      // 이미 있는 것은 건너뛴다 — 같은 파일을 두 번 넣거나, 상대가 먼저 적어 둔 사람이 있어도 두 번 들어가지 않게
+      const keyOf = csvDuplicateKey(importTable);
+      const seen = new Set(keyOf ? (data[importTable] as unknown as Record<string, unknown>[]).map(keyOf) : []);
+      let added = 0;
+      for (const r of rows) {
+        const k = keyOf?.(r as Record<string, unknown>);
+        if (k && seen.has(k)) continue;
+        if (k) seen.add(k);
+        add(importTable, r as never, { log: false });
+        added++;
+      }
+      const skipped = rows.length - added;
+      if (added > 0) log(`${CSV_TABLE_LABEL[importTable]} ${added}건을 CSV 로 가져왔어요.`, importTable, null, "create");
+      toast(
+        added === 0
+          ? `${CSV_TABLE_LABEL[importTable]} ${rows.length}건이 모두 이미 있어요.`
+          : `${CSV_TABLE_LABEL[importTable]} ${added}건을 가져왔어요.${skipped > 0 ? ` (이미 있는 ${skipped}건은 건너뜀)` : ""}`,
+        { tone: "success", duration: 6000 },
+      );
     } catch (e) {
       toast(e instanceof Error ? e.message : "가져오기에 실패했어요.", { tone: "error" });
     } finally {
